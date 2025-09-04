@@ -1,0 +1,110 @@
+{% extends 'transcriber/base.html' %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8">Upload Audio File</h1>
+    
+    <div class="bg-gray-800 rounded-lg p-8">
+        <form method="post" 
+              enctype="multipart/form-data"
+              hx-post="{% url 'transcriber:upload' %}"
+              hx-target="#upload-result"
+              hx-swap="innerHTML"
+              x-data="{ uploading: false, progress: 0 }">
+            {% csrf_token %}
+            
+            <!-- File Drop Zone -->
+            <div class="border-2 border-dashed border-gray-600 rounded-lg p-12 text-center hover:border-purple-500 transition"
+                 x-on:dragover.prevent="$el.classList.add('border-purple-500')"
+                 x-on:dragleave.prevent="$el.classList.remove('border-purple-500')"
+                 x-on:drop.prevent="$el.classList.remove('border-purple-500'); 
+                                     const file = $event.dataTransfer.files[0]; 
+                                     document.getElementById('audio-file').files = $event.dataTransfer.files;">
+                
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                
+                <label for="audio-file" class="cursor-pointer">
+                    <span class="text-xl mb-2 block">Drop your audio file here</span>
+                    <span class="text-gray-400">or click to browse</span>
+                    <input type="file" 
+                           id="audio-file" 
+                           name="audio_file" 
+                           accept=".mp3,.wav,.m4a,.flac,.ogg" 
+                           class="hidden"
+                           required
+                           x-on:change="
+                               const fileName = $event.target.files[0]?.name;
+                               if (fileName) {
+                                   document.getElementById('file-name').textContent = fileName;
+                                   document.getElementById('file-info').classList.remove('hidden');
+                               }
+                           ">
+                </label>
+            </div>
+            
+            <!-- File Info -->
+            <div id="file-info" class="hidden mt-4 p-4 bg-gray-700 rounded-lg">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-300">Selected: <span id="file-name" class="font-semibold"></span></span>
+                    <button type="button" 
+                            onclick="document.getElementById('audio-file').value=''; 
+                                     document.getElementById('file-info').classList.add('hidden');"
+                            class="text-red-400 hover:text-red-300">Remove</button>
+                </div>
+            </div>
+            
+            <!-- Supported Formats -->
+            <div class="mt-6 text-sm text-gray-400">
+                <p class="font-semibold mb-2">Supported formats:</p>
+                <div class="flex flex-wrap gap-2">
+                    <span class="px-2 py-1 bg-gray-700 rounded">.mp3</span>
+                    <span class="px-2 py-1 bg-gray-700 rounded">.wav</span>
+                    <span class="px-2 py-1 bg-gray-700 rounded">.m4a</span>
+                    <span class="px-2 py-1 bg-gray-700 rounded">.flac</span>
+                    <span class="px-2 py-1 bg-gray-700 rounded">.ogg</span>
+                </div>
+            </div>
+            
+            <!-- Upload Button -->
+            <button type="submit" 
+                    class="w-full mt-8 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold transition transform hover:scale-105"
+                    x-on:click="uploading = true"
+                    x-bind:disabled="uploading">
+                <span x-show="!uploading">Start Transcription</span>
+                <span x-show="uploading" class="flex items-center justify-center">
+                    <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Uploading...
+                </span>
+            </button>
+        </form>
+        
+        <!-- Upload Result -->
+        <div id="upload-result" class="mt-6"></div>
+    </div>
+    
+    <!-- Instructions -->
+    <div class="mt-8 bg-gray-800 rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">How it works</h2>
+        <ol class="space-y-3 text-gray-300">
+            <li class="flex items-start">
+                <span class="flex-shrink-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">1</span>
+                <span>Upload your audio file (guitar recording, song, or any musical audio)</span>
+            </li>
+            <li class="flex items-start">
+                <span class="flex-shrink-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">2</span>
+                <span>Our AI analyzes the audio to detect notes, tempo, and structure</span>
+            </li>
+            <li class="flex items-start">
+                <span class="flex-shrink-0 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center mr-3">3</span>
+                <span>Download your transcribed tabs in your preferred format</span>
+            </li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

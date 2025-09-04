@@ -1,0 +1,78 @@
+{% extends 'transcriber/base.html' %}
+
+{% block content %}
+<div>
+    <h1 class="text-3xl font-bold mb-8">Transcription Library</h1>
+    
+    <!-- Filters -->
+    <div class="bg-gray-800 rounded-lg p-4 mb-6">
+        <form method="get" class="flex gap-4">
+            <select name="instrument" class="bg-gray-700 text-gray-200 px-4 py-2 rounded">
+                <option value="">All Instruments</option>
+                <option value="guitar" {% if selected_instrument == 'guitar' %}selected{% endif %}>Guitar</option>
+                <option value="bass" {% if selected_instrument == 'bass' %}selected{% endif %}>Bass</option>
+                <option value="drums" {% if selected_instrument == 'drums' %}selected{% endif %}>Drums</option>
+            </select>
+            
+            <select name="complexity" class="bg-gray-700 text-gray-200 px-4 py-2 rounded">
+                <option value="">All Complexity</option>
+                <option value="simple" {% if selected_complexity == 'simple' %}selected{% endif %}>Simple</option>
+                <option value="moderate" {% if selected_complexity == 'moderate' %}selected{% endif %}>Moderate</option>
+                <option value="complex" {% if selected_complexity == 'complex' %}selected{% endif %}>Complex</option>
+            </select>
+            
+            <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded transition">
+                Apply Filters
+            </button>
+        </form>
+    </div>
+    
+    <!-- Transcriptions Grid -->
+    {% if transcriptions %}
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for transcription in transcriptions %}
+        <div class="bg-gray-800 rounded-lg p-6 hover:bg-gray-750 transition">
+            <h3 class="font-semibold text-lg mb-2">
+                <a href="{% url 'transcriber:detail' pk=transcription.pk %}" class="text-purple-400 hover:text-purple-300">
+                    {{ transcription.filename|truncatechars:30 }}
+                </a>
+            </h3>
+            
+            <div class="text-sm text-gray-400 space-y-1 mb-4">
+                <div>Duration: {{ transcription.duration_formatted }}</div>
+                {% if transcription.estimated_tempo %}
+                    <div>Tempo: {{ transcription.estimated_tempo }} BPM</div>
+                {% endif %}
+                {% if transcription.estimated_key %}
+                    <div>Key: {{ transcription.estimated_key }}</div>
+                {% endif %}
+                {% if transcription.complexity %}
+                    <div>Complexity: {{ transcription.get_complexity_display }}</div>
+                {% endif %}
+            </div>
+            
+            {% if transcription.detected_instruments %}
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% for instrument in transcription.detected_instruments %}
+                <span class="px-2 py-1 bg-gray-700 text-xs rounded">{{ instrument }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'transcriber:detail' pk=transcription.pk %}" 
+               class="text-sm text-purple-400 hover:text-purple-300">
+                View Details →
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-gray-800 rounded-lg p-12 text-center">
+        <p class="text-gray-400 mb-4">No completed transcriptions yet.</p>
+        <a href="{% url 'transcriber:upload' %}" class="text-purple-400 hover:text-purple-300">
+            Upload your first audio file
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

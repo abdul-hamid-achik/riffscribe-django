@@ -1,0 +1,86 @@
+<div class="bg-gray-800 rounded-lg p-6 mb-6"
+     id="status-card"
+     {% if transcription.status in 'pending,processing' %}
+     hx-get="{% url 'transcriber:status' pk=transcription.pk %}"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML"
+     {% endif %}>
+    
+    <div class="grid md:grid-cols-2 gap-6">
+        <!-- Left Column -->
+        <div>
+            <h2 class="text-xl font-semibold mb-4">Transcription Status</h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Status:</span>
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold
+                        {% if transcription.status == 'completed' %}bg-green-900 text-green-300
+                        {% elif transcription.status == 'processing' %}bg-yellow-900 text-yellow-300
+                        {% elif transcription.status == 'failed' %}bg-red-900 text-red-300
+                        {% else %}bg-gray-700 text-gray-300{% endif %}">
+                        {{ transcription.get_status_display }}
+                    </span>
+                </div>
+                
+                {% if transcription.status == 'processing' %}
+                <div class="mt-4">
+                    <div class="flex items-center space-x-2">
+                        <svg class="animate-spin h-5 w-5 text-purple-500" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span class="text-gray-300">Processing audio...</span>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if transcription.error_message %}
+                <div class="mt-4 p-4 bg-red-900 bg-opacity-30 rounded-lg">
+                    <p class="text-red-300">{{ transcription.error_message }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div>
+            <h2 class="text-xl font-semibold mb-4">Audio Analysis</h2>
+            
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Duration:</span>
+                    <span class="text-gray-200">{{ transcription.duration_formatted }}</span>
+                </div>
+                
+                {% if transcription.estimated_tempo %}
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Tempo:</span>
+                    <span class="text-gray-200">{{ transcription.estimated_tempo }} BPM</span>
+                </div>
+                {% endif %}
+                
+                {% if transcription.estimated_key %}
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Key:</span>
+                    <span class="text-gray-200">{{ transcription.estimated_key }}</span>
+                </div>
+                {% endif %}
+                
+                {% if transcription.complexity %}
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Complexity:</span>
+                    <span class="text-gray-200">{{ transcription.get_complexity_display }}</span>
+                </div>
+                {% endif %}
+                
+                {% if transcription.detected_instruments %}
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Instruments:</span>
+                    <span class="text-gray-200">{{ transcription.instruments_display }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
