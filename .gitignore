@@ -84,6 +84,14 @@ SECRET_KEY
 *.ogg
 *.aac
 
+# But allow sample audio files for testing
+!samples/*.mp3
+!samples/*.wav
+!samples/*.flac
+!samples/*.m4a
+!samples/*.ogg
+!samples/*.aac
+
 # Backup files
 *.bak
 *.backup
