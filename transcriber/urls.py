@@ -11,5 +11,7 @@ urlpatterns = [
     path('transcription/<uuid:pk>/export/', views.export, name='export'),
     path('transcription/<uuid:pk>/export/<int:export_id>/download/', views.download, name='download'),
     path('transcription/<uuid:pk>/delete/', views.delete, name='delete'),
+    path('transcription/<uuid:pk>/preview/', views.preview_tab, name='preview_tab'),
+    path('task/<str:task_id>/status/', views.get_task_status, name='task_status'),
     path('library/', views.library, name='library'),
 ]

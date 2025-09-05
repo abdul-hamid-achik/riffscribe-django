@@ -1,0 +1,26 @@
+# Advanced ML Models Installation
+# Install these separately after base requirements
+
+# Basic-pitch (Spotify's model)
+basic-pitch>=0.3
+tensorflow>=2.15
+
+# CREPE (monophonic pitch detection)
+crepe>=0.0.15
+
+# Source separation (install one)
+# Note: demucs requires manual installation:
+# pip install -U git+https://github.com/facebookresearch/demucs#egg=demucs
+
+# Alternative source separation
+spleeter>=2.4
+
+# Advanced beat tracking (requires system dependencies)
+# madmom>=0.16  # Needs: apt-get install libfftw3-dev
+
+# Evaluation metrics
+mir-eval>=0.7
+
+# GPU support (optional)
+# torch==2.0.1+cu118  # For CUDA 11.8
+# torchaudio==2.0.2+cu118

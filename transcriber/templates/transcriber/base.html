@@ -13,6 +13,44 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'display': ['Playfair Display', 'Georgia', 'serif'],
+                        'headline': ['Crimson Text', 'Georgia', 'serif'], 
+                        'body': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        sheet: {
+                            cream: '#faf8f3',
+                            ivory: '#f8f6f0',
+                        },
+                        nyt: {
+                            black: '#121212',
+                            gray: {
+                                dark: '#333333',
+                                medium: '#666666',
+                                light: '#999999',
+                            },
+                            border: '#e6e6e6',
+                        },
+                        musical: {
+                            gold: '#c9a96e',
+                            treble: '#8b4513',
+                            staff: '#2c2c2c',
+                            note: '#1a1a1a',
+                        },
+                        primary: {
+                            blue: '#326891',
+                            'blue-hover': '#2c5aa0',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- Custom CSS -->
     {% load static %}
@@ -20,40 +58,73 @@
     
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <!-- Navigation -->
-    <nav class="bg-gray-800 border-b border-gray-700">
+<body class="min-h-screen font-body text-nyt-black">
+    <!-- Navigation - NYT Style -->
+    <nav class="nyt-nav sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
+            <div class="flex items-center justify-between h-20">
                 <div class="flex items-center">
-                    <a href="{% url 'transcriber:index' %}" class="flex items-center space-x-2">
-                        <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                        </svg>
-                        <span class="text-xl font-bold text-white">RiffScribe</span>
+                    <a href="{% url 'transcriber:index' %}" class="flex items-center space-x-3 treble-clef">
+                        <span class="font-display text-3xl text-white tracking-tight">RiffScribe</span>
                     </a>
+                    <div class="hidden md:block ml-10">
+                        <div class="flex items-baseline space-x-8">
+                            <a href="{% url 'transcriber:index' %}" 
+                               class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
+                                Home
+                            </a>
+                            <a href="{% url 'transcriber:library' %}" 
+                               class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
+                                Library
+                            </a>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="{% url 'transcriber:upload' %}" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition">
+                    <a href="{% url 'transcriber:upload' %}" 
+                       class="btn-primary inline-flex items-center musical-note">
                         Upload Audio
                     </a>
-                    <a href="{% url 'transcriber:library' %}" class="text-gray-300 hover:text-white transition">
-                        Library
-                    </a>
                 </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div class="md:hidden px-4 pb-3">
+            <div class="flex flex-col space-y-2">
+                <a href="{% url 'transcriber:index' %}" 
+                   class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                    Home
+                </a>
+                <a href="{% url 'transcriber:library' %}" 
+                   class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                    Library
+                </a>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% block content %}{% endblock %}
+    <main class="staff-lines-subtle">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="mt-auto py-8 px-4 border-t border-gray-800">
-        <div class="max-w-7xl mx-auto text-center text-gray-400 text-sm">
-            <p>RiffScribe - AI-powered guitar tab transcription</p>
+    <!-- Footer - NYT Style -->
+    <footer class="mt-20 border-t-4 border-musical-gold bg-nyt-black text-white">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="font-display text-2xl mb-4 treble-clef">RiffScribe</div>
+                <p class="font-body text-gray-400 text-sm max-w-md mx-auto">
+                    AI-powered guitar tab transcription. Transform any song into accurate tablature 
+                    with advanced machine learning technology.
+                </p>
+                <div class="mt-6 pt-6 border-t border-gray-700">
+                    <p class="font-body text-gray-500 text-xs">
+                        &copy; 2024 RiffScribe. Built with precision and passion for music.
+                    </p>
+                </div>
+            </div>
         </div>
     </footer>
 
@@ -62,6 +133,16 @@
         // HTMX configuration
         document.body.addEventListener('htmx:configRequest', (event) => {
             event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+        
+        // Add subtle parallax effect to staff lines
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallax = document.querySelector('.staff-lines-subtle');
+            if (parallax) {
+                const speed = scrolled * 0.1;
+                parallax.style.backgroundPositionY = `${speed}px`;
+            }
         });
     </script>
     {% block extra_scripts %}{% endblock %}

@@ -1,102 +1,175 @@
 {% extends 'transcriber/base.html' %}
 
 {% block content %}
-<div class="space-y-8">
-    <!-- Hero Section -->
-    <div class="text-center py-12">
-        <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Turn Any Song Into Guitar Tabs
-        </h1>
-        <p class="text-xl text-gray-400 mb-8">
-            Upload your audio and let AI transcribe it into accurate guitar tablature
-        </p>
-        <a href="{% url 'transcriber:upload' %}" 
-           class="inline-block px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition transform hover:scale-105">
-            Start Transcribing
-        </a>
+<div class="space-y-16">
+    <!-- Hero Section - Music Sheet Inspired -->
+    <div class="hero-section text-center py-20 px-6 rounded-2xl relative overflow-hidden">
+        <div class="relative z-10">
+            <h1 class="font-display text-6xl md:text-7xl font-bold mb-6 text-nyt-black leading-tight">
+                Turn Any Song Into 
+                <span class="text-primary-blue">Guitar Tabs</span>
+            </h1>
+            <p class="font-body text-xl text-nyt-gray-medium mb-10 max-w-2xl mx-auto leading-relaxed">
+                Upload your audio and let AI transcribe it into accurate guitar tablature. 
+                Experience the future of music transcription with precision and elegance.
+            </p>
+            <div class="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
+                <a href="{% url 'transcriber:upload' %}" 
+                   class="btn-primary inline-flex items-center text-lg font-semibold animate-float musical-note">
+                    Start Transcribing
+                </a>
+                <a href="{% url 'transcriber:library' %}" 
+                   class="btn-secondary inline-flex items-center text-lg font-semibold">
+                    Browse Library
+                </a>
+            </div>
+        </div>
+        <!-- Decorative staff lines -->
+        <div class="absolute inset-0 opacity-30 staff-background"></div>
     </div>
 
-    <!-- Features -->
-    <div class="grid md:grid-cols-3 gap-6">
-        <div class="bg-gray-800 p-6 rounded-lg">
-            <div class="text-purple-400 mb-4">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
-                </svg>
-            </div>
-            <h3 class="text-xl font-semibold mb-2">AI-Powered Transcription</h3>
-            <p class="text-gray-400">Advanced machine learning models analyze your audio and extract individual notes</p>
+    <!-- Features Section - NYT Grid Style -->
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+            <h2 class="font-headline text-4xl font-bold text-nyt-black mb-4">
+                How RiffScribe Works
+            </h2>
+            <p class="font-body text-lg text-nyt-gray-medium max-w-2xl mx-auto">
+                Three powerful features that transform your music into professional guitar tabs
+            </p>
         </div>
-        
-        <div class="bg-gray-800 p-6 rounded-lg">
-            <div class="text-purple-400 mb-4">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="sheet-card feature-card p-8 rounded-xl">
+                <div class="text-musical-treble mb-6 flex justify-center">
+                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                              d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                    </svg>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4 text-nyt-black">AI-Powered Analysis</h3>
+                <p class="font-body text-nyt-gray-medium leading-relaxed">
+                    Advanced machine learning models analyze your audio files with professional-grade precision, 
+                    extracting individual notes, chords, and timing information.
+                </p>
             </div>
-            <h3 class="text-xl font-semibold mb-2">Real-Time Processing</h3>
-            <p class="text-gray-400">Watch as your audio is analyzed and converted to tabs in real-time</p>
-        </div>
-        
-        <div class="bg-gray-800 p-6 rounded-lg">
-            <div class="text-purple-400 mb-4">
-                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
-                </svg>
+            
+            <!-- Feature 2 -->
+            <div class="sheet-card feature-card p-8 rounded-xl">
+                <div class="text-musical-treble mb-6 flex justify-center">
+                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4 text-nyt-black">Real-Time Processing</h3>
+                <p class="font-body text-nyt-gray-medium leading-relaxed">
+                    Watch as your audio is processed in real-time with live progress updates. 
+                    Our optimized pipeline ensures fast, accurate transcription every time.
+                </p>
             </div>
-            <h3 class="text-xl font-semibold mb-2">Export Formats</h3>
-            <p class="text-gray-400">Download your tabs as Guitar Pro, MusicXML, PDF, or ASCII</p>
+            
+            <!-- Feature 3 -->
+            <div class="sheet-card feature-card p-8 rounded-xl">
+                <div class="text-musical-treble mb-6 flex justify-center">
+                    <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                </div>
+                <h3 class="font-headline text-2xl font-bold mb-4 text-nyt-black">Professional Export</h3>
+                <p class="font-body text-nyt-gray-medium leading-relaxed">
+                    Export your tabs in multiple professional formats including Guitar Pro, MusicXML, 
+                    PDF, and ASCII for seamless integration with your workflow.
+                </p>
+            </div>
         </div>
     </div>
 
-    <!-- Recent Transcriptions -->
+    <!-- Recent Transcriptions - NYT Table Style -->
     {% if transcriptions %}
-    <div>
-        <h2 class="text-2xl font-bold mb-4">Recent Transcriptions</h2>
-        <div class="bg-gray-800 rounded-lg overflow-hidden">
+    <div class="max-w-6xl mx-auto">
+        <div class="border-l-4 border-musical-gold pl-6 mb-8">
+            <h2 class="font-headline text-3xl font-bold text-nyt-black mb-2">Recent Transcriptions</h2>
+            <p class="font-body text-nyt-gray-medium">Your latest musical creations, ready for download</p>
+        </div>
+        
+        <div class="nyt-table rounded-xl overflow-hidden">
             <table class="w-full">
-                <thead class="bg-gray-700">
+                <thead>
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">File</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Duration</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Actions</th>
+                        <th class="px-8 py-4 text-left font-body font-semibold text-sm tracking-wider uppercase">File</th>
+                        <th class="px-8 py-4 text-left font-body font-semibold text-sm tracking-wider uppercase">Duration</th>
+                        <th class="px-8 py-4 text-left font-body font-semibold text-sm tracking-wider uppercase">Status</th>
+                        <th class="px-8 py-4 text-left font-body font-semibold text-sm tracking-wider uppercase">Tempo</th>
+                        <th class="px-8 py-4 text-left font-body font-semibold text-sm tracking-wider uppercase">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-700">
+                <tbody>
                     {% for transcription in transcriptions %}
-                    <tr class="hover:bg-gray-700 transition">
-                        <td class="px-6 py-4">
-                            <a href="{% url 'transcriber:detail' pk=transcription.pk %}" class="text-purple-400 hover:text-purple-300">
-                                {{ transcription.filename|truncatechars:30 }}
+                    <tr>
+                        <td class="px-8 py-6">
+                            <a href="{% url 'transcriber:detail' pk=transcription.pk %}" 
+                               class="font-body font-medium text-primary-blue hover:text-primary-blue-hover transition duration-200">
+                                {{ transcription.filename|truncatechars:35 }}
                             </a>
                         </td>
-                        <td class="px-6 py-4 text-gray-300">{{ transcription.duration_formatted }}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs rounded-full
-                                {% if transcription.status == 'completed' %}bg-green-900 text-green-300
-                                {% elif transcription.status == 'processing' %}bg-yellow-900 text-yellow-300
-                                {% elif transcription.status == 'failed' %}bg-red-900 text-red-300
-                                {% else %}bg-gray-700 text-gray-300{% endif %}">
+                        <td class="px-8 py-6 font-body text-nyt-gray-medium">
+                            {{ transcription.duration_formatted }}
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="status-badge
+                                {% if transcription.status == 'completed' %}status-completed
+                                {% elif transcription.status == 'processing' %}status-processing
+                                {% elif transcription.status == 'failed' %}status-failed
+                                {% else %}status-badge{% endif %}">
+                                {% if transcription.status == 'completed' %}✓{% endif %}
+                                {% if transcription.status == 'processing' %}⏳{% endif %}
+                                {% if transcription.status == 'failed' %}⚠{% endif %}
                                 {{ transcription.get_status_display }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-gray-300">
+                        <td class="px-8 py-6 font-body text-nyt-gray-medium">
                             {% if transcription.estimated_tempo %}
-                                {{ transcription.estimated_tempo }} BPM
+                                <span class="font-medium">{{ transcription.estimated_tempo }}</span> BPM
                             {% else %}
-                                --
+                                <span class="text-nyt-gray-light">--</span>
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4">
+                        <td class="px-8 py-6">
                             <a href="{% url 'transcriber:detail' pk=transcription.pk %}" 
-                               class="text-purple-400 hover:text-purple-300">View</a>
+                               class="inline-flex items-center font-body font-medium text-primary-blue hover:text-primary-blue-hover transition duration-200">
+                                View Details
+                                <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty state -->
+    <div class="max-w-2xl mx-auto text-center py-16">
+        <div class="sheet-card p-12 rounded-xl">
+            <div class="text-musical-gold mb-6">
+                <svg class="w-20 h-20 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
+                          d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
+                </svg>
+            </div>
+            <h3 class="font-headline text-2xl font-bold text-nyt-black mb-4">Start Your Musical Journey</h3>
+            <p class="font-body text-nyt-gray-medium mb-8">
+                Upload your first audio file to begin creating professional guitar tabs with AI precision.
+            </p>
+            <a href="{% url 'transcriber:upload' %}" 
+               class="btn-primary inline-flex items-center musical-note">
+                Upload Your First Song
+            </a>
         </div>
     </div>
     {% endif %}

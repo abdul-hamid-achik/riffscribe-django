@@ -82,6 +82,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    } if not config('DATABASE_URL', default=None) else {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'riffscribe',
+        'USER': 'riffscribe',
+        'PASSWORD': 'riffscribe_dev',
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
 
@@ -137,3 +144,25 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Celery Configuration
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 minutes
+
+# ML Model Configuration
+ML_MODELS_DIR = BASE_DIR / 'ml_models'
+USE_GPU = config('USE_GPU', default=False, cast=bool)
+DEMUCS_MODEL = config('DEMUCS_MODEL', default='htdemucs')
+BASIC_PITCH_MODEL = config('BASIC_PITCH_MODEL', default='default')
+MAX_AUDIO_LENGTH = config('MAX_AUDIO_LENGTH', default=600, cast=int)  # 10 minutes
+
+# File upload settings
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50MB

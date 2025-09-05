@@ -1,0 +1,102 @@
+services:
+  django:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    networks:
+      - riffscribe_network
+
+  celery:
+    build: .
+    command: celery -A riffscribe worker -l info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    networks:
+      - riffscribe_network
+
+  celery-beat:
+    build: .
+    command: celery -A riffscribe beat -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    networks:
+      - riffscribe_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - riffscribe_network
+    volumes:
+      - redis_data:/data
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=riffscribe
+      - POSTGRES_USER=riffscribe
+      - POSTGRES_PASSWORD=riffscribe_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - riffscribe_network
+
+  flower:
+    build: .
+    command: celery -A riffscribe flower
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - riffscribe_network
+
+volumes:
+  media_volume:
+  redis_data:
+  postgres_data:
+
+networks:
+  riffscribe_network:
+    driver: bridge

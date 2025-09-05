@@ -1,0 +1,169 @@
+<!-- AlphaTab Tab Preview -->
+<div id="alphatab-container" class="bg-gray-800 rounded-lg p-4 mt-4">
+    <div class="mb-4 flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Tab Preview</h3>
+        <div class="flex space-x-2">
+            <button id="play-pause" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm">
+                Play
+            </button>
+            <button id="stop" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm">
+                Stop
+            </button>
+            <select id="speed-control" class="px-3 py-1 bg-gray-700 rounded text-sm">
+                <option value="0.5">50%</option>
+                <option value="0.75">75%</option>
+                <option value="1" selected>100%</option>
+                <option value="1.25">125%</option>
+                <option value="1.5">150%</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- AlphaTab Viewport -->
+    <div id="alphatab-viewport" class="bg-white rounded" style="height: 600px; overflow-y: auto;">
+        <!-- Tab content will be rendered here -->
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="mt-4">
+        <div class="bg-gray-700 rounded-full h-2">
+            <div id="playback-progress" class="bg-purple-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mt-1">
+            <span id="current-time">0:00</span>
+            <span id="total-time">0:00</span>
+        </div>
+    </div>
+</div>
+
+<!-- AlphaTab Scripts -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.css" />
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize AlphaTab
+    const element = document.getElementById('alphatab-viewport');
+    const api = new alphaTab.AlphaTabApi(element, {
+        core: {
+            engine: 'html5',
+            logLevel: alphaTab.LogLevel.Warning,
+            useWorkers: true,
+            fontDirectory: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/font/'
+        },
+        display: {
+            layoutMode: alphaTab.LayoutMode.Page,
+            staveProfile: alphaTab.StaveProfile.Tab,
+            resources: {
+                // Custom resource paths if needed
+            }
+        },
+        notation: {
+            displayMode: alphaTab.DisplayMode.GuitarPro,
+            elements: {
+                scoreTitle: true,
+                scoreSubTitle: true,
+                scoreArtist: true,
+                scoreAlbum: false,
+                scoreWordsAndMusic: false,
+                effectTempo: true,
+                effectTrillSpeed: true,
+                effectDynamics: true,
+                guitarTabNotation: true
+            }
+        },
+        player: {
+            enablePlayer: true,
+            enableCursor: true,
+            enableUserInteraction: true,
+            soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',
+            scrollMode: alphaTab.ScrollMode.Continuous
+        }
+    });
+    
+    // Load MusicXML content
+    {% if musicxml %}
+    const musicXmlContent = `{{ musicxml|safe }}`;
+    api.load(musicXmlContent, alphaTab.importer.ScoreImporter.GP5);
+    {% elif transcription.musicxml_content %}
+    const musicXmlContent = `{{ transcription.musicxml_content|safe }}`;
+    api.load(musicXmlContent, alphaTab.importer.ScoreImporter.MusicXml);
+    {% endif %}
+    
+    // Player controls
+    let isPlaying = false;
+    const playPauseBtn = document.getElementById('play-pause');
+    const stopBtn = document.getElementById('stop');
+    const speedControl = document.getElementById('speed-control');
+    const progressBar = document.getElementById('playback-progress');
+    const currentTimeSpan = document.getElementById('current-time');
+    const totalTimeSpan = document.getElementById('total-time');
+    
+    // Play/Pause
+    playPauseBtn.addEventListener('click', function() {
+        if (isPlaying) {
+            api.pause();
+            playPauseBtn.textContent = 'Play';
+            playPauseBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            playPauseBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        } else {
+            api.play();
+            playPauseBtn.textContent = 'Pause';
+            playPauseBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            playPauseBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        }
+        isPlaying = !isPlaying;
+    });
+    
+    // Stop
+    stopBtn.addEventListener('click', function() {
+        api.stop();
+        isPlaying = false;
+        playPauseBtn.textContent = 'Play';
+        playPauseBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+        playPauseBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        progressBar.style.width = '0%';
+        currentTimeSpan.textContent = '0:00';
+    });
+    
+    // Speed control
+    speedControl.addEventListener('change', function() {
+        api.playbackSpeed = parseFloat(this.value);
+    });
+    
+    // Listen to AlphaTab events
+    api.playerPositionChanged.on(function(e) {
+        const percentage = (e.currentTime / e.endTime) * 100;
+        progressBar.style.width = percentage + '%';
+        
+        // Format time
+        const currentMinutes = Math.floor(e.currentTime / 60000);
+        const currentSeconds = Math.floor((e.currentTime % 60000) / 1000);
+        currentTimeSpan.textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')}`;
+        
+        const totalMinutes = Math.floor(e.endTime / 60000);
+        const totalSeconds = Math.floor((e.endTime % 60000) / 1000);
+        totalTimeSpan.textContent = `${totalMinutes}:${totalSeconds.toString().padStart(2, '0')}`;
+    });
+    
+    api.playerStateChanged.on(function(e) {
+        if (e.state === alphaTab.synth.PlayerState.Stopped || e.state === alphaTab.synth.PlayerState.Paused) {
+            isPlaying = false;
+            playPauseBtn.textContent = 'Play';
+            playPauseBtn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            playPauseBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+        } else if (e.state === alphaTab.synth.PlayerState.Playing) {
+            isPlaying = true;
+            playPauseBtn.textContent = 'Pause';
+            playPauseBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            playPauseBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        }
+    });
+    
+    // Error handling
+    api.error.on(function(error) {
+        console.error('AlphaTab error:', error);
+        element.innerHTML = '<div class="p-8 text-center text-red-500">Error loading tab: ' + error + '</div>';
+    });
+});
+</script>

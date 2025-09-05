@@ -1,47 +1,374 @@
-/* Custom styles for RiffScribe */
+/* RiffScribe - NYT + Music Sheet Theme */
 
-/* Animation for loading spinner */
+/* Import fonts - NYT style serif for headings, clean sans for body */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Crimson+Text:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Custom CSS Variables - Music Sheet + NYT Color Palette */
+:root {
+    /* Music sheet colors */
+    --sheet-cream: #faf8f3;
+    --sheet-ivory: #f8f6f0;
+    --staff-line: #2c2c2c;
+    --note-black: #1a1a1a;
+    --accent-gold: #c9a96e;
+
+    /* NYT inspired colors */
+    --nyt-black: #121212;
+    --nyt-gray-dark: #333333;
+    --nyt-gray-medium: #666666;
+    --nyt-gray-light: #999999;
+    --nyt-border: #e6e6e6;
+
+    /* Musical accent colors */
+    --treble-clef: #8b4513;
+    --sharp-flat: #4a5568;
+
+    /* Interactive colors */
+    --primary-blue: #326891;
+    --hover-blue: #2c5aa0;
+    --success-green: #047857;
+    --warning-amber: #d97706;
+    --error-red: #dc2626;
+}
+
+/* Base body styling - Sheet music background */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(to bottom, var(--sheet-cream) 0%, var(--sheet-ivory) 100%);
+    color: var(--nyt-black);
+    line-height: 1.6;
+}
+
+/* Staff lines background pattern */
+.staff-background {
+    position: relative;
+    background-image:
+        repeating-linear-gradient(transparent,
+            transparent 19px,
+            var(--staff-line) 19px,
+            var(--staff-line) 20px,
+            transparent 20px,
+            transparent 39px,
+            var(--staff-line) 39px,
+            var(--staff-line) 40px,
+            transparent 40px,
+            transparent 59px,
+            var(--staff-line) 59px,
+            var(--staff-line) 60px,
+            transparent 60px,
+            transparent 79px,
+            var(--staff-line) 79px,
+            var(--staff-line) 80px,
+            transparent 80px,
+            transparent 99px,
+            var(--staff-line) 99px,
+            var(--staff-line) 100px,
+            transparent 100px,
+            transparent 150px);
+    background-size: 100% 150px;
+}
+
+/* Subtle staff lines for cards and sections */
+.staff-lines-subtle {
+    position: relative;
+    background-image:
+        repeating-linear-gradient(transparent,
+            transparent 24px,
+            rgba(44, 44, 44, 0.1) 24px,
+            rgba(44, 44, 44, 0.1) 25px);
+}
+
+/* Typography - NYT inspired */
+.font-display {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+.font-headline {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.font-body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.6;
+}
+
+/* Musical note decorative elements */
+.musical-note::before {
+    content: '♪';
+    font-size: 1.2em;
+    color: var(--treble-clef);
+    margin-right: 0.5rem;
+}
+
+.treble-clef::before {
+    content: '𝄞';
+    font-size: 1.8em;
+    color: var(--treble-clef);
+    margin-right: 0.75rem;
+    vertical-align: middle;
+}
+
+/* Card styling - Sheet music inspired */
+.sheet-card {
+    background: linear-gradient(135deg, #ffffff 0%, var(--sheet-ivory) 100%);
+    border: 1px solid var(--nyt-border);
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+
+.sheet-card:hover {
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    transform: translateY(-2px);
+}
+
+/* Navigation - NYT style */
+.nyt-nav {
+    background: var(--nyt-black);
+    border-bottom: 3px solid var(--accent-gold);
+}
+
+/* Buttons - Musical inspired */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--hover-blue) 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(50, 104, 145, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--hover-blue) 0%, var(--primary-blue) 100%);
+    box-shadow: 0 4px 12px rgba(50, 104, 145, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--sheet-cream);
+    color: var(--nyt-black);
+    border: 2px solid var(--nyt-border);
+    padding: 0.75rem 2rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: var(--sheet-ivory);
+    border-color: var(--accent-gold);
+    box-shadow: 0 2px 8px rgba(201, 169, 110, 0.3);
+}
+
+/* Status badges - Musical note inspired */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-completed {
+    background: rgba(4, 120, 87, 0.1);
+    color: var(--success-green);
+    border: 1px solid rgba(4, 120, 87, 0.3);
+}
+
+.status-processing {
+    background: rgba(217, 119, 6, 0.1);
+    color: var(--warning-amber);
+    border: 1px solid rgba(217, 119, 6, 0.3);
+    animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+.status-failed {
+    background: rgba(220, 38, 38, 0.1);
+    color: var(--error-red);
+    border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+/* Tab display - Musical score styling */
+.tab-display {
+    font-family: 'Courier New', 'Monaco', monospace;
+    background: linear-gradient(to bottom, #ffffff 0%, var(--sheet-ivory) 100%);
+    border: 2px solid var(--nyt-border);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    letter-spacing: 0.1em;
+    line-height: 1.4;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Table styling - Newspaper inspired */
+.nyt-table {
+    background: white;
+    border: 1px solid var(--nyt-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.nyt-table thead {
+    background: linear-gradient(135deg, var(--nyt-gray-dark) 0%, var(--nyt-black) 100%);
+    color: white;
+}
+
+.nyt-table tbody tr {
+    border-bottom: 1px solid var(--nyt-border);
+    transition: background-color 0.2s ease;
+}
+
+.nyt-table tbody tr:hover {
+    background: var(--sheet-ivory);
+}
+
+/* Hero section - Music sheet inspired */
+.hero-section {
+    background:
+        radial-gradient(circle at 20% 80%, rgba(201, 169, 110, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(50, 104, 145, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, var(--sheet-cream) 0%, var(--sheet-ivory) 100%);
+    position: relative;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23c9a96e' fill-opacity='0.03'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+/* Custom scrollbar - Music themed */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--sheet-ivory);
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--accent-gold) 0%, var(--treble-clef) 100%);
+    border-radius: 6px;
+    border: 2px solid var(--sheet-ivory);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--treble-clef) 0%, var(--accent-gold) 100%);
+}
+
+/* Animations */
+@keyframes gentle-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .animate-spin {
     animation: spin 1s linear infinite;
 }
 
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* Responsive design helpers */
+@media (max-width: 768px) {
+    .staff-background {
+        background-size: 100% 100px;
+    }
+
+    .hero-section {
+        padding: 2rem 1rem;
+    }
+
+    .sheet-card {
+        margin: 0.5rem;
+    }
 }
 
-::-webkit-scrollbar-track {
-    background: #1f2937;
+/* Focus states for accessibility */
+.btn-primary:focus,
+.btn-secondary:focus {
+    outline: 2px solid var(--primary-blue);
+    outline-offset: 2px;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #4b5563;
-    border-radius: 4px;
+/* Link styling - NYT inspired */
+a {
+    color: var(--primary-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #6b7280;
+a:hover {
+    color: var(--hover-blue);
+    text-decoration: underline;
 }
 
-/* Tab display styles */
-.tab-display {
-    font-family: 'Courier New', monospace;
-    letter-spacing: 0.1em;
-    line-height: 1.4;
+/* Feature cards with musical elements */
+.feature-card {
+    position: relative;
+    overflow: hidden;
 }
 
-/* Pulse animation for processing status */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(201, 169, 110, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.feature-card:hover::before {
+    opacity: 1;
 }
