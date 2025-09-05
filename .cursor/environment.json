@@ -4,17 +4,10 @@
     "dockerfile": ".cursor/Dockerfile.cursor",
     "install": "uv sync && uv run python manage.py migrate && uv run python manage.py collectstatic --noinput",
     "secrets": [
-        "DATABASE_URL",
-        "REDIS_URL",
-        "CELERY_BROKER_URL",
-        "CELERY_RESULT_BACKEND",
         "SECRET_KEY",
-        "OPENAI_API_KEY",
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_STORAGE_BUCKET_NAME",
-        "AWS_S3_ENDPOINT_URL"
+        "OPENAI_API_KEY"
     ],
+    "note": "PostgreSQL and Redis run embedded in the container - no external services needed!",
     "terminals": [
         {
             "name": "Django Dev Server",
@@ -42,7 +35,11 @@
         "PYTHONPATH": "/app",
         "DEBUG": "True",
         "USE_S3": "false",
-        "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0"
+        "ALLOWED_HOSTS": "*",
+        "DATABASE_URL": "postgresql://riffscribe:riffscribe_dev@localhost:5432/riffscribe",
+        "REDIS_URL": "redis://localhost:6379/0",
+        "CELERY_BROKER_URL": "redis://localhost:6379/0",
+        "CELERY_RESULT_BACKEND": "redis://localhost:6379/0"
     },
     "ports": [
         {

@@ -1,6 +1,6 @@
 #!/bin/bash
-# Setup script for Cursor Background Agents
-# This script initializes the Django development environment
+# Setup script for Cursor Background Agents with embedded services
+# This script initializes the Django development environment with PostgreSQL + Redis
 
 set -e  # Exit on any error
 
@@ -9,19 +9,23 @@ echo "🚀 Setting up Cursor Background Agent environment for riffscribe-django.
 # Ensure we're in the right directory
 cd /app
 
+# Wait for PostgreSQL and Redis to start (managed by supervisord)
+echo "⏳ Waiting for embedded PostgreSQL and Redis services..."
+sleep 5
+
+# Verify services are running
+echo "🔍 Checking embedded services..."
+pg_isready -h localhost -p 5432 -U riffscribe && echo "✅ PostgreSQL is ready"
+redis-cli -h localhost -p 6379 ping | grep -q PONG && echo "✅ Redis is ready"
+
 # Install Python dependencies using UV
 echo "📦 Installing Python dependencies..."
 uv sync
 
 # Apply database migrations
 echo "🗄️  Applying database migrations..."
-if [ "$DATABASE_URL" ]; then
-    echo "Using external database: $DATABASE_URL"
-    uv run python manage.py migrate --noinput
-else
-    echo "⚠️  No DATABASE_URL found. Background agent will need database connection."
-    echo "   Please configure DATABASE_URL in Cursor settings secrets."
-fi
+echo "Using embedded PostgreSQL database"
+uv run python manage.py migrate --noinput
 
 # Collect static files
 echo "🎨 Collecting static files..."

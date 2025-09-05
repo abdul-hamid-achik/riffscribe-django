@@ -38,19 +38,11 @@ In Cursor **Settings → Background Agents → Secrets**, add the following:
 
 #### Required Secrets:
 ```bash
-DATABASE_URL=postgresql://username:password@host:5432/database
-REDIS_URL=redis://host:6379/0
-SECRET_KEY=your-django-secret-key
-OPENAI_API_KEY=your-openai-api-key
+SECRET_KEY=your-django-secret-key-here
+OPENAI_API_KEY=sk-your-openai-api-key
 ```
 
-#### Optional Secrets (for S3 storage):
-```bash
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-AWS_STORAGE_BUCKET_NAME=your-bucket-name
-AWS_S3_ENDPOINT_URL=https://s3.amazonaws.com
-```
+**That's it!** No database URLs needed - PostgreSQL and Redis run embedded in the container.
 
 ### 3. Launch Background Agent
 1. Open Command Palette (`Cmd+Shift+P`)

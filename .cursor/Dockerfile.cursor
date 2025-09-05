@@ -1,5 +1,5 @@
-# Dockerfile optimized for Cursor Background Agents
-# Based on the development stage of the main Dockerfile but streamlined for agent usage
+# Dockerfile optimized for Cursor Background Agents with embedded services
+# Self-contained environment with PostgreSQL + Redis + Django
 
 FROM python:3.11-slim-bookworm
 
@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
 
-# Install system dependencies needed for audio processing and Django
+# Install system dependencies + PostgreSQL + Redis
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Build tools
     build-essential \
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     git \
     curl \
+    supervisor \
     # Audio processing libraries
     ffmpeg \
     libsndfile1-dev \
@@ -25,8 +26,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     portaudio19-dev \
     libgomp1 \
-    # Database clients
-    postgresql-client \
+    # Database services
+    postgresql-15 \
+    postgresql-client-15 \
+    redis-server \
     # SSL and crypto
     libffi-dev \
     libssl-dev \
@@ -38,10 +41,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Add UV to PATH
 ENV PATH="/root/.local/bin:$PATH"
 
+# Configure PostgreSQL
+USER postgres
+RUN /etc/init.d/postgresql start && \
+    createdb riffscribe && \
+    psql -c "CREATE USER riffscribe WITH PASSWORD 'riffscribe_dev';" && \
+    psql -c "GRANT ALL PRIVILEGES ON DATABASE riffscribe TO riffscribe;" && \
+    psql -c "ALTER USER riffscribe CREATEDB;"
+
+# Switch back to root to complete setup
+USER root
+
+# Configure Redis (allow external connections)
+RUN sed -i 's/^bind 127.0.0.1/bind 0.0.0.0/' /etc/redis/redis.conf
+
+# Create supervisord configuration for managing services
+COPY .cursor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
 # Set working directory
 WORKDIR /app
 
-# Create a non-root user for security
+# Create a non-root user for Django
 RUN groupadd -r django && useradd -r -g django -s /bin/bash django
 
 # Create necessary directories with proper permissions
@@ -51,18 +71,14 @@ RUN mkdir -p /app/media /app/static /app/staticfiles /app/tmp /app/audio /app/ex
 # Copy project files (this will be done by Cursor during setup)
 # The background agent will checkout the repository automatically
 
-# Set up environment variables that are common for development
+# Set up environment variables for embedded services
 ENV DJANGO_SETTINGS_MODULE=riffscribe.settings \
     PYTHONPATH=/app \
-    DEBUG=True
+    DEBUG=True \
+    DATABASE_URL=postgresql://riffscribe:riffscribe_dev@localhost:5432/riffscribe \
+    REDIS_URL=redis://localhost:6379/0 \
+    CELERY_BROKER_URL=redis://localhost:6379/0 \
+    CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
-# Switch to non-root user
-USER django
-
-# The install command from environment.json will handle:
-# - uv sync (install dependencies)
-# - python manage.py migrate (setup database)
-# - python manage.py collectstatic --noinput (collect static files)
-
-# Default command - can be overridden by terminals in environment.json
-CMD ["/bin/bash"]
+# Start services with supervisord and allow background agent to override
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
