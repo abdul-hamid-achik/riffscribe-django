@@ -14,6 +14,11 @@ urlpatterns = [
     path('transcription/<uuid:pk>/delete/', views.delete_transcription, name='delete'),
     path('transcription/<uuid:pk>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('transcription/<uuid:pk>/preview/', views.preview_tab, name='preview'),
+    path('transcription/<uuid:pk>/preview/tab-api/', views.tab_preview_api, name='tab_preview_api'),
+    path('transcription/<uuid:pk>/preview/midi-api/', views.midi_preview_api, name='midi_preview_api'),
+    path('transcription/<uuid:pk>/preview/sheet/', views.sheet_music_preview, name='sheet_music_preview'),
+    path('transcription/<uuid:pk>/preview/ascii/', views.ascii_tab_preview, name='ascii_tab_preview'),
+    path('transcription/<uuid:pk>/comparison/', views.comparison_view, name='comparison'),
     
     # Variant-related URLs
     path('transcription/<uuid:pk>/variants/', views.variants_list, name='variants_list'),
@@ -22,6 +27,7 @@ urlpatterns = [
     path('transcription/<uuid:pk>/variants/regenerate/', views.regenerate_variants, name='regenerate_variants'),
     path('transcription/<uuid:pk>/variants/<uuid:variant_id>/stats/', views.variant_stats, name='variant_stats'),
     path('transcription/<uuid:pk>/variants/<uuid:variant_id>/export/', views.export_variant, name='export_variant'),
+    path('transcription/<uuid:pk>/variants/status/<str:task_id>/', views.check_generation_status, name='check_generation_status'),
     
     # Export URLs
     path('transcription/<uuid:pk>/download/<int:export_id>/', views.download, name='download'),
@@ -34,6 +40,7 @@ urlpatterns = [
     # User dashboard and profile
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
+    path('preview-settings/', views.preview_settings, name='preview_settings'),
     
     path('task/<str:task_id>/status/', views.get_task_status, name='task_status'),
     path('library/', views.library, name='library'),

@@ -58,6 +58,12 @@ from .variants import (
 
 from .preview import (
     preview_tab,
+    tab_preview_api,
+    midi_preview_api,
+    sheet_music_preview,
+    ascii_tab_preview,
+    preview_settings,
+    comparison_view,
 )
 
 # Make all views available at package level
@@ -101,6 +107,12 @@ __all__ = [
     
     # Preview views
     'preview_tab',
+    'tab_preview_api',
+    'midi_preview_api', 
+    'sheet_music_preview',
+    'ascii_tab_preview',
+    'preview_settings',
+    'comparison_view',
     
     # Variant views
     'variants_list',

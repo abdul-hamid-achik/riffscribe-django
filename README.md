@@ -466,6 +466,27 @@ The drum transcriber uses:
 - [ ] Mobile app
 - [ ] REST API for third-party integrations
 
+## 🏗️ Architecture
+
+RiffScribe uses a clean, modular Django architecture for maintainability:
+
+```
+transcriber/views/
+├── core.py           # Main pages (index, upload, library, dashboard)
+├── transcription.py  # Transcription management 
+├── export.py         # Export functionality (MusicXML, GP5, MIDI, ASCII)
+├── variants.py       # Fingering variant management
+├── preview.py        # Interactive preview & comparison
+├── comments.py       # Comment system
+├── voting.py         # Voting & karma system
+└── mixins.py         # Shared utilities
+```
+
+- **Modular views**: Organized by functionality for better maintainability
+- **HTMX integration**: Server-side rendering with dynamic updates
+- **Celery tasks**: Background processing for audio transcription
+- **PostgreSQL**: Production database with complex queries
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
