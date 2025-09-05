@@ -18,7 +18,11 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'cleanup-old-transcriptions': {
         'task': 'transcriber.tasks.cleanup_old_transcriptions',
-        'schedule': 86400.0,  # Run daily
+        'schedule': 86400.0,  # Run daily (24 hours)
+    },
+    'check-transcription-health': {
+        'task': 'transcriber.tasks.check_transcription_health',
+        'schedule': 300.0,  # Run every 5 minutes
     },
 }
 

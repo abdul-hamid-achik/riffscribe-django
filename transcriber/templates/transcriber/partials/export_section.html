@@ -1,0 +1,114 @@
+<!-- Comprehensive Export Section with HTMX -->
+{% load static %}
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <h2 class="font-headline text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+        </svg>
+        Export Formats
+    </h2>
+    
+    <div class="space-y-3" id="export-formats-list">
+        <!-- MusicXML Export -->
+        <div id="export-musicxml-container">
+            {% include 'transcriber/partials/export_button.html' with format='musicxml' format_display='MusicXML' format_description='Universal format for notation software' existing_export=export_musicxml %}
+        </div>
+        
+        <!-- Guitar Pro Export -->
+        <div id="export-gp5-container">
+            {% include 'transcriber/partials/export_button.html' with format='gp5' format_display='Guitar Pro' format_description='For Guitar Pro 5 and compatible apps' existing_export=export_gp5 %}
+        </div>
+        
+        <!-- MIDI Export -->
+        <div id="export-midi-container">
+            {% include 'transcriber/partials/export_button.html' with format='midi' format_display='MIDI' format_description='For DAWs and music production' existing_export=export_midi %}
+        </div>
+        
+        <!-- ASCII Tab Export -->
+        <div id="export-ascii-container">
+            {% include 'transcriber/partials/export_button.html' with format='ascii' format_display='ASCII Tab' format_description='Plain text format for sharing' existing_export=export_ascii %}
+        </div>
+    </div>
+    
+    <!-- Batch Export Actions -->
+    <div class="mt-6 pt-6 border-t border-gray-100">
+        <div class="flex items-center justify-between">
+            <button id="export-all-btn"
+                    hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                    hx-vals='{"format": "all"}'
+                    hx-target="#export-status-message"
+                    hx-swap="innerHTML"
+                    class="text-sm text-musical-gold hover:text-musical-treble font-medium flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                Generate All Formats
+            </button>
+            
+            <div id="export-status-message" class="text-sm text-gray-500"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Downloads Section (if exports exist) -->
+{% if transcription.exports.exists %}
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+    <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        Available Downloads
+    </h3>
+    
+    <div class="space-y-2" id="downloads-list">
+        {% for export in transcription.exports.all %}
+        <a href="{% url 'transcriber:download' pk=transcription.pk export_id=export.id %}"
+           class="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-white rounded flex items-center justify-center">
+                    {% if export.format == 'musicxml' %}
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {% elif export.format == 'gp5' %}
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
+                    </svg>
+                    {% elif export.format == 'midi' %}
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-700">{{ export.get_format_display }}</p>
+                    <p class="text-xs text-gray-500">{{ export.created_at|timesince }} ago</p>
+                </div>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 group-hover:text-gray-600 group-hover:translate-y-1 transition-all" 
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+            </svg>
+        </a>
+        {% endfor %}
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+        <button class="text-xs text-gray-500 hover:text-gray-700">
+            Download All as ZIP
+        </button>
+        <button hx-post="{% url 'transcriber:clear_exports' pk=transcription.pk %}"
+                hx-confirm="Delete all export files?"
+                hx-target="#downloads-list"
+                class="text-xs text-red-500 hover:text-red-700">
+            Clear All
+        </button>
+    </div>
+</div>
+{% endif %}

@@ -1,0 +1,111 @@
+<!-- Anonymous User Comment Form with Captcha -->
+<form hx-post="{% url 'transcriber:add_comment' transcription.pk %}" 
+      hx-target="#comment-form-container"
+      hx-swap="outerHTML"
+      class="space-y-4">
+    {% csrf_token %}
+    
+    <!-- Anonymous User Info -->
+    <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div>
+            <span class="text-gray-700">Anonymous User</span>
+            <div class="text-sm text-gray-500">
+                <a href="#" onclick="showAuthModal('signin')" class="text-musical-gold hover:text-musical-gold/80">Sign in</a> 
+                to be featured as a verified user
+            </div>
+        </div>
+    </div>
+    
+    <!-- Name Field (Optional) -->
+    <div>
+        <label for="{{ form.anonymous_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ form.anonymous_name.label }} (Optional)
+        </label>
+        {{ form.anonymous_name }}
+        {% if form.anonymous_name.errors %}
+            <div class="mt-1 text-sm text-red-600">
+                {{ form.anonymous_name.errors.0 }}
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Comment Field -->
+    <div>
+        <label for="{{ form.content.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ form.content.label }} *
+        </label>
+        {{ form.content }}
+        {% if form.content.errors %}
+            <div class="mt-1 text-sm text-red-600">
+                {{ form.content.errors.0 }}
+            </div>
+        {% endif %}
+        <div class="mt-1 text-xs text-gray-500">
+            <span id="char-count-anon">0</span>/2000 characters
+        </div>
+    </div>
+    
+    <!-- Captcha Field -->
+    <div>
+        <label for="{{ form.captcha.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+            {{ form.captcha.label }} *
+        </label>
+        
+        <!-- Captcha Image -->
+        <div class="flex items-center space-x-4 mb-3">
+            {{ form.captcha.field.widget.render_captcha_image }}
+            <button type="button" 
+                    onclick="refreshCaptcha()"
+                    class="p-2 text-gray-500 hover:text-gray-700 rounded-lg border border-gray-300 hover:border-musical-gold transition-colors"
+                    title="Refresh captcha">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Captcha Input -->
+        {{ form.captcha }}
+        {% if form.captcha.errors %}
+            <div class="mt-1 text-sm text-red-600">
+                {{ form.captcha.errors.0 }}
+            </div>
+        {% endif %}
+        <div class="mt-1 text-xs text-gray-500">{{ form.captcha.help_text }}</div>
+    </div>
+    
+    <!-- Submit Button -->
+    <div class="flex justify-end">
+        <button type="submit" 
+                class="btn-primary inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Post Comment
+        </button>
+    </div>
+</form>
+
+<script>
+// Character counter for anonymous form
+document.getElementById('{{ form.content.id_for_label }}').addEventListener('input', function() {
+    const count = this.value.length;
+    const counter = document.getElementById('char-count-anon');
+    counter.textContent = count;
+    counter.className = count > 1800 ? 'text-red-500' : count > 1500 ? 'text-yellow-500' : 'text-gray-500';
+});
+
+// Refresh captcha function
+function refreshCaptcha() {
+    // This would need to be implemented with HTMX to reload just the captcha
+    htmx.ajax('GET', '{% url 'transcriber:get_comment_form' transcription.pk %}', {
+        target: '#comment-form-container',
+        swap: 'innerHTML'
+    });
+}
+</script>

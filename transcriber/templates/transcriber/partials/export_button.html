@@ -1,0 +1,78 @@
+{% csrf_token %}
+
+<div class="export-status-container" id="export-{{ format }}-container">
+    {% if existing_export %}
+    <!-- Export already exists - show download -->
+    <a href="{% url 'transcriber:download' pk=transcription.pk export_id=existing_export.id %}"
+       class="w-full flex items-center justify-between p-4 rounded-lg border-2 border-green-500 bg-green-50 hover:bg-green-100 transition-all group">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold text-gray-900">{{ format_display }}</p>
+                <p class="text-xs text-gray-600">Ready to download</p>
+            </div>
+        </div>
+        <svg class="w-5 h-5 text-green-600 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+        </svg>
+    </a>
+    
+    {% else %}
+    <!-- Export button - triggers generation -->
+    <button type="button"
+            hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+            hx-vals='{"format": "{{ format }}"}'
+            hx-target="#export-{{ format }}-container"
+            hx-swap="outerHTML"
+            hx-indicator="#export-{{ format }}-spinner"
+            class="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-musical-gold hover:bg-musical-gold/5 transition-all group">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-musical-gold/10 rounded-lg flex items-center justify-center group-hover:bg-musical-gold/20">
+                    {% if format == 'musicxml' %}
+                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    {% elif format == 'gp5' %}
+                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
+                    </svg>
+                    {% elif format == 'midi' %}
+                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+                    </svg>
+                    {% elif format == 'ascii' %}
+                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                    </svg>
+                    {% else %}
+                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-900">{{ format_display }}</p>
+                    <p class="text-xs text-gray-500">{{ format_description }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <!-- Loading spinner (hidden by default) -->
+                <svg id="export-{{ format }}-spinner" 
+                     class="htmx-indicator animate-spin h-4 w-4 text-musical-gold" 
+                     fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <svg class="w-4 h-4 text-gray-400 group-hover:text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </div>
+    </button>
+    {% endif %}
+</div>

@@ -58,3 +58,57 @@ ml_models/
 
 # Audio samples (for testing)
 samples/
+
+# Node modules (if any frontend build)
+node_modules/
+*.node
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+wheels/
+*.egg
+
+# Cache directories
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+
+# Environment files  
+.env.local
+.env.*.local
+
+# OS files
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swn
+*.swo
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Coverage reports
+.coverage.*
+coverage.xml
+*.cover
+
+# Requirements (we use separated ones)
+requirements.txt.backup
+requirements.old
+
+# Scripts not needed in container
+scripts/
+*.sh

@@ -1,0 +1,66 @@
+{% csrf_token %}
+
+<div class="export-status-container" id="export-{{ format }}-container">
+    <!-- Processing state -->
+    <div class="w-full p-4 rounded-lg border-2 border-blue-200 bg-blue-50">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <!-- Spinning loading icon -->
+                    <svg class="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-900">{{ format_display }}</p>
+                    <p class="text-xs text-blue-700">Generating export...</p>
+                </div>
+            </div>
+            <div class="text-sm text-blue-600">
+                Processing
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auto-refresh to check completion -->
+    <script>
+        // Poll for export completion every 2 seconds
+        setTimeout(function() {
+            fetch('{% url "transcriber:task_status" task_id=task_id %}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.state === 'SUCCESS') {
+                        // Export completed successfully - show success and refresh page section
+                        location.reload();
+                    } else if (data.state === 'FAILURE') {
+                        // Export failed - show error
+                        document.getElementById('export-{{ format }}-container').innerHTML = `
+                            <div class="w-full p-4 rounded-lg border-2 border-red-200 bg-red-50">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ format_display }}</p>
+                                        <p class="text-xs text-red-700">Export failed: ${data.status || 'Unknown error'}</p>
+                                        <button onclick="location.reload()" class="text-xs text-red-600 hover:text-red-800 underline mt-1">Try again</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Still processing - check again in 2 seconds
+                        setTimeout(arguments.callee, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking export status:', error);
+                    // Check again after error
+                    setTimeout(arguments.callee, 3000);
+                });
+        }, 2000);
+    </script>
+</div>

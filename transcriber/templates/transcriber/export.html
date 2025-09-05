@@ -1,0 +1,220 @@
+{% extends 'transcriber/base.html' %}
+
+{% block title %}Export - {{ transcription.filename }} - RiffScribe{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="border-l-4 border-musical-gold pl-6 mb-8">
+        <h1 class="font-display text-4xl font-bold text-nyt-black mb-2 treble-clef">
+            Export Guitar Tab
+        </h1>
+        <p class="font-body text-lg text-nyt-gray-medium">
+            Choose your preferred format for {{ transcription.filename }}
+        </p>
+    </div>
+
+    <!-- Export Options -->
+    <div class="sheet-card rounded-xl p-8">
+        <h2 class="font-headline text-2xl font-bold text-nyt-black mb-6">Available Export Formats</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- MusicXML Export -->
+            <form method="POST" action="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-trigger="submit"
+                  hx-target="#export-status-musicxml"
+                  hx-swap="innerHTML"
+                  class="sheet-card p-6 rounded-lg hover:shadow-lg transition-all duration-300">
+                {% csrf_token %}
+                <input type="hidden" name="format" value="musicxml">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-musical-gold">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="font-body font-semibold text-nyt-black text-lg">MusicXML</div>
+                </div>
+                
+                <p class="font-body text-nyt-gray-medium text-sm mb-4">
+                    Universal format compatible with MuseScore, Finale, Sibelius, and most notation software
+                </p>
+                
+                <button type="submit" class="btn-primary w-full musical-note">
+                    Export as MusicXML
+                </button>
+                
+                <div id="export-status-musicxml" class="mt-4"></div>
+            </form>
+
+            <!-- Guitar Pro Export -->
+            <form method="POST" action="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-trigger="submit"
+                  hx-target="#export-status-gp5"
+                  hx-swap="innerHTML"
+                  class="sheet-card p-6 rounded-lg hover:shadow-lg transition-all duration-300">
+                {% csrf_token %}
+                <input type="hidden" name="format" value="gp5">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-musical-treble">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="font-body font-semibold text-nyt-black text-lg">Guitar Pro</div>
+                </div>
+                
+                <p class="font-body text-nyt-gray-medium text-sm mb-4">
+                    Professional guitar tablature format with playback, compatible with Guitar Pro 5+
+                </p>
+                
+                <button type="submit" class="btn-primary w-full musical-note">
+                    Export as Guitar Pro
+                </button>
+                
+                <div id="export-status-gp5" class="mt-4"></div>
+            </form>
+
+            <!-- PDF Export -->
+            <form method="POST" action="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-trigger="submit"
+                  hx-target="#export-status-pdf"
+                  hx-swap="innerHTML"
+                  class="sheet-card p-6 rounded-lg hover:shadow-lg transition-all duration-300">
+                {% csrf_token %}
+                <input type="hidden" name="format" value="pdf">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-error-red">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="font-body font-semibold text-nyt-black text-lg">PDF</div>
+                </div>
+                
+                <p class="font-body text-nyt-gray-medium text-sm mb-4">
+                    Print-ready sheet music format for sharing and archiving
+                </p>
+                
+                <button type="submit" class="btn-primary w-full musical-note">
+                    Export as PDF
+                </button>
+                
+                <div id="export-status-pdf" class="mt-4"></div>
+            </form>
+
+            <!-- ASCII Tab Export -->
+            <form method="POST" action="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                  hx-trigger="submit"
+                  hx-target="#export-status-ascii"
+                  hx-swap="innerHTML"
+                  class="sheet-card p-6 rounded-lg hover:shadow-lg transition-all duration-300">
+                {% csrf_token %}
+                <input type="hidden" name="format" value="ascii">
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div class="text-success-green">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4">
+                            </path>
+                        </svg>
+                    </div>
+                    <div class="font-body font-semibold text-nyt-black text-lg">ASCII Tab</div>
+                </div>
+                
+                <p class="font-body text-nyt-gray-medium text-sm mb-4">
+                    Simple text-based tablature format for online sharing and forums
+                </p>
+                
+                <button type="submit" class="btn-primary w-full musical-note">
+                    Export as ASCII Tab
+                </button>
+                
+                <div id="export-status-ascii" class="mt-4"></div>
+            </form>
+        </div>
+
+        <!-- Existing Exports -->
+        {% if transcription.exports.exists %}
+        <div class="mt-8 pt-8 border-t border-nyt-border">
+            <h3 class="font-headline text-xl font-bold text-nyt-black mb-4">Previous Exports</h3>
+            
+            <div class="space-y-3">
+                {% for export in transcription.exports.all %}
+                <div class="flex items-center justify-between p-4 bg-sheet-ivory rounded-lg">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-musical-gold">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10">
+                                </path>
+                            </svg>
+                        </div>
+                        <span class="font-body font-medium text-nyt-black">{{ export.get_format_display }}</span>
+                        <span class="font-body text-sm text-nyt-gray-medium">{{ export.created_at|timesince }} ago</span>
+                    </div>
+                    
+                    <a href="{% url 'transcriber:download' pk=transcription.pk export_id=export.id %}"
+                       class="btn-secondary text-sm">
+                        Download
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Back to Transcription -->
+    <div class="mt-8 text-center">
+        <a href="{% url 'transcriber:detail' pk=transcription.pk %}" 
+           class="font-body text-primary-blue hover:text-hover-blue transition">
+            ← Back to Transcription Details
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('htmx:afterRequest', function(event) {
+    // Check if the response was successful and contains a task_id
+    if (event.detail.xhr.status === 200) {
+        const response = JSON.parse(event.detail.xhr.responseText);
+        if (response.task_id) {
+            // Poll for task status
+            const targetId = event.detail.target.id;
+            const format = response.format;
+            
+            // Show processing message
+            event.detail.target.innerHTML = `
+                <div class="flex items-center space-x-2 text-warning-amber">
+                    <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Generating ${format.toUpperCase()} export...</span>
+                </div>
+            `;
+            
+            // Poll for completion
+            setTimeout(function() {
+                window.location.reload();
+            }, 3000);
+        }
+    }
+});
+</script>
+{% endblock %}

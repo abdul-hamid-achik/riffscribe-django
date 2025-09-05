@@ -1,0 +1,41 @@
+# Core dependencies that rarely change
+# These form the base layer for better caching
+
+# Django and web framework
+django>=5.0
+django-htmx>=1.17
+django-cors-headers>=4.3
+whitenoise>=6.6
+gunicorn>=21.2
+python-decouple>=3.8
+
+# Storage
+django-storages[boto3]>=1.14
+boto3>=1.26
+
+# Database
+psycopg2-binary>=2.9
+
+# Celery and task queue
+celery>=5.3,<5.4
+vine==5.0.0
+kombu>=5.3,<5.4
+amqp>=5.2,<5.3
+redis>=5.0
+flower>=2.0
+
+# System monitoring
+psutil>=5.9.0
+
+# File handling
+pillow>=10.0
+
+# Authentication and forms
+django-allauth>=0.57.0
+PyJWT>=2.8.0
+cryptography>=41.0.0
+django-crispy-forms>=2.1
+crispy-tailwind>=1.0.3
+django-tailwind[reload]>=3.8  # For proper Tailwind CSS integration with hot-reload
+django-simple-captcha>=0.6.0  # Captcha for anonymous comments
+requests>=2.31  # Required by django-allauth

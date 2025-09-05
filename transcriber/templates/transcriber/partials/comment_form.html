@@ -1,0 +1,55 @@
+<!-- Authenticated User Comment Form -->
+<form hx-post="{% url 'transcriber:add_comment' transcription.pk %}" 
+      hx-target="#comment-form-container"
+      hx-swap="outerHTML"
+      class="space-y-4">
+    {% csrf_token %}
+    
+    <!-- User Info Display -->
+    <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 bg-musical-gold rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div>
+            <span class="font-medium text-gray-900">{{ user.profile.display_name|default:user.username }}</span>
+            <div class="text-sm text-gray-500">Verified User</div>
+        </div>
+    </div>
+    
+    <!-- Comment Field -->
+    <div>
+        {{ form.content.label_tag }}
+        {{ form.content }}
+        {% if form.content.errors %}
+            <div class="mt-1 text-sm text-red-600">
+                {{ form.content.errors.0 }}
+            </div>
+        {% endif %}
+        <div class="mt-1 text-xs text-gray-500">
+            <span id="char-count">0</span>/2000 characters
+        </div>
+    </div>
+    
+    <!-- Submit Button -->
+    <div class="flex justify-end">
+        <button type="submit" 
+                class="btn-primary inline-flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            Post Comment
+        </button>
+    </div>
+</form>
+
+<script>
+// Character counter
+document.getElementById('{{ form.content.id_for_label }}').addEventListener('input', function() {
+    const count = this.value.length;
+    const counter = document.getElementById('char-count');
+    counter.textContent = count;
+    counter.className = count > 1800 ? 'text-red-500' : count > 1500 ? 'text-yellow-500' : 'text-gray-500';
+});
+</script>

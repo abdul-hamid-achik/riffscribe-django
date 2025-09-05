@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Profile - RiffScribe{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                Profile Settings
+            </h2>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'transcriber:profile' %}" class="mt-8 space-y-6">
+        {% csrf_token %}
+        
+        <!-- Personal Information -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Personal Information</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <div class="grid grid-cols-6 gap-6">
+                    <div class="col-span-6 sm:col-span-3">
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">First name</label>
+                        <input type="text" name="first_name" id="first_name" value="{{ user.first_name }}" 
+                               class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-3">
+                        <label for="last_name" class="block text-sm font-medium text-gray-700">Last name</label>
+                        <input type="text" name="last_name" id="last_name" value="{{ user.last_name }}"
+                               class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                    </div>
+
+                    <div class="col-span-6">
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email address</label>
+                        <input type="email" name="email" id="email" value="{{ user.email }}" disabled
+                               class="mt-1 bg-gray-100 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        <p class="mt-2 text-sm text-gray-500">Email cannot be changed here. <a href="{% url 'account_email' %}" class="text-indigo-600 hover:text-indigo-500">Manage emails</a></p>
+                    </div>
+
+                    <div class="col-span-6">
+                        <label for="bio" class="block text-sm font-medium text-gray-700">Bio</label>
+                        <textarea id="bio" name="bio" rows="3"
+                                  class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                                  placeholder="Tell us about yourself...">{{ user_profile.bio }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Musical Preferences -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Musical Preferences</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <div class="grid grid-cols-6 gap-6">
+                    <div class="col-span-6 sm:col-span-3">
+                        <label for="skill_level" class="block text-sm font-medium text-gray-700">Skill Level</label>
+                        <select id="skill_level" name="skill_level"
+                                class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="beginner" {% if user_profile.skill_level == 'beginner' %}selected{% endif %}>Beginner</option>
+                            <option value="intermediate" {% if user_profile.skill_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+                            <option value="advanced" {% if user_profile.skill_level == 'advanced' %}selected{% endif %}>Advanced</option>
+                            <option value="expert" {% if user_profile.skill_level == 'expert' %}selected{% endif %}>Expert</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-6 sm:col-span-3">
+                        <label for="preferred_difficulty" class="block text-sm font-medium text-gray-700">Preferred Tab Difficulty</label>
+                        <select id="preferred_difficulty" name="preferred_difficulty"
+                                class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            <option value="easy" {% if user_profile.preferred_difficulty == 'easy' %}selected{% endif %}>Easy</option>
+                            <option value="balanced" {% if user_profile.preferred_difficulty == 'balanced' %}selected{% endif %}>Balanced</option>
+                            <option value="technical" {% if user_profile.preferred_difficulty == 'technical' %}selected{% endif %}>Technical</option>
+                            <option value="original" {% if user_profile.preferred_difficulty == 'original' %}selected{% endif %}>Original</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-6">
+                        <label for="tempo_adjustment" class="block text-sm font-medium text-gray-700">
+                            Default Tempo Adjustment
+                            <span class="text-gray-500">({{ user_profile.default_tempo_adjustment }}x)</span>
+                        </label>
+                        <input type="range" id="tempo_adjustment" name="tempo_adjustment"
+                               min="0.5" max="2.0" step="0.1" value="{{ user_profile.default_tempo_adjustment }}"
+                               class="mt-1 block w-full"
+                               oninput="document.getElementById('tempo_value').textContent = this.value + 'x'">
+                        <div class="mt-1 text-sm text-gray-500">
+                            <span id="tempo_value">{{ user_profile.default_tempo_adjustment }}x</span> speed
+                        </div>
+                    </div>
+
+                    <div class="col-span-6">
+                        <label class="block text-sm font-medium text-gray-700">Preferred Genres</label>
+                        <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                            {% for genre in genre_choices %}
+                            <div class="flex items-start">
+                                <div class="flex items-center h-5">
+                                    <input id="genre_{{ genre|lower }}" name="genres" type="checkbox" value="{{ genre }}"
+                                           {% if genre in user_profile.preferred_genres %}checked{% endif %}
+                                           class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <label for="genre_{{ genre|lower }}" class="font-medium text-gray-700">{{ genre }}</label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Information -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Account Information</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Account Type</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {% if user_profile.is_premium %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Premium</span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Free</span>
+                            {% endif %}
+                        </dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Monthly Uploads</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            {{ user_profile.uploads_this_month }} / {{ user_profile.monthly_upload_limit }}
+                        </dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Total Transcriptions</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ user_profile.transcriptions_count }}</dd>
+                    </div>
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Total Duration Processed</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ user_profile.total_duration_processed|floatformat:0 }} seconds</dd>
+                    </div>
+
+                    {% if user_profile.github_username %}
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">GitHub</dt>
+                        <dd class="mt-1 text-sm text-gray-900">
+                            <a href="{{ user_profile.github_profile_url }}" target="_blank" class="text-indigo-600 hover:text-indigo-500">
+                                @{{ user_profile.github_username }}
+                            </a>
+                        </dd>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Member Since</dt>
+                        <dd class="mt-1 text-sm text-gray-900">{{ user_profile.created_at|date:"F j, Y" }}</dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3">
+            <a href="{% url 'transcriber:dashboard' %}" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Cancel
+            </a>
+            <button type="submit" class="bg-indigo-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+<div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+    <div class="flex items-start">
+        <svg class="w-6 h-6 text-red-600 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+            <p class="text-red-800 font-semibold">Upload Failed</p>
+            <p class="text-red-600 text-sm mt-1">{{ error }}</p>
+            <button type="button" 
+                onclick="document.getElementById('upload-result').innerHTML = ''"
+                class="mt-3 text-sm text-red-700 underline hover:no-underline">
+                Dismiss
+            </button>
+        </div>
+    </div>
+</div>

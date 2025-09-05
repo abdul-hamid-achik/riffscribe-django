@@ -1,0 +1,177 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Crimson+Text:wght@400;600&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* CSS Variables for legacy support */
+    :root {
+        /* Music sheet colors */
+        --sheet-cream: #faf8f3;
+        --sheet-ivory: #f8f6f0;
+        --staff-line: #2c2c2c;
+        --note-black: #1a1a1a;
+        --accent-gold: #c9a96e;
+
+        /* NYT inspired colors */
+        --nyt-black: #121212;
+        --nyt-gray-dark: #333333;
+        --nyt-gray-medium: #666666;
+        --nyt-gray-light: #999999;
+        --nyt-border: #e6e6e6;
+
+        /* Musical accent colors */
+        --treble-clef: #8b4513;
+        --sharp-flat: #4a5568;
+
+        /* Interactive colors */
+        --primary-blue: #326891;
+        --hover-blue: #2c5aa0;
+        --success-green: #047857;
+        --warning-amber: #d97706;
+        --error-red: #dc2626;
+    }
+}
+
+@layer components {
+    /* NYT-style navigation */
+    .nyt-nav {
+        @apply bg-white border-b-4 border-nyt-black shadow-sm;
+    }
+
+    .nyt-nav-link {
+        @apply text-nyt-gray-dark hover:text-nyt-black font-body font-medium px-4 py-2 transition-colors duration-200;
+    }
+
+    /* Sheet music card styling */
+    .sheet-card {
+        @apply bg-sheet-ivory border-2 border-musical-staff/20 shadow-xl;
+        position: relative;
+    }
+
+    .sheet-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        background: var(--staff-lines);
+        opacity: 0.03;
+        pointer-events: none;
+    }
+
+    /* Status badges */
+    .status-badge {
+        @apply px-3 py-1 rounded-full text-sm font-semibold inline-flex items-center;
+    }
+
+    .status-completed {
+        @apply bg-green-100 text-green-800;
+    }
+
+    .status-processing {
+        @apply bg-blue-100 text-blue-800;
+    }
+
+    .status-pending {
+        @apply bg-yellow-100 text-yellow-800;
+    }
+
+    .status-failed {
+        @apply bg-red-100 text-red-800;
+    }
+
+    /* Button styles */
+    .btn-primary {
+        @apply bg-musical-gold hover:bg-musical-treble text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    }
+
+    .btn-secondary {
+        @apply bg-nyt-gray-light hover:bg-nyt-gray-medium text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+    }
+
+    .btn-outline {
+        @apply border-2 border-musical-gold hover:bg-musical-gold hover:text-white text-musical-gold font-semibold py-2 px-4 rounded-lg transition-all duration-200;
+    }
+
+    /* Tab display styling */
+    .tab-line {
+        @apply font-mono text-sm leading-tight;
+    }
+
+    .tab-measure {
+        @apply border-l-2 border-musical-staff/30 pl-2;
+    }
+
+    /* Feature cards */
+    .feature-card {
+        @apply bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-nyt-border relative overflow-hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(201, 169, 110, 0.1), transparent);
+        transform: rotate(45deg);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .feature-card:hover::before {
+        opacity: 1;
+    }
+
+    /* Typography styles */
+    .headline-serif {
+        @apply font-display text-nyt-black;
+    }
+
+    .body-text {
+        @apply font-body text-nyt-gray-dark leading-relaxed;
+    }
+
+    /* Musical notation elements */
+    .treble-clef::before {
+        content: '𝄞';
+        @apply text-musical-treble text-2xl mr-2;
+    }
+
+    .bass-clef::before {
+        content: '𝄢';
+        @apply text-musical-treble text-2xl mr-2;
+    }
+
+    /* Form styling for crispy-tailwind compatibility */
+    .form-input {
+        @apply w-full px-3 py-2 border border-nyt-border rounded-md focus:outline-none focus:ring-2 focus:ring-musical-gold focus:border-transparent;
+    }
+
+    .form-label {
+        @apply block text-sm font-medium text-nyt-gray-dark mb-1;
+    }
+
+    .form-error {
+        @apply text-error-red text-sm mt-1;
+    }
+}
+
+@layer utilities {
+    /* Additional utility classes */
+    .text-shadow {
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .gradient-musical {
+        background: linear-gradient(135deg, var(--musical-gold) 0%, var(--musical-treble) 100%);
+    }
+
+    .gradient-nyt {
+        background: linear-gradient(135deg, var(--nyt-gray-dark) 0%, var(--nyt-black) 100%);
+    }
+}

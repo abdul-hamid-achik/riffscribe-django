@@ -1,0 +1,752 @@
+{% extends "transcriber/base.html" %}
+{% load static %}
+
+{% block title %}Preview - {{ transcription.filename }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #326891;
+        --border-color: #e6e6e6;
+    }
+
+    .preview-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .preview-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .preview-modes {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .mode-btn {
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--border-color);
+        background: white;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .mode-btn:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .mode-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .preview-content {
+        min-height: 600px;
+        background: white;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .variant-selector {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .download-section {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .download-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .download-card {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        text-align: center;
+        transition: transform 0.2s;
+    }
+
+    .download-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* AlphaTab container */
+    #alphatab-container {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background: white;
+        overflow: hidden;
+    }
+
+    /* AlphaTab specific styles */
+    .at-surface {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .at-viewport {
+        background: white;
+        border-radius: 0.5rem;
+    }
+
+    .at-wrap {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+    }
+
+    .at-content {
+        position: relative;
+    }
+
+    /* AlphaTab player bar */
+    .at-controls {
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .at-player-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        font-family: var(--bs-font-sans-serif);
+        color: #6c757d;
+    }
+
+    /* Loading spinner for AlphaTab */
+    .alphatab-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 400px;
+        font-size: 18px;
+        color: #6c757d;
+    }
+
+    .alphatab-loading::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 1rem;
+    }
+
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* MIDI Player */
+    .midi-player {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .player-controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .progress-bar {
+        flex: 1;
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--primary-color);
+        border-radius: 4px;
+        transition: width 0.1s;
+    }
+
+    /* Sheet music */
+    #sheet-music-container {
+        width: 100%;
+        min-height: 600px;
+    }
+
+    /* ASCII Tab */
+    .ascii-tab-container {
+        font-family: 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.4;
+        background: #2b2b2b;
+        color: #f8f8f2;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        overflow-x: auto;
+        white-space: pre;
+    }
+
+    .playback-controls {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: white;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .speed-control {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+    <!-- Header -->
+    <div class="preview-header">
+        <div>
+            <h1>{{ transcription.filename }}</h1>
+            <p class="text-muted">
+                Created {{ transcription.created_at|timesince }} ago
+                {% if transcription.user %}by {{ transcription.user.username }}{% endif %}
+            </p>
+        </div>
+        <div class="actions">
+            <a href="{% url 'transcriber:detail' transcription.pk %}" class="btn btn-outline-secondary">
+                ← Back to Details
+            </a>
+            <button class="btn btn-outline-primary" onclick="toggleFullscreen()">
+                ⛶ Fullscreen
+            </button>
+        </div>
+    </div>
+
+    {% if preview_available %}
+    <!-- Preview Mode Selector -->
+    <div class="preview-modes" role="tablist">
+        {% for mode in preview_modes %}
+        <button class="mode-btn {% if forloop.first %}active{% endif %}" data-mode="{{ mode.id }}"
+            onclick="switchPreviewMode('{{ mode.id }}')">
+            <span>{{ mode.icon }}</span>
+            {{ mode.name }}
+        </button>
+        {% endfor %}
+    </div>
+
+    <!-- Variant Selector (if variants exist) -->
+    {% if variants %}
+    <div class="variant-selector">
+        <label>Select Difficulty:</label>
+        <select id="variant-select" onchange="loadVariant(this.value)" class="form-select">
+            {% for variant in variants %}
+            <option value="{{ variant.id }}" {% if variant.is_selected %}selected{% endif %}>
+                {{ variant.get_variant_name_display }}
+                (Difficulty: {{ variant.difficulty_score|floatformat:1 }}/10)
+            </option>
+            {% endfor %}
+        </select>
+        <button onclick="openComparison()" class="btn btn-sm btn-outline-secondary">
+            Compare Variants
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- Preview Content Area -->
+    <div class="preview-content">
+        <!-- Tab View (AlphaTab) -->
+        <div id="tab-preview" class="preview-panel">
+            <div id="alphatab-container">
+                <div class="alphatab-loading">Loading guitar tab...</div>
+            </div>
+            <div class="alphatab-controls mt-3">
+                <button id="alphatab-play-btn" onclick="toggleAlphaTabPlayback()" class="btn btn-primary" disabled>
+                    ▶ Play/Pause
+                </button>
+                <button id="alphatab-stop-btn" onclick="stopAlphaTab()" class="btn btn-secondary" disabled>
+                    ■ Stop
+                </button>
+                <input type="range" id="zoom-slider" min="50" max="200" value="100"
+                    oninput="setAlphaTabZoom(this.value)" disabled>
+                <span>Zoom: <span id="zoom-value">100%</span></span>
+            </div>
+        </div>
+
+        <!-- Sheet Music View -->
+        <div id="sheet-preview" class="preview-panel" style="display:none;">
+            <div id="sheet-music-container"></div>
+        </div>
+
+        <!-- MIDI Player View -->
+        <div id="midi-preview" class="preview-panel" style="display:none;">
+            <div class="midi-player">
+                <div class="player-controls">
+                    <button id="midi-play-btn" onclick="toggleMidiPlayback()" class="btn btn-primary">
+                        ▶ Play
+                    </button>
+                    <div class="progress-bar" onclick="seekMidi(event)">
+                        <div class="progress-fill" id="midi-progress"></div>
+                    </div>
+                    <span id="midi-time">0:00 / 0:00</span>
+                </div>
+
+                <div class="midi-visualization">
+                    <canvas id="midi-canvas" width="1200" height="400"></canvas>
+                </div>
+
+                <div class="speed-control">
+                    <label>Speed:</label>
+                    <input type="range" min="50" max="150" value="100" onchange="setMidiSpeed(this.value)">
+                    <span id="speed-value">100%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ASCII Tab View -->
+        <div id="ascii-preview" class="preview-panel" style="display:none;">
+            <div class="ascii-tab-container" id="ascii-tab-content">
+                Loading ASCII tab...
+            </div>
+            <div class="mt-3">
+                <button onclick="copyAsciiTab()" class="btn btn-secondary">📋 Copy to Clipboard</button>
+                <button onclick="printAsciiTab()" class="btn btn-secondary">🖨 Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Section -->
+    <div class="download-section">
+        <h3>Download Options</h3>
+        <div class="download-grid">
+            {% for format in download_formats %}
+            <div class="download-card">
+                <h5>{{ format.name }}</h5>
+                <p class="text-muted">{{ format.extension }}</p>
+                <a href="{% url 'transcriber:export' transcription.pk %}?format={{ format.format }}"
+                    class="btn btn-sm btn-primary">
+                    ⬇ Download
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Floating Playback Controls -->
+    <div class="playback-controls" id="playback-controls" style="display:none;">
+        <button onclick="playPause()" class="btn btn-primary">▶/⏸</button>
+        <button onclick="stop()" class="btn btn-secondary">■</button>
+        <div class="speed-control">
+            <label>Speed:</label>
+            <select onchange="setPlaybackSpeed(this.value)">
+                <option value="0.5">50%</option>
+                <option value="0.75">75%</option>
+                <option value="1" selected>100%</option>
+                <option value="1.25">125%</option>
+                <option value="1.5">150%</option>
+            </select>
+        </div>
+        <label>
+            <input type="checkbox" checked onchange="toggleAutoScroll(this.checked)">
+            Auto-scroll
+        </label>
+    </div>
+
+    {% else %}
+    <!-- Not ready for preview -->
+    <div class="alert alert-info">
+        <h4>Preview Not Available</h4>
+        <p>{{ message }}</p>
+        <a href="{% url 'transcriber:detail' transcription.pk %}" class="btn btn-primary">
+            View Status
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- AlphaTab -->
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
+
+<!-- OpenSheetMusicDisplay for sheet music -->
+<script src="https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@latest/build/opensheetmusicdisplay.min.js"></script>
+
+<!-- Tone.js for MIDI playback -->
+<script src="https://cdn.jsdelivr.net/npm/tone@latest/build/Tone.js"></script>
+
+<script>
+    let currentMode = 'tab';
+    let alphaTabApi = null;
+    let midiPlayer = null;
+    let sheetDisplay = null;
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        if ('{{ preview_available }}' === 'True') {
+            initializeAlphaTab();
+            loadInitialData();
+        }
+    });
+
+    function switchPreviewMode(mode) {
+        // Hide all panels
+        document.querySelectorAll('.preview-panel').forEach(panel => {
+            panel.style.display = 'none';
+        });
+
+        // Remove active class from all buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Show selected panel and activate button
+        document.getElementById(mode + '-preview').style.display = 'block';
+        document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+        currentMode = mode;
+
+        // Load content for the mode if needed
+        switch (mode) {
+            case 'tab':
+                if (!alphaTabApi) initializeAlphaTab();
+                break;
+            case 'sheet':
+                if (!sheetDisplay) initializeSheetMusic();
+                break;
+            case 'midi':
+                if (!midiPlayer) initializeMidiPlayer();
+                break;
+            case 'ascii':
+                loadAsciiTab();
+                break;
+        }
+
+        // Show/hide playback controls based on mode
+        document.getElementById('playback-controls').style.display =
+            (mode === 'tab' || mode === 'midi') ? 'flex' : 'none';
+    }
+
+    function initializeAlphaTab() {
+        const container = document.getElementById('alphatab-container');
+        if (!container) {
+            console.error('AlphaTab container not found');
+            return;
+        }
+
+        try {
+            // Clear loading message
+            container.innerHTML = '';
+
+            alphaTabApi = new alphaTab.AlphaTabApi(container, {
+                file: "{% url 'transcriber:export_musicxml' transcription.pk %}",
+                player: {
+                    enablePlayer: true,
+                    enableCursor: true,
+                    enableUserInteraction: true,
+                    scrollMode: 'continuous',
+                    soundFont: "https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2"
+                },
+                display: {
+                    layoutMode: "page",
+                    staveProfile: "tab",
+                    scale: 1.0
+                },
+                notation: {
+                    notationMode: 'GuitarPro',
+                    rhythmMode: 'showWithBars'
+                }
+            });
+
+            // Add event listeners
+            alphaTabApi.renderStarted.on(() => {
+                console.log('AlphaTab rendering started');
+                showLoadingState();
+            });
+
+            alphaTabApi.renderFinished.on(() => {
+                console.log('AlphaTab rendering finished');
+                hideLoadingState();
+                enableControls();
+            });
+
+            alphaTabApi.playerReady.on(() => {
+                console.log('AlphaTab player ready');
+                enablePlayerControls();
+            });
+
+            alphaTabApi.playerStateChanged.on((args) => {
+                updatePlaybackControls(args.state);
+            });
+
+            alphaTabApi.error.on((error) => {
+                console.error('AlphaTab error:', error);
+                showAlphaTabError(error);
+            });
+
+        } catch (error) {
+            console.error('Error initializing AlphaTab:', error);
+            showAlphaTabError('Failed to initialize tab viewer');
+        }
+    }
+
+    function showLoadingState() {
+        const container = document.getElementById('alphatab-container');
+        if (container && !container.querySelector('.alphatab-loading')) {
+            container.innerHTML = '<div class="alphatab-loading">Loading guitar tab...</div>';
+        }
+    }
+
+    function hideLoadingState() {
+        const loading = document.querySelector('.alphatab-loading');
+        if (loading) {
+            loading.remove();
+        }
+    }
+
+    function enableControls() {
+        const zoomSlider = document.getElementById('zoom-slider');
+        if (zoomSlider) zoomSlider.disabled = false;
+    }
+
+    function enablePlayerControls() {
+        const playBtn = document.getElementById('alphatab-play-btn');
+        const stopBtn = document.getElementById('alphatab-stop-btn');
+        if (playBtn) playBtn.disabled = false;
+        if (stopBtn) stopBtn.disabled = false;
+    }
+
+    function showAlphaTabError(error) {
+        const container = document.getElementById('alphatab-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <h5>Tab Preview Unavailable</h5>
+                    <p>Unable to load the interactive tab viewer. Error: ${error}</p>
+                    <p>You can still download the tab files below.</p>
+                </div>
+            `;
+        }
+    }
+
+    function toggleAlphaTabPlayback() {
+        if (alphaTabApi && alphaTabApi.playerReady) {
+            alphaTabApi.playPause();
+        }
+    }
+
+    function stopAlphaTab() {
+        if (alphaTabApi && alphaTabApi.playerReady) {
+            alphaTabApi.stop();
+        }
+    }
+
+    function setAlphaTabZoom(value) {
+        const scale = value / 100;
+        if (alphaTabApi) {
+            alphaTabApi.settings.display.scale = scale;
+            alphaTabApi.updateSettings();
+        }
+        document.getElementById('zoom-value').textContent = value + '%';
+    }
+
+    function initializeSheetMusic() {
+        const container = document.getElementById('sheet-music-container');
+        if (!container) return;
+
+        sheetDisplay = new opensheetmusicdisplay.OpenSheetMusicDisplay(container);
+
+        // Load MusicXML
+        fetch("{% url 'transcriber:export_musicxml' transcription.pk %}")
+            .then(response => response.text())
+            .then(xml => {
+                sheetDisplay.load(xml).then(() => {
+                    sheetDisplay.render();
+                });
+            });
+    }
+
+    function initializeMidiPlayer() {
+        // Initialize Tone.js MIDI player
+        fetch("{% url 'transcriber:download_midi' transcription.pk %}")
+            .then(response => response.arrayBuffer())
+            .then(midiData => {
+                // Setup MIDI playback with Tone.js
+                console.log('MIDI data loaded');
+                // Implementation would go here
+            });
+    }
+
+    function loadAsciiTab() {
+        const variantId = document.getElementById('variant-select')?.value;
+        let url = "{% url 'transcriber:download_ascii_tab' transcription.pk %}";
+        if (variantId) {
+            url += '?variant_id=' + variantId;
+        }
+
+        fetch(url, {
+            headers: { 'HX-Request': 'true' }
+        })
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('ascii-tab-content').innerHTML = html;
+            });
+    }
+
+    function loadVariant(variantId) {
+        // Reload the current preview with new variant
+        switch (currentMode) {
+            case 'tab':
+                // Reload AlphaTab with variant
+                if (alphaTabApi) {
+                    const url = "{% url 'transcriber:export_musicxml' transcription.pk %}?variant_id=" + variantId;
+                    alphaTabApi.load(url);
+                }
+                break;
+            case 'ascii':
+                loadAsciiTab();
+                break;
+        }
+    }
+
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.querySelector('.preview-content').requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    function copyAsciiTab() {
+        const content = document.getElementById('ascii-tab-content').textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            alert('Tab copied to clipboard!');
+        });
+    }
+
+    function printAsciiTab() {
+        const content = document.getElementById('ascii-tab-content').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Tab - {{ transcription.filename }}</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; }
+                        pre { font-size: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <pre>${content}</pre>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    function openComparison() {
+        const variants = Array.from(document.getElementById('variant-select').options)
+            .slice(0, 2)
+            .map(opt => opt.value);
+        // Note: Comparison feature coming soon
+        alert('Variant comparison feature coming soon!');
+    }
+
+    // Playback control functions
+    function playPause() {
+        if (currentMode === 'tab') {
+            toggleAlphaTabPlayback();
+        } else if (currentMode === 'midi' && midiPlayer) {
+            // Toggle MIDI playback
+        }
+    }
+
+    function stop() {
+        if (currentMode === 'tab') {
+            stopAlphaTab();
+        } else if (currentMode === 'midi' && midiPlayer) {
+            // Stop MIDI playback
+        }
+    }
+
+    function setPlaybackSpeed(speed) {
+        if (alphaTabApi) {
+            alphaTabApi.playbackSpeed = parseFloat(speed);
+        }
+    }
+
+    function toggleAutoScroll(enabled) {
+        if (alphaTabApi) {
+            alphaTabApi.settings.player.scrollMode = enabled ? 'continuous' : 'off';
+        }
+    }
+
+    function updatePlaybackControls(state) {
+        const playBtn = document.getElementById('alphatab-play-btn');
+        if (playBtn) {
+            switch (state) {
+                case 0: // Paused
+                    playBtn.innerHTML = '▶ Play';
+                    break;
+                case 1: // Playing
+                    playBtn.innerHTML = '⏸ Pause';
+                    break;
+                default:
+                    playBtn.innerHTML = '▶ Play/Pause';
+                    break;
+            }
+        }
+    }
+
+    // Add error handling for missing functions
+    function loadInitialData() {
+        // This function was referenced but not defined
+        console.log('Loading initial preview data...');
+    }
+</script>
+{% endblock %}

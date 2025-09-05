@@ -1,0 +1,117 @@
+<!-- Updated variants list after selection -->
+<div id="variants-container" class="bg-white rounded-lg shadow-md p-6">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-gray-900">Fingering Variants</h3>
+        <div class="flex items-center gap-2">
+            <span class="text-sm text-green-600">✓ Variant updated</span>
+            <button 
+                hx-post="{% url 'transcriber:regenerate_variants' transcription.id %}"
+                hx-target="#variants-container"
+                hx-swap="outerHTML"
+                class="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+            >
+                Regenerate All
+            </button>
+        </div>
+    </div>
+
+    {% if metrics %}
+    <div class="mb-4 p-3 bg-green-50 rounded-md border border-green-200">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+            <div>
+                <span class="font-semibold">Playability:</span> 
+                <span class="text-green-600">{{ metrics.playability_score|floatformat:0 }}%</span>
+            </div>
+            <div>
+                <span class="font-semibold">Skill Level:</span> 
+                <span class="capitalize">{{ metrics.recommended_skill_level|default:"--" }}</span>
+            </div>
+            <div>
+                <span class="font-semibold">Max Span:</span> 
+                <span>{{ metrics.max_fret_span|default:"--" }} frets</span>
+            </div>
+            <div>
+                <span class="font-semibold">Open Strings:</span> 
+                <span>{{ metrics.open_strings_used|default:0 }}</span>
+            </div>
+        </div>
+        {% if metrics.slow_tempo_suggestion %}
+        <div class="mt-2 text-sm text-gray-600">
+            Suggested practice tempo: {{ metrics.slow_tempo_suggestion }} BPM
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="space-y-2">
+        {% for variant in variants %}
+        <div class="border rounded-lg p-3 hover:bg-gray-50 transition-all duration-300
+                    {% if variant.is_selected %}bg-green-50 border-green-400 shadow-sm{% endif %}">
+            <div class="flex justify-between items-center">
+                <div class="flex-1">
+                    <div class="flex items-center gap-3">
+                        <span class="font-semibold capitalize">{{ variant.get_variant_name_display }}</span>
+                        {% if variant.is_selected %}
+                        <span class="px-2 py-1 bg-green-500 text-white text-xs rounded animate-pulse">Selected</span>
+                        {% endif %}
+                    </div>
+                    <div class="mt-1 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600">
+                        <div>Playability: {{ variant.playability_score|floatformat:0 }}%</div>
+                        <div>Difficulty: {{ variant.difficulty_score|floatformat:0 }}%</div>
+                        {% if variant.removed_techniques %}
+                        <div class="col-span-2">
+                            Simplified: 
+                            {% for tech, count in variant.removed_techniques.items %}
+                            {{ count }} {{ tech }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex gap-2 ml-4">
+                    <button 
+                        hx-get="{% url 'transcriber:preview_variant' transcription.id variant.id %}"
+                        hx-target="#tab-preview-container"
+                        hx-swap="innerHTML"
+                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                    >
+                        Preview
+                    </button>
+                    {% if not variant.is_selected %}
+                    <button 
+                        hx-post="{% url 'transcriber:select_variant' transcription.id variant.id %}"
+                        hx-target="#variants-container"
+                        hx-swap="outerHTML"
+                        class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                    >
+                        Select
+                    </button>
+                    {% endif %}
+                    <button 
+                        hx-get="{% url 'transcriber:variant_stats' transcription.id variant.id %}"
+                        hx-target="#variant-stats-modal"
+                        hx-swap="innerHTML"
+                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+                        onclick="document.getElementById('variant-stats-modal').classList.remove('hidden')"
+                    >
+                        Stats
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Also update the tab preview if needed -->
+<script>
+    // Trigger a refresh of the AlphaTab preview
+    if (window.alphaTabApi) {
+        htmx.ajax('GET', '{% url "transcriber:preview_tab" transcription.id %}', '#tab-preview-container');
+    }
+</script>
+
+<!-- Modal container for variant stats -->
+<div id="variant-stats-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+     onclick="if(event.target === this) this.classList.add('hidden')">
+</div>

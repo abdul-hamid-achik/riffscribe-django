@@ -1,5 +1,5 @@
 """
-Advanced ML Pipeline for audio transcription with source separation and pitch detection.
+Advanced ML Pipeline for audio transcription with source separation, pitch detection, and Whisper AI.
 """
 import os
 import numpy as np
@@ -8,7 +8,10 @@ import torch
 import logging
 from typing import Dict, List, Optional, Tuple
 import tempfile
+import gc
+from .json_utils import clean_analysis_result
 import soundfile as sf
+from django.conf import settings
 
 # ML model imports
 try:
@@ -35,6 +38,10 @@ try:
 except ImportError:
     madmom = None
 
+# Import Whisper service and Multi-track service
+from .whisper_service import WhisperService
+from .multi_track_service import MultiTrackService
+
 from scipy.signal import find_peaks
 import music21
 
@@ -47,24 +54,52 @@ class MLPipeline:
     Integrates multiple models for source separation, pitch detection, and analysis.
     """
     
-    def __init__(self, use_gpu=False, demucs_model='htdemucs', basic_pitch_model='default'):
+    def __init__(self, use_gpu=False, demucs_model='htdemucs_ft', basic_pitch_model='default', use_whisper=None, enable_multitrack=True):
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.device = torch.device('cuda' if self.use_gpu else 'cpu')
         self.demucs_model_name = demucs_model
         self.basic_pitch_model = basic_pitch_model
+        self.enable_multitrack = enable_multitrack
         
         # Load models lazily
         self.demucs_model = None
         self.basic_pitch_loaded = False
         
-        logger.info(f"ML Pipeline initialized. GPU: {self.use_gpu}, Device: {self.device}")
+        # Initialize Whisper if enabled
+        self.use_whisper = use_whisper if use_whisper is not None else getattr(settings, 'USE_WHISPER', False)
+        self.whisper_service = None
+        if self.use_whisper and getattr(settings, 'OPENAI_API_KEY', ''):
+            try:
+                self.whisper_service = WhisperService(
+                    api_key=settings.OPENAI_API_KEY
+                )
+                logger.info("Whisper AI service initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Whisper service: {str(e)}")
+                self.whisper_service = None
+        
+        # Initialize Multi-track service
+        self.multi_track_service = None
+        if self.enable_multitrack:
+            try:
+                self.multi_track_service = MultiTrackService(
+                    model_name=self.demucs_model_name,
+                    use_gpu=self.use_gpu
+                )
+                logger.info("Multi-track service initialized successfully")
+            except Exception as e:
+                logger.warning(f"Failed to initialize multi-track service: {str(e)}")
+                self.multi_track_service = None
+        
+        logger.info(f"ML Pipeline initialized. GPU: {self.use_gpu}, Device: {self.device}, Whisper: {self.whisper_service is not None}, Multi-track: {self.multi_track_service is not None}")
     
     def analyze_audio(self, audio_path: str) -> Dict:
         """
         Comprehensive audio analysis including tempo, key, complexity, and instruments.
+        Enhanced with Whisper AI when available.
         """
-        # Load audio
-        y, sr = librosa.load(audio_path, sr=None)
+        # Load audio with reduced sample rate to save memory
+        y, sr = librosa.load(audio_path, sr=22050)
         
         # Basic info
         duration = librosa.get_duration(y=y, sr=sr)
@@ -89,7 +124,7 @@ class MLPipeline:
         # Instrument detection
         instruments = self._detect_instruments(y, sr)
         
-        return {
+        result = {
             'duration': duration,
             'sample_rate': sr,
             'channels': channels,
@@ -100,6 +135,34 @@ class MLPipeline:
             'complexity': complexity,
             'instruments': instruments
         }
+        
+        # Enhance with Whisper analysis if available
+        if self.whisper_service:
+            try:
+                whisper_analysis = self.whisper_service.analyze_music(audio_path)
+                # Ensure the whisper analysis is JSON serializable
+                from .json_utils import ensure_json_serializable
+                result['whisper_analysis'] = ensure_json_serializable(whisper_analysis)
+                
+                # Merge Whisper-detected instruments
+                whisper_instruments = whisper_analysis.get('musical_elements', {}).get('instruments', [])
+                for inst in whisper_instruments:
+                    if inst not in result['instruments']:
+                        result['instruments'].append(inst)
+                
+                # Clean up whisper analysis memory
+                del whisper_analysis
+                gc.collect()
+                        
+                logger.info("Audio analysis enhanced with Whisper AI")
+            except Exception as e:
+                logger.warning(f"Whisper analysis failed, continuing with traditional methods: {str(e)}")
+        
+        # Clean up audio data from memory
+        del y
+        gc.collect()
+        
+        return clean_analysis_result(result)
     
     def separate_sources(self, audio_path: str) -> Dict[str, str]:
         """
@@ -148,19 +211,39 @@ class MLPipeline:
             logger.error(f"Source separation failed: {str(e)}")
             return {'original': audio_path}
     
-    def transcribe(self, audio_path: str) -> Dict:
+    def transcribe(self, audio_path: str, context: Optional[Dict] = None) -> Dict:
         """
         Transcribe audio to MIDI notes using multiple methods.
-        Primary: basic-pitch (polyphonic)
+        Primary: basic-pitch (polyphonic) enhanced with Whisper
         Fallback: crepe (monophonic) or librosa
         """
         notes = []
         midi_data = {}
+        chord_data = None
+        
+        # Try Whisper chord detection first if available
+        if self.whisper_service and settings.WHISPER_ENABLE_CHORD_DETECTION:
+            try:
+                # Use context if provided (from analyze_audio)
+                if context:
+                    whisper_result = self.whisper_service.enhance_transcription_with_context(
+                        audio_path, context
+                    )
+                else:
+                    whisper_result = self.whisper_service.detect_chords_and_notes(audio_path)
+                    
+                chord_data = whisper_result
+                midi_data['whisper_chords'] = chord_data
+                logger.info(f"Whisper detected {len(chord_data.get('chords', []))} chords")
+                
+            except Exception as e:
+                logger.warning(f"Whisper chord detection failed: {str(e)}")
         
         # Try basic-pitch first (best for polyphonic)
         if basic_pitch:
             try:
-                notes, midi_data = self._transcribe_basic_pitch(audio_path)
+                notes, pitch_midi_data = self._transcribe_basic_pitch(audio_path)
+                midi_data.update(pitch_midi_data)
                 logger.info(f"Basic-pitch transcription complete: {len(notes)} notes detected")
             except Exception as e:
                 logger.warning(f"Basic-pitch failed: {str(e)}, falling back to alternatives")
@@ -168,22 +251,29 @@ class MLPipeline:
         # Fallback to crepe for monophonic
         if not notes and crepe:
             try:
-                notes, midi_data = self._transcribe_crepe(audio_path)
+                notes, crepe_midi_data = self._transcribe_crepe(audio_path)
+                midi_data.update(crepe_midi_data)
                 logger.info(f"CREPE transcription complete: {len(notes)} notes detected")
             except Exception as e:
                 logger.warning(f"CREPE failed: {str(e)}, falling back to librosa")
         
         # Final fallback to librosa
         if not notes:
-            notes, midi_data = self._transcribe_librosa(audio_path)
+            notes, librosa_midi_data = self._transcribe_librosa(audio_path)
+            midi_data.update(librosa_midi_data)
             logger.info(f"Librosa transcription complete: {len(notes)} notes detected")
+        
+        # Enhance notes with Whisper chord context if available
+        if chord_data and chord_data.get('chords'):
+            notes = self._enhance_notes_with_chords(notes, chord_data['chords'])
         
         # Post-process notes
         notes = self._post_process_notes(notes)
         
         return {
             'notes': notes,
-            'midi_data': midi_data
+            'midi_data': midi_data,
+            'chord_data': chord_data
         }
     
     def _transcribe_basic_pitch(self, audio_path: str) -> Tuple[List, Dict]:
@@ -261,7 +351,7 @@ class MLPipeline:
     
     def _transcribe_librosa(self, audio_path: str) -> Tuple[List, Dict]:
         """Fallback transcription using librosa."""
-        y, sr = librosa.load(audio_path, sr=None)
+        y, sr = librosa.load(audio_path, sr=22050)
         
         # Harmonic-percussive separation
         y_harmonic, y_percussive = librosa.effects.hpss(y)
@@ -450,6 +540,81 @@ class MLPipeline:
         
         return instruments
     
+    def _enhance_notes_with_chords(self, notes: List[Dict], chords: List[Dict]) -> List[Dict]:
+        """
+        Enhance detected notes with Whisper chord information.
+        Adds chord context and improves note confidence.
+        """
+        if not notes or not chords:
+            return notes
+            
+        # Sort chords by time
+        chords = sorted(chords, key=lambda c: c.get('start_time', 0))
+        
+        # For each note, find the corresponding chord
+        for note in notes:
+            note_time = note['start_time']
+            
+            # Find active chord at this time
+            active_chord = None
+            for chord in chords:
+                if chord['start_time'] <= note_time <= chord.get('end_time', chord['start_time'] + 1):
+                    active_chord = chord
+                    break
+                    
+            if active_chord:
+                # Add chord context to note
+                note['chord_context'] = active_chord['chord']
+                note['chord_confidence'] = active_chord.get('confidence', 0.5)
+                
+                # Boost confidence if note matches chord
+                chord_notes = self._get_chord_notes(active_chord['chord'])
+                if chord_notes:
+                    note_pitch = note['midi_note'] % 12  # Get pitch class
+                    if note_pitch in chord_notes:
+                        note['confidence'] = min(1.0, note.get('confidence', 0.5) * 1.2)
+                        note['in_chord'] = True
+                        
+        return notes
+        
+    def _get_chord_notes(self, chord_name: str) -> List[int]:
+        """
+        Get MIDI pitch classes for a chord name.
+        Returns list of pitch classes (0-11).
+        """
+        # Basic chord mappings (pitch classes)
+        chord_map = {
+            'C': [0, 4, 7],      # C major
+            'Cm': [0, 3, 7],     # C minor
+            'C7': [0, 4, 7, 10], # C7
+            'D': [2, 6, 9],      # D major
+            'Dm': [2, 5, 9],     # D minor
+            'D7': [2, 6, 9, 0],  # D7
+            'E': [4, 8, 11],     # E major
+            'Em': [4, 7, 11],    # E minor
+            'E7': [4, 8, 11, 2], # E7
+            'F': [5, 9, 0],      # F major
+            'Fm': [5, 8, 0],     # F minor
+            'F7': [5, 9, 0, 3],  # F7
+            'G': [7, 11, 2],     # G major
+            'Gm': [7, 10, 2],    # G minor
+            'G7': [7, 11, 2, 5], # G7
+            'A': [9, 1, 4],      # A major
+            'Am': [9, 0, 4],     # A minor
+            'A7': [9, 1, 4, 7],  # A7
+            'B': [11, 3, 6],     # B major
+            'Bm': [11, 2, 6],    # B minor
+            'B7': [11, 3, 6, 9], # B7
+        }
+        
+        # Try to find chord in map
+        chord_upper = chord_name.upper()
+        for key, notes in chord_map.items():
+            if chord_upper.startswith(key):
+                return notes
+                
+        return []
+    
     def _post_process_notes(self, notes: List[Dict]) -> List[Dict]:
         """Post-process detected notes for better accuracy."""
         if not notes:
@@ -475,3 +640,180 @@ class MLPipeline:
         ]
         
         return filtered_notes
+    
+    def process_multitrack_transcription(self, transcription_obj) -> Dict:
+        """
+        Process a transcription with multi-track separation and individual track analysis.
+        
+        Args:
+            transcription_obj: Transcription model instance
+            
+        Returns:
+            Dict with multi-track processing results
+        """
+        if not self.multi_track_service:
+            logger.warning("Multi-track service not available, falling back to single-track processing")
+            return {'tracks': [], 'fallback': True}
+        
+        try:
+            logger.info(f"Starting multi-track processing for: {transcription_obj.filename}")
+            
+            # Step 1: Separate audio into tracks
+            tracks = self.multi_track_service.process_transcription(transcription_obj)
+            
+            # Step 2: Process each track individually
+            processed_tracks = []
+            for track in tracks:
+                if not track.separated_audio:
+                    continue
+                    
+                try:
+                    # Skip processing for certain track types
+                    if track.track_type in ['original', 'vocals']:
+                        processed_tracks.append({
+                            'track': track,
+                            'processed': False,
+                            'reason': f'Skipping {track.track_type} track'
+                        })
+                        continue
+                    
+                    logger.info(f"Processing track: {track.display_name}")
+                    
+                    # Analyze track audio
+                    track_analysis = self.analyze_audio(track.separated_audio.path)
+                    
+                    # Transcribe track if it's a melodic instrument
+                    track_transcription = None
+                    if track.track_type in ['other', 'bass'] or track.instrument_type in ['electric_guitar', 'acoustic_guitar', 'bass']:
+                        track_transcription = self.transcribe(
+                            track.separated_audio.path,
+                            context={
+                                'tempo': track_analysis.get('tempo'),
+                                'key': track_analysis.get('key'),
+                                'instrument': track.instrument_type
+                            }
+                        )
+                    
+                    # Update track with analysis results
+                    if track_transcription:
+                        track.midi_data = track_transcription['midi_data']
+                        track.guitar_notes = track_transcription['notes']
+                        if 'chord_data' in track_transcription and track_transcription['chord_data']:
+                            track.chord_progressions = track_transcription['chord_data']
+                    
+                    track.is_processed = True
+                    track.save()
+                    
+                    processed_tracks.append({
+                        'track': track,
+                        'analysis': track_analysis,
+                        'transcription': track_transcription,
+                        'processed': True
+                    })
+                    
+                    logger.info(f"Successfully processed track: {track.display_name}")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to process track {track.display_name}: {str(e)}")
+                    track.processing_error = str(e)
+                    track.save()
+                    
+                    processed_tracks.append({
+                        'track': track,
+                        'processed': False,
+                        'error': str(e)
+                    })
+            
+            # Step 3: Generate track variants for guitar tracks
+            self._generate_track_variants(processed_tracks)
+            
+            # Step 4: Update overall transcription with multi-track info
+            self._update_transcription_with_tracks(transcription_obj, tracks, processed_tracks)
+            
+            logger.info(f"Multi-track processing completed. Processed {len(processed_tracks)} tracks.")
+            
+            return {
+                'tracks': processed_tracks,
+                'track_count': len(tracks),
+                'processed_count': len([t for t in processed_tracks if t['processed']]),
+                'fallback': False
+            }
+            
+        except Exception as e:
+            logger.error(f"Multi-track processing failed: {str(e)}")
+            raise
+    
+    def _generate_track_variants(self, processed_tracks: List[Dict]) -> None:
+        """Generate fingering variants for guitar tracks."""
+        from .variant_generator import VariantGenerator
+        
+        for track_info in processed_tracks:
+            if not track_info['processed']:
+                continue
+                
+            track = track_info['track']
+            if track.instrument_type not in ['electric_guitar', 'acoustic_guitar']:
+                continue
+                
+            if not track.guitar_notes:
+                continue
+                
+            try:
+                logger.info(f"Generating variants for track: {track.display_name}")
+                
+                # Create variant generator for this track
+                variant_gen = VariantGenerator(track.transcription)
+                
+                # Generate variants using track-specific data
+                track_variants = variant_gen.generate_track_variants(
+                    track, 
+                    track.guitar_notes
+                )
+                
+                logger.info(f"Generated {len(track_variants)} variants for {track.display_name}")
+                
+            except Exception as e:
+                logger.error(f"Failed to generate variants for track {track.display_name}: {str(e)}")
+    
+    def _update_transcription_with_tracks(self, transcription_obj, tracks: List, processed_tracks: List[Dict]) -> None:
+        """Update the main transcription object with multi-track information."""
+        try:
+            # Update detected instruments with track information
+            track_instruments = []
+            for track in tracks:
+                if track.instrument_type and track.instrument_type != 'other':
+                    track_instruments.append(track.instrument_type)
+            
+            if track_instruments:
+                # Combine with existing instruments, avoiding duplicates
+                existing = transcription_obj.detected_instruments or []
+                combined = list(set(existing + track_instruments))
+                transcription_obj.detected_instruments = combined
+            
+            # Update complexity based on track count and content
+            guitar_tracks = [t for t in tracks if t.instrument_type in ['electric_guitar', 'acoustic_guitar']]
+            if len(guitar_tracks) > 1:
+                # Multiple guitar tracks = more complex
+                if transcription_obj.complexity == 'simple':
+                    transcription_obj.complexity = 'moderate'
+                elif transcription_obj.complexity == 'moderate':
+                    transcription_obj.complexity = 'complex'
+            
+            transcription_obj.save()
+            logger.info(f"Updated transcription with {len(tracks)} tracks")
+            
+        except Exception as e:
+            logger.error(f"Failed to update transcription with track info: {str(e)}")
+    
+    def get_pipeline_info(self) -> Dict:
+        """Get information about the pipeline configuration."""
+        return {
+            'gpu_enabled': self.use_gpu,
+            'device': str(self.device),
+            'whisper_enabled': self.whisper_service is not None,
+            'multitrack_enabled': self.multi_track_service is not None,
+            'demucs_model': self.demucs_model_name,
+            'basic_pitch_available': basic_pitch is not None,
+            'crepe_available': crepe is not None,
+            'demucs_available': demucs is not None
+        }

@@ -1,0 +1,32 @@
+# ML and Audio processing dependencies
+# Separated for better caching as these are large and change less frequently
+
+# Audio processing core
+numpy>=1.24,<2.0
+scipy>=1.11
+librosa>=0.10
+soundfile>=0.12
+pydub>=0.25
+audioread>=3.0
+resampy>=0.4
+
+# PyTorch - will auto-select appropriate version
+torch>=2.0,<3.0
+torchaudio>=2.0,<3.0
+
+# AI/ML APIs
+openai>=1.0
+
+# Music processing
+pretty-midi>=0.2
+music21>=9.1
+midiutil>=1.2
+
+# Guitar tab formats  
+pyguitarpro>=0.10  # For reading/writing Guitar Pro files (GP3, GP4, GP5)
+
+# Advanced audio models
+demucs>=4.0  # Audio source separation
+basic-pitch>=0.3  # Pitch detection
+# crepe>=0.0.12  # Optional: alternative pitch detection
+# madmom>=0.16  # Optional: requires system dependencies

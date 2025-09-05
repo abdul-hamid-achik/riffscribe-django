@@ -11,49 +11,11 @@
     <!-- Alpine.js for lightweight interactivity -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'display': ['Playfair Display', 'Georgia', 'serif'],
-                        'headline': ['Crimson Text', 'Georgia', 'serif'], 
-                        'body': ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        sheet: {
-                            cream: '#faf8f3',
-                            ivory: '#f8f6f0',
-                        },
-                        nyt: {
-                            black: '#121212',
-                            gray: {
-                                dark: '#333333',
-                                medium: '#666666',
-                                light: '#999999',
-                            },
-                            border: '#e6e6e6',
-                        },
-                        musical: {
-                            gold: '#c9a96e',
-                            treble: '#8b4513',
-                            staff: '#2c2c2c',
-                            note: '#1a1a1a',
-                        },
-                        primary: {
-                            blue: '#326891',
-                            'blue-hover': '#2c5aa0',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Custom CSS -->
+    <!-- Load compiled Tailwind CSS -->
     {% load static %}
+    <link rel="stylesheet" href="{% static 'transcriber/css/output.css' %}">
+    
+    <!-- Load custom CSS for additional styles -->
     <link rel="stylesheet" href="{% static 'transcriber/css/style.css' %}">
     
     {% block extra_head %}{% endblock %}
@@ -80,16 +42,86 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Mobile menu toggle -->
+                <div class="md:hidden">
+                    <button x-data x-on:click="document.getElementById('mobile-menu').classList.toggle('hidden')" 
+                            class="text-gray-300 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+                
                 <div class="flex items-center space-x-4">
-                    <a href="{% url 'transcriber:upload' %}" 
-                       class="btn-primary inline-flex items-center musical-note">
-                        Upload Audio
-                    </a>
+                    {% if user.is_authenticated %}
+                        <!-- User Menu for Authenticated Users -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" 
+                                    class="flex items-center space-x-2 text-gray-300 hover:text-white font-body text-sm font-medium transition duration-300">
+                                <div class="h-8 w-8 rounded-full bg-musical-gold flex items-center justify-center text-nyt-black font-semibold">
+                                    {{ user.username|first|upper }}
+                                </div>
+                                <span>{{ user.username }}</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div x-show="open" 
+                                 @click.away="open = false" 
+                                 x-transition:enter="transition ease-out duration-100"
+                                 x-transition:enter-start="transform opacity-0 scale-95"
+                                 x-transition:enter-end="transform opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-75"
+                                 x-transition:leave-start="transform opacity-100 scale-100"
+                                 x-transition:leave-end="transform opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                <div class="py-2">
+                                    <a href="{% url 'transcriber:dashboard' %}" 
+                                       class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                        Dashboard
+                                    </a>
+                                    <a href="{% url 'transcriber:profile' %}" 
+                                       class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                        Profile
+                                    </a>
+                                    <div class="border-t border-gray-200 my-1"></div>
+                                    <form method="post" action="{% url 'account_logout' %}">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="block w-full text-left px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                            Sign out
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{% url 'transcriber:upload' %}" 
+                           class="btn-primary inline-flex items-center musical-note">
+                            Upload Audio
+                        </a>
+                    {% else %}
+                        <!-- Authentication Buttons for Anonymous Users -->
+                        <button onclick="showAuthModal('signin')" 
+                                class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold px-3 py-2">
+                            Sign In
+                        </button>
+                        <button onclick="showAuthModal('signup')" 
+                                class="btn-secondary inline-flex items-center">
+                            Sign Up
+                        </button>
+                        <button onclick="showAuthModal('signin')" 
+                                class="btn-primary inline-flex items-center musical-note">
+                            Upload Audio
+                        </button>
+                    {% endif %}
                 </div>
             </div>
         </div>
         <!-- Mobile menu -->
-        <div class="md:hidden px-4 pb-3">
+        <div id="mobile-menu" class="md:hidden px-4 pb-3 hidden">
             <div class="flex flex-col space-y-2">
                 <a href="{% url 'transcriber:index' %}" 
                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
@@ -99,6 +131,32 @@
                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
                     Library
                 </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'transcriber:dashboard' %}" 
+                       class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                        Dashboard
+                    </a>
+                    <a href="{% url 'transcriber:profile' %}" 
+                       class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                        Profile
+                    </a>
+                    <form method="post" action="{% url 'account_logout' %}" class="mt-2">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                            Sign out
+                        </button>
+                    </form>
+                {% else %}
+                    <button onclick="showAuthModal('signin')" 
+                            class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
+                        Sign In
+                    </button>
+                    <button onclick="showAuthModal('signup')" 
+                            class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
+                        Sign Up
+                    </button>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -121,7 +179,7 @@
                 </p>
                 <div class="mt-6 pt-6 border-t border-gray-700">
                     <p class="font-body text-gray-500 text-xs">
-                        &copy; 2024 RiffScribe. Built with precision and passion for music.
+                        &copy; {% now "Y" %} RiffScribe. Created by Abdul Hamid. Built with precision and passion for music.
                     </p>
                 </div>
             </div>
@@ -146,5 +204,50 @@
         });
     </script>
     {% block extra_scripts %}{% endblock %}
+    
+    <!-- Authentication Modal -->
+    {% include 'transcriber/partials/auth_modal_container.html' %}
+    
+    <!-- Show modal on page load if needed -->
+    <script>
+    // Show authentication modal when non-auth users click protected actions
+    function showAuthForAction(message) {
+        // You can customize this message based on the action
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div id="auth-modal" 
+                 class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full m-4 transform transition-all">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-xl font-semibold text-gray-900">
+                            Sign in Required
+                        </h2>
+                        <button type="button" 
+                                onclick="this.closest('#auth-modal').remove()"
+                                class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="px-6 py-6 text-center">
+                        <p class="text-gray-600 mb-6">${message || 'Please sign in to continue'}</p>
+                        <div class="space-y-3">
+                            <button onclick="this.closest('#auth-modal').remove(); showAuthModal('signin');" 
+                                    class="w-full btn-primary">
+                                Sign In
+                            </button>
+                            <button onclick="this.closest('#auth-modal').remove(); showAuthModal('signup');" 
+                                    class="w-full btn-secondary">
+                                Create Free Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    </script>
 </body>
 </html>

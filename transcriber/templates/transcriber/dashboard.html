@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - RiffScribe{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between">
+        <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                Welcome back, {{ user_profile.display_name }}!
+            </h2>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+            <a href="{% url 'transcriber:upload' %}" class="ml-3 inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                Upload New Audio
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Total Transcriptions</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{{ total_transcriptions }}</dd>
+        </div>
+        
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Completed</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-green-600">{{ completed_transcriptions }}</dd>
+        </div>
+        
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Processing</dt>
+            <dd class="mt-1 text-3xl font-semibold tracking-tight text-yellow-600">{{ processing_transcriptions }}</dd>
+        </div>
+        
+        <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
+            <dt class="truncate text-sm font-medium text-gray-500">Monthly Usage</dt>
+            <dd class="mt-1">
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold text-gray-900">{{ user_profile.uploads_this_month }}/{{ user_profile.monthly_upload_limit }}</span>
+                </div>
+                <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ usage_percentage }}%"></div>
+                </div>
+            </dd>
+        </div>
+    </div>
+
+    <!-- Recent Transcriptions -->
+    <div class="mt-8">
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Recent Transcriptions</h3>
+        <div class="mt-4 overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+            <table class="min-w-full divide-y divide-gray-300">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Title
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Duration
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Created
+                        </th>
+                        <th scope="col" class="relative px-6 py-3">
+                            <span class="sr-only">Actions</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for transcription in transcriptions %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">
+                                <a href="{% url 'transcriber:detail' transcription.id %}" class="hover:text-indigo-600">
+                                    {{ transcription.filename|truncatechars:40 }}
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if transcription.status == 'completed' %}bg-green-100 text-green-800
+                                {% elif transcription.status == 'processing' %}bg-yellow-100 text-yellow-800
+                                {% elif transcription.status == 'failed' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ transcription.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ transcription.duration_formatted }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ transcription.created_at|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'transcriber:detail' transcription.id %}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            No transcriptions yet. <a href="{% url 'transcriber:upload' %}" class="text-indigo-600 hover:text-indigo-900">Upload your first audio file</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Favorite Transcriptions -->
+    {% if favorites %}
+    <div class="mt-8">
+        <h3 class="text-lg font-medium leading-6 text-gray-900">Favorite Transcriptions</h3>
+        <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {% for fav in favorites %}
+            <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+                <div class="flex items-center space-x-3">
+                    <div class="flex-1 min-w-0">
+                        <a href="{% url 'transcriber:detail' fav.id %}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">{{ fav.filename|truncatechars:30 }}</p>
+                            <p class="truncate text-sm text-gray-500">{{ fav.duration_formatted }} • {{ fav.created_at|date:"M d" }}</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

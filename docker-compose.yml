@@ -1,45 +1,71 @@
 services:
-  django:
+  website:
     build: .
     command: python manage.py runserver 0.0.0.0:8000
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
       - .:/app
       - media_volume:/app/media
+      - ./tmp:/app/tmp
     env_file:
       - .env
     environment:
+      - DATABASE_URL=postgresql://riffscribe:riffscribe_dev@db:5432/riffscribe
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin123
+      - AWS_STORAGE_BUCKET_NAME=riffscribe-media
+      - AWS_S3_ENDPOINT_URL=http://storage:9000
+      - AWS_S3_USE_SSL=false
+      - USE_S3=true
     depends_on:
       - redis
       - db
+      - storage
     networks:
       - riffscribe_network
 
-  celery:
+  workers:
     build: .
-    command: celery -A riffscribe worker -l info
+    command: celery -A riffscribe worker -l info --concurrency=1 --max-memory-per-child=1000000
+    restart: unless-stopped
     volumes:
       - .:/app
       - media_volume:/app/media
+      - ./tmp:/app/tmp
     env_file:
       - .env
     environment:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin123
+      - AWS_STORAGE_BUCKET_NAME=riffscribe-media
+      - AWS_S3_ENDPOINT_URL=http://storage:9000
+      - AWS_S3_USE_SSL=false
+      - USE_S3=true
     depends_on:
       - redis
       - db
+      - storage
     networks:
       - riffscribe_network
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
 
-  celery-beat:
+  scheduler:
     build: .
     command: celery -A riffscribe beat -l info
+    restart: unless-stopped
     volumes:
       - .:/app
     env_file:
@@ -56,6 +82,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     networks:
@@ -65,6 +92,7 @@ services:
 
   db:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       - POSTGRES_DB=riffscribe
       - POSTGRES_USER=riffscribe
@@ -76,9 +104,10 @@ services:
     networks:
       - riffscribe_network
 
-  flower:
+  monitor:
     build: .
-    command: celery -A riffscribe flower
+    command: sh -c "pip install flower && celery -A riffscribe flower --port=5555"
+    restart: unless-stopped
     ports:
       - "5555:5555"
     env_file:
@@ -88,14 +117,47 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
       - redis
-      - celery
+      - workers
     networks:
       - riffscribe_network
+
+  storage:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      MINIO_DEFAULT_BUCKETS: riffscribe-media,riffscribe-exports
+    volumes:
+      - storage_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - riffscribe_network
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/minio server /data --console-address ':9001' &
+      sleep 10 &&
+      mc alias set local http://storage:9000 minioadmin minioadmin123 &&
+      mc mb --ignore-existing local/riffscribe-media &&
+      mc mb --ignore-existing local/riffscribe-exports &&
+      mc anonymous set public local/riffscribe-media &&
+      mc anonymous set public local/riffscribe-exports &&
+      tail -f /dev/null
+      "
 
 volumes:
   media_volume:
   redis_data:
   postgres_data:
+  storage_data:
 
 networks:
   riffscribe_network:

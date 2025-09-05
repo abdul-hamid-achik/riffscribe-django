@@ -1,0 +1,277 @@
+<!-- Animated Voting Buttons -->
+<div class="voting-container flex flex-col items-center space-y-2 mr-4" 
+     id="voting-{{ comment.id }}"
+     hx-target="this"
+     hx-swap="outerHTML">
+    
+    <!-- Upvote Button -->
+    <button type="button"
+            hx-post="{% url 'transcriber:toggle_vote' transcription.pk comment.id 'up' %}"
+            class="vote-btn upvote-btn group relative p-2 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-musical-gold focus:ring-opacity-50
+                   {% if user_vote == 'up' %}bg-green-100 text-green-600 shadow-lg vote-active{% else %}bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-500{% endif %}"
+            title="Upvote this comment"
+            {% if not user.is_authenticated %}disabled{% endif %}>
+        
+        <!-- Upvote Arrow -->
+        <svg class="w-5 h-5 transition-all duration-300 transform
+                    {% if user_vote == 'up' %}rotate-12 scale-110{% endif %}"
+             fill="none" 
+             stroke="currentColor" 
+             viewBox="0 0 24 24">
+            <path stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M5 15l7-7 7 7"/>
+        </svg>
+        
+        <!-- Upvote Animation Burst -->
+        {% if user_vote == 'up' %}
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="vote-burst vote-burst-1"></div>
+            <div class="vote-burst vote-burst-2"></div>
+            <div class="vote-burst vote-burst-3"></div>
+        </div>
+        {% endif %}
+        
+        <!-- Disabled overlay for non-authenticated users -->
+        {% if not user.is_authenticated %}
+        <div class="absolute inset-0 bg-gray-300 bg-opacity-50 rounded-full cursor-not-allowed"></div>
+        {% endif %}
+    </button>
+    
+    <!-- Score Display -->
+    <div class="score-display text-center py-1 px-2 min-w-[40px]">
+        <span class="text-lg font-bold transition-all duration-300 
+                     {% if comment.score > 0 %}text-green-600{% elif comment.score < 0 %}text-red-600{% else %}text-gray-600{% endif %}
+                     {% if action == 'added' or action == 'changed' %}animate-pulse{% endif %}">
+            {% if comment.score > 0 %}+{% endif %}{{ comment.score }}
+        </span>
+        {% if comment.score != 0 %}
+        <div class="text-xs text-gray-500 mt-1">
+            <span class="text-green-600">{{ comment.upvotes_count }}↑</span>
+            <span class="mx-1">•</span>
+            <span class="text-red-600">{{ comment.downvotes_count }}↓</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Downvote Button -->
+    <button type="button"
+            hx-post="{% url 'transcriber:toggle_vote' transcription.pk comment.id 'down' %}"
+            class="vote-btn downvote-btn group relative p-2 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-musical-gold focus:ring-opacity-50
+                   {% if user_vote == 'down' %}bg-red-100 text-red-600 shadow-lg vote-active{% else %}bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500{% endif %}"
+            title="Downvote this comment"
+            {% if not user.is_authenticated %}disabled{% endif %}>
+        
+        <!-- Downvote Arrow -->
+        <svg class="w-5 h-5 transition-all duration-300 transform
+                    {% if user_vote == 'down' %}rotate-12 scale-110{% endif %}"
+             fill="none" 
+             stroke="currentColor" 
+             viewBox="0 0 24 24">
+            <path stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d="M19 9l-7 7-7-7"/>
+        </svg>
+        
+        <!-- Downvote Animation Burst -->
+        {% if user_vote == 'down' %}
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="vote-burst-down vote-burst-1"></div>
+            <div class="vote-burst-down vote-burst-2"></div>
+            <div class="vote-burst-down vote-burst-3"></div>
+        </div>
+        {% endif %}
+        
+        <!-- Disabled overlay for non-authenticated users -->
+        {% if not user.is_authenticated %}
+        <div class="absolute inset-0 bg-gray-300 bg-opacity-50 rounded-full cursor-not-allowed"></div>
+        {% endif %}
+    </button>
+    
+    <!-- Voting Stats Tooltip (for authenticated users) -->
+    {% if user.is_authenticated and comment.upvotes_count > 0 or comment.downvotes_count > 0 %}
+    <button type="button"
+            hx-get="{% url 'transcriber:voting_stats' transcription.pk comment.id %}"
+            hx-target="#voting-stats-modal"
+            hx-swap="innerHTML"
+            class="text-xs text-gray-400 hover:text-musical-gold transition-colors duration-200 mt-1"
+            onclick="showVotingStats()">
+        View voters
+    </button>
+    {% endif %}
+</div>
+
+<!-- CSS Animations -->
+<style>
+/* Vote button animations */
+.vote-btn:hover {
+    transform: scale(1.1);
+}
+
+.vote-active {
+    animation: vote-success 0.6s ease-out;
+}
+
+@keyframes vote-success {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Vote burst animations */
+.vote-burst, .vote-burst-down {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    animation: burst 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.vote-burst {
+    background: #10B981; /* Green for upvotes */
+}
+
+.vote-burst-down {
+    background: #EF4444; /* Red for downvotes */
+}
+
+.vote-burst-1 {
+    top: 10%;
+    left: 10%;
+    animation-delay: 0.1s;
+    --burst-x: -15px;
+    --burst-y: -15px;
+}
+
+.vote-burst-2 {
+    top: 10%;
+    right: 10%;
+    animation-delay: 0.2s;
+    --burst-x: 15px;
+    --burst-y: -15px;
+}
+
+.vote-burst-3 {
+    bottom: 10%;
+    left: 50%;
+    animation-delay: 0.3s;
+    --burst-x: 0px;
+    --burst-y: 15px;
+}
+
+@keyframes burst {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(calc(var(--burst-x, 0px) * 0.5), calc(var(--burst-y, 0px) * 0.5)) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--burst-x, 0px), var(--burst-y, 0px)) scale(0);
+    }
+}
+
+/* Score animation */
+.score-display .animate-pulse {
+    animation: score-update 0.5s ease-in-out;
+}
+
+@keyframes score-update {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Loading state */
+.vote-btn[hx-request] {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.vote-btn[hx-request]::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Disabled state styling */
+.vote-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+    .voting-container {
+        flex-direction: row;
+        space-y: 0;
+        gap: 0.5rem;
+    }
+    
+    .score-display {
+        order: 2;
+        min-width: auto;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .vote-btn {
+        padding: 0.375rem;
+    }
+    
+    .vote-btn svg {
+        width: 1rem;
+        height: 1rem;
+    }
+}
+</style>
+
+<!-- JavaScript for enhanced interactions -->
+<script>
+// Enhanced voting feedback
+document.addEventListener('htmx:afterRequest', function(event) {
+    if (event.detail.target.classList.contains('voting-container')) {
+        // Add success flash effect
+        event.detail.target.classList.add('flash-success');
+        setTimeout(() => {
+            event.detail.target.classList.remove('flash-success');
+        }, 600);
+    }
+});
+
+// Show voting stats modal
+function showVotingStats() {
+    document.getElementById('voting-stats-modal').classList.remove('hidden');
+}
+
+// Add flash effect class
+const flashStyles = `
+.flash-success {
+    animation: flash-success 0.6s ease-out;
+}
+
+@keyframes flash-success {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(34, 197, 94, 0.1); }
+    100% { background-color: transparent; }
+}
+`;
+
+// Inject flash styles
+const styleSheet = document.createElement('style');
+styleSheet.textContent = flashStyles;
+document.head.appendChild(styleSheet);
+</script>

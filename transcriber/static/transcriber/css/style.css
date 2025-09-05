@@ -102,6 +102,7 @@ body {
     font-size: 1.2em;
     color: var(--treble-clef);
     margin-right: 0.5rem;
+    display: inline-block;
 }
 
 .treble-clef::before {
@@ -145,6 +146,9 @@ body {
     font-weight: 500;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(50, 104, 145, 0.3);
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
 }
 
 .btn-primary:hover {
@@ -371,4 +375,176 @@ a:hover {
 
 .feature-card:hover::before {
     opacity: 1;
+}
+
+/* Text Color Utilities - Higher specificity to override Tailwind */
+.text-nyt-black,
+body .text-nyt-black {
+    color: var(--nyt-black) !important;
+}
+
+.text-nyt-gray-dark {
+    color: var(--nyt-gray-dark);
+}
+
+.text-nyt-gray-medium {
+    color: var(--nyt-gray-medium);
+}
+
+.text-nyt-gray-light {
+    color: var(--nyt-gray-light);
+}
+
+.text-white {
+    color: #ffffff;
+}
+
+.text-sheet-cream {
+    color: var(--sheet-cream);
+}
+
+.text-musical-gold {
+    color: var(--accent-gold);
+}
+
+/* Header improvements for better contrast on dark backgrounds */
+.sheet-card h2.text-nyt-black,
+.status-card h2.text-nyt-black {
+    color: var(--sheet-cream) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Fix for button text cutoff and animation issues */
+.btn-primary.animate-float,
+.btn-secondary.animate-float {
+    overflow: visible;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Fix inline-flex items alignment */
+.btn-primary.inline-flex,
+.btn-secondary.inline-flex {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Ensure musical note doesn't cause overflow */
+.musical-note {
+    overflow: visible;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Fix for "How RiffScribe Works" white text on light background */
+.sheet-card h3,
+.sheet-card h2 {
+    color: var(--nyt-black) !important;
+}
+
+/* Fix numbered circles in How it Works section */
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--from-color), var(--to-color));
+}
+
+/* Ensure text in numbered steps is readable */
+.text-white {
+    color: white !important;
+}
+
+/* Override for numbered circles to ensure contrast */
+.flex.items-center.justify-center.w-16.h-16.rounded-full {
+    background: var(--primary-blue) !important;
+}
+
+.flex.items-center.justify-center.w-16.h-16.rounded-full .text-white {
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Additional fixes for Tailwind utility classes */
+.from-primary-blue {
+    --tw-gradient-from: var(--primary-blue);
+}
+
+.to-primary-blue-hover {
+    --tw-gradient-to: var(--hover-blue);
+}
+
+.from-musical-gold {
+    --tw-gradient-from: var(--accent-gold);
+}
+
+.to-musical-treble {
+    --tw-gradient-to: var(--treble-clef);
+}
+
+.from-success-green {
+    --tw-gradient-from: var(--success-green);
+}
+
+/* Ensure proper gradient backgrounds for numbered circles */
+.bg-gradient-to-br {
+    background-image: linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to));
+}
+
+/* Specific fixes for How It Works numbered circles */
+.bg-gradient-to-br.from-primary-blue.to-primary-blue-hover {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--hover-blue) 100%) !important;
+}
+
+.bg-gradient-to-br.from-musical-gold.to-musical-treble {
+    background: linear-gradient(135deg, var(--accent-gold) 0%, var(--treble-clef) 100%) !important;
+}
+
+.bg-gradient-to-br.from-success-green.to-musical-treble {
+    background: linear-gradient(135deg, var(--success-green) 0%, var(--treble-clef) 100%) !important;
+}
+
+/* Ensure white text in numbered circles is visible */
+.flex.items-center.justify-center.w-16.h-16.rounded-full span.text-white {
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Make sure headings in upload section are visible */
+.font-headline,
+.font-display {
+    color: var(--nyt-black) !important;
+}
+
+/* Ensure proper text contrast in all sections */
+.sheet-card p.font-body {
+    color: var(--nyt-gray-medium) !important;
+}
+
+/* Fix for any section titles that appear white on light background */
+.sheet-card h1,
+.sheet-card h2,
+.sheet-card h3,
+.sheet-card h4 {
+    color: var(--nyt-black) !important;
+    text-shadow: none !important;
+}
+
+/* Ensure status card headers are visible */
+.status-card h1,
+.status-card h2,
+.status-card h3 {
+    color: var(--nyt-black) !important;
+}
+
+/* Fix any white text on sheet backgrounds */
+.sheet-card .text-white:not(.rounded-full span) {
+    color: var(--nyt-black) !important;
+}
+
+/* But keep white text in buttons and badges */
+.btn-primary .text-white,
+.status-badge .text-white,
+.rounded-full .text-white,
+button .text-white {
+    color: white !important;
 }

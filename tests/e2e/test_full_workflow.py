@@ -9,19 +9,20 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 
 
 @pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 class TestRiffScribeWorkflow:
     """Test the complete user workflow from upload to export."""
     
     @pytest.fixture(scope="function", autouse=True)
-    def setup(self, page: Page, live_server):
+    def setup(self, page: Page, live_server, sample_audio_path):
         """Set up for each test."""
         self.page = page
         self.live_server_url = live_server.url
-        self.sample_audio = Path(__file__).parent.parent.parent / "samples" / "simple-riff.wav"
+        self.sample_audio = Path(sample_audio_path) if sample_audio_path else None
         
     def test_homepage_loads(self):
         """Test that the homepage loads correctly."""
-        self.page.goto(self.live_server_url)
+        self.page.goto(f"{self.live_server_url}/")
         
         # Check title and main elements
         expect(self.page).to_have_title("RiffScribe - Guitar Tab Transcription")
@@ -42,7 +43,7 @@ class TestRiffScribeWorkflow:
         expect(self.page.locator('input[type="file"]')).to_be_visible()
         
         # Upload a file
-        if self.sample_audio.exists():
+        if self.sample_audio and self.sample_audio.exists():
             self.page.set_input_files('input[type="file"]', str(self.sample_audio))
             
             # Submit the form
@@ -85,7 +86,7 @@ class TestRiffScribeWorkflow:
         # First create a test transcription via upload
         self.page.goto(f"{self.live_server_url}/upload/")
         
-        if self.sample_audio.exists():
+        if self.sample_audio and self.sample_audio.exists():
             # Upload file
             self.page.set_input_files('input[type="file"]', str(self.sample_audio))
             self.page.click('button[type="submit"]')
@@ -111,7 +112,7 @@ class TestRiffScribeWorkflow:
         # Create a test transcription
         self.page.goto(f"{self.live_server_url}/upload/")
         
-        if self.sample_audio.exists():
+        if self.sample_audio and self.sample_audio.exists():
             self.page.set_input_files('input[type="file"]', str(self.sample_audio))
             self.page.click('button[type="submit"]')
             self.page.wait_for_url("**/transcription/**")
@@ -215,6 +216,7 @@ class TestRiffScribeWorkflow:
 
 
 @pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 class TestAccessibility:
     """Test accessibility features."""
     
@@ -265,6 +267,7 @@ class TestAccessibility:
 
 
 @pytest.mark.e2e
+@pytest.mark.django_db(transaction=True)
 class TestPerformance:
     """Test performance-related aspects."""
     

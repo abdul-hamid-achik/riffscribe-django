@@ -101,3 +101,18 @@ Desktop.ini
 # Linux
 .directory
 .Trash-*
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Tailwind CSS build output
+transcriber/static/transcriber/css/output.css
+
+# Temporary artifacts folder
+tmp/*
+!tmp/.gitkeep

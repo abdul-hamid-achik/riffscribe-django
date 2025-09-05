@@ -1,0 +1,198 @@
+<!-- Voting Statistics Modal Content -->
+<div class="voting-stats-content p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Voting Statistics
+        </h3>
+        <button onclick="hideVotingStats()" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- Overall Stats -->
+    <div class="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+        <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ comment.upvotes_count }}</div>
+            <div class="text-sm text-gray-600">Upvotes</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold 
+                        {% if comment.score > 0 %}text-green-600{% elif comment.score < 0 %}text-red-600{% else %}text-gray-600{% endif %}">
+                {% if comment.score > 0 %}+{% endif %}{{ comment.score }}
+            </div>
+            <div class="text-sm text-gray-600">Score</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-red-600">{{ comment.downvotes_count }}</div>
+            <div class="text-sm text-gray-600">Downvotes</div>
+        </div>
+    </div>
+    
+    <!-- Vote Ratio Visualization -->
+    {% if comment.upvotes_count > 0 or comment.downvotes_count > 0 %}
+    <div class="mb-6">
+        <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <span>Vote Distribution</span>
+            <span>{{ comment.upvotes_count|add:comment.downvotes_count }} total votes</span>
+        </div>
+        
+        {% with total_votes=comment.upvotes_count|add:comment.downvotes_count %}
+        {% if total_votes > 0 %}
+        <div class="flex h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div class="bg-green-500 transition-all duration-1000" 
+                 style="width: {% widthratio comment.upvotes_count total_votes 100 %}%"></div>
+            <div class="bg-red-500 transition-all duration-1000" 
+                 style="width: {% widthratio comment.downvotes_count total_votes 100 %}%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>{% widthratio comment.upvotes_count total_votes 100 %}% positive</span>
+            <span>{% widthratio comment.downvotes_count total_votes 100 %}% negative</span>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+    {% endif %}
+    
+    <!-- Recent Voters -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Upvoters -->
+        {% if recent_upvoters %}
+        <div>
+            <h4 class="font-medium text-green-700 mb-3 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                </svg>
+                Recent Upvoters
+            </h4>
+            <div class="space-y-2">
+                {% for vote in recent_upvoters %}
+                <div class="flex items-center space-x-3 p-2 bg-green-50 rounded-lg">
+                    <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">{{ vote.user.profile.display_name }}</div>
+                        <div class="text-xs text-gray-500">{{ vote.created_at|timesince }} ago</div>
+                    </div>
+                    <!-- User's karma badge -->
+                    <div class="text-xs px-2 py-1 rounded-full {{ vote.user.profile.karma_badge_color }} text-white">
+                        {{ vote.user.profile.karma_score }}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if comment.upvotes_count > recent_upvoters|length %}
+                <div class="text-center text-sm text-gray-500 py-2">
+                    ... and {{ comment.upvotes_count|add:recent_upvoters|length|add:"-5" }} more upvoters
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Downvoters -->
+        {% if recent_downvoters %}
+        <div>
+            <h4 class="font-medium text-red-700 mb-3 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                Recent Downvoters
+            </h4>
+            <div class="space-y-2">
+                {% for vote in recent_downvoters %}
+                <div class="flex items-center space-x-3 p-2 bg-red-50 rounded-lg">
+                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">{{ vote.user.profile.display_name }}</div>
+                        <div class="text-xs text-gray-500">{{ vote.created_at|timesince }} ago</div>
+                    </div>
+                    <!-- User's karma badge -->
+                    <div class="text-xs px-2 py-1 rounded-full {{ vote.user.profile.karma_badge_color }} text-white">
+                        {{ vote.user.profile.karma_score }}
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% if comment.downvotes_count > recent_downvoters|length %}
+                <div class="text-center text-sm text-gray-500 py-2">
+                    ... and {{ comment.downvotes_count|add:recent_downvoters|length|add:"-5" }} more downvoters
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Empty State -->
+    {% if not recent_upvoters and not recent_downvoters %}
+    <div class="text-center py-8">
+        <div class="w-16 h-16 mx-auto mb-4 text-gray-300">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <p class="text-gray-500">No votes yet</p>
+        <p class="text-sm text-gray-400 mt-1">Be the first to vote on this comment!</p>
+    </div>
+    {% endif %}
+    
+    <!-- Voting Engagement Stats -->
+    {% if comment.upvotes_count > 0 or comment.downvotes_count > 0 %}
+    <div class="mt-6 pt-6 border-t border-gray-200">
+        <div class="grid grid-cols-2 gap-4 text-center text-sm">
+            <div>
+                <div class="text-gray-500">Engagement Rate</div>
+                <div class="font-semibold text-musical-gold">
+                    {% with total_votes=comment.upvotes_count|add:comment.downvotes_count %}
+                    {% if total_votes > 0 %}High{% else %}Low{% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+            <div>
+                <div class="text-gray-500">Community Rating</div>
+                <div class="font-semibold 
+                           {% if comment.score > 5 %}text-green-600{% elif comment.score > 0 %}text-green-500{% elif comment.score < -5 %}text-red-600{% elif comment.score < 0 %}text-red-500{% else %}text-gray-600{% endif %}">
+                    {% if comment.score > 5 %}Excellent
+                    {% elif comment.score > 0 %}Good
+                    {% elif comment.score == 0 %}Neutral
+                    {% elif comment.score > -5 %}Poor
+                    {% else %}Very Poor{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- JavaScript for modal functionality -->
+<script>
+function hideVotingStats() {
+    document.getElementById('voting-stats-modal').classList.add('hidden');
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        hideVotingStats();
+    }
+});
+
+// Close modal on outside click
+document.getElementById('voting-stats-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        hideVotingStats();
+    }
+});
+</script>

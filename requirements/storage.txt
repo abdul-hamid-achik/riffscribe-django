@@ -1,0 +1,10 @@
+# Cloud storage backends
+django-storages[boto3]>=1.14  # AWS S3 support
+django-storages[google]>=1.14  # Google Cloud Storage
+django-storages[azure]>=1.14  # Azure Storage
+
+# Or install just the base package and add cloud-specific deps as needed:
+# django-storages>=1.14
+# boto3>=1.4.4  # For AWS S3
+# google-cloud-storage>=1.27.0  # For GCS
+# azure-storage-blob>=12.0  # For Azure

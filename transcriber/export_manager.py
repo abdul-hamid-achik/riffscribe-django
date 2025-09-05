@@ -32,10 +32,18 @@ class ExportManager:
         self.transcription = transcription
         self.tab_data = transcription.guitar_notes
         
-    def generate_musicxml(self, tab_data: Dict) -> str:
+    def generate_musicxml(self, tab_data: Optional[Dict] = None) -> str:
         """
         Generate MusicXML content for AlphaTab rendering.
+        Can use custom tab_data (e.g., from a variant) or default to transcription's data.
         """
+        # Use provided tab_data or fall back to transcription's data
+        if tab_data is None:
+            tab_data = self.tab_data
+            
+        if not tab_data:
+            return ""
+            
         try:
             # Create music21 score
             score = stream.Score()
@@ -67,24 +75,31 @@ class ExportManager:
                     n.duration.quarterLength = note_data['duration'] * 4  # Convert to quarter notes
                     
                     # Add string and fret info as articulations
-                    n.articulations.append(
-                        music21.articulations.TechnicalIndication(
-                            f"string:{note_data['string']+1},fret:{note_data['fret']}"
-                        )
-                    )
+                    try:
+                        tech_indication = music21.articulations.TechnicalIndication()
+                        tech_indication.name = f"string:{note_data['string']+1},fret:{note_data['fret']}"
+                        n.articulations.append(tech_indication)
+                    except Exception as e:
+                        logger.warning(f"Could not add technical indication: {e}")
+                        # Fall back to a simple approach
+                        pass
                     
                     # Add techniques
                     technique = note_data.get('technique', 'normal')
-                    if technique == 'hammer_on':
-                        n.articulations.append(music21.articulations.HammerOn())
-                    elif technique == 'pull_off':
-                        n.articulations.append(music21.articulations.PullOff())
-                    elif technique == 'slide_up':
-                        n.articulations.append(music21.articulations.GlissandoUp())
-                    elif technique == 'slide_down':
-                        n.articulations.append(music21.articulations.GlissandoDown())
-                    elif technique == 'bend':
-                        n.articulations.append(music21.articulations.Bend())
+                    try:
+                        if technique == 'hammer_on':
+                            n.articulations.append(music21.articulations.HammerOn())
+                        elif technique == 'pull_off':
+                            n.articulations.append(music21.articulations.PullOff())
+                        elif technique == 'slide_up':
+                            n.articulations.append(music21.articulations.GlissandoUp())
+                        elif technique == 'slide_down':
+                            n.articulations.append(music21.articulations.GlissandoDown())
+                        elif technique == 'bend':
+                            n.articulations.append(music21.articulations.Bend())
+                    except Exception as e:
+                        logger.warning(f"Could not add technique articulation '{technique}': {e}")
+                        # Continue without the articulation
                     
                     measure.append(n)
                 
@@ -93,7 +108,12 @@ class ExportManager:
             score.append(part)
             
             # Convert to MusicXML
-            musicxml = score.write('musicxml', fmt='xml')
+            # Create a temporary file to write the MusicXML
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as temp_file:
+                score.write('musicxml', fp=temp_file.name)
+                with open(temp_file.name, 'r') as f:
+                    musicxml = f.read()
+            
             return musicxml
             
         except Exception as e:
@@ -214,91 +234,97 @@ class ExportManager:
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ")
     
-    def generate_gp5(self, tab_data: Dict) -> Optional[str]:
+    def generate_gp5(self, tab_data: Optional[Dict] = None) -> Optional[str]:
         """
         Generate Guitar Pro 5 file.
+        Can use custom tab_data (e.g., from a variant) or default to transcription's data.
         """
+        # Use provided tab_data or fall back to transcription's data
+        if tab_data is None:
+            tab_data = self.tab_data
+            
+        if not tab_data:
+            return None
+            
         if not gp:
             logger.warning("guitarpro library not available")
             return None
         
         try:
-            # Create GP song
+            # Try simple approach first - create basic GP5 structure
             song = gp.Song()
-            song.title = self.transcription.filename
+            song.title = self.transcription.filename or "Untitled"
             song.artist = "RiffScribe"
-            song.tempo = tab_data.get('tempo', 120)
             
-            # Create track
-            track = gp.Track()
+            # Set tempo if available
+            tempo_value = tab_data.get('tempo', 120)
+            song.tempo = tempo_value
+            
+            # Create a single guitar track
+            track = gp.Track(song=song)
             track.name = "Guitar"
-            track.channel = gp.MidiChannel()
-            track.channel.instrument = 24  # Acoustic guitar
+            track.isPercussionTrack = False
             
-            # Set tuning
-            tuning = tab_data.get('tuning', [40, 45, 50, 55, 59, 64])
-            track.strings = []
-            for midi_note in tuning:
-                string = gp.GuitarString()
-                string.value = midi_note
-                track.strings.append(string)
+            # Set MIDI channel if available
+            if hasattr(track, 'channel'):
+                track.channel = gp.MidiChannel()
+                track.channel.instrument = 24  # Acoustic guitar
             
+            # Add track to song
             song.tracks.append(track)
             
-            # Create measures
-            for measure_data in tab_data.get('measures', []):
-                measure = gp.Measure()
-                measure.timeSignature = gp.TimeSignature()
-                ts_parts = tab_data.get('time_signature', '4/4').split('/')
-                measure.timeSignature.numerator = int(ts_parts[0])
-                measure.timeSignature.denominator = gp.Duration()
-                measure.timeSignature.denominator.value = int(ts_parts[1])
-                
-                voice = gp.Voice()
-                beat_time = 0
-                
-                for note_data in measure_data['notes']:
-                    beat = gp.Beat()
-                    beat.start = int(beat_time * 960)  # GP uses 960 ticks per quarter note
-                    beat.duration = gp.Duration()
-                    beat.duration.value = self._duration_to_gp_duration(note_data['duration'])
-                    
-                    # Create note
-                    note = gp.Note()
-                    note.string = note_data['string'] + 1  # GP uses 1-based indexing
-                    note.value = note_data['fret']
-                    note.velocity = note_data.get('velocity', 80)
-                    
-                    # Add effects
-                    technique = note_data.get('technique', 'normal')
-                    if technique == 'hammer_on':
-                        note.effect.hammer = True
-                    elif technique == 'pull_off':
-                        note.effect.pullOff = True
-                    elif technique == 'slide_up':
-                        note.effect.slides = [gp.SlideType.shiftSlideTo]
-                    elif technique == 'slide_down':
-                        note.effect.slides = [gp.SlideType.shiftSlideFrom]
-                    elif technique == 'bend':
-                        note.effect.bend = gp.BendEffect()
-                        note.effect.bend.points = [gp.BendPoint(0, 0), gp.BendPoint(50, 100)]
-                    elif technique == 'vibrato':
-                        note.effect.vibrato = True
-                    elif technique == 'palm_mute':
-                        note.effect.palmMute = True
-                    
-                    beat.notes.append(note)
-                    voice.beats.append(beat)
-                    
-                    beat_time += note_data['duration']
-                
-                measure.voices.append(voice)
-                track.measures.append(measure)
-                song.measures.append(measure)
+            # Get measures or create a default one
+            measures_data = tab_data.get('measures', [])
+            if not measures_data:
+                # Create minimal structure with one empty measure
+                measures_data = [{'notes': []}]
             
-            # Save to file
+            # For simplicity, create a minimal structure
+            # PyGuitarPro often auto-creates basic structure when track is created
+            if hasattr(track, 'measures') and not track.measures:
+                # Create at least one measure with basic structure
+                for i in range(max(1, len(measures_data))):
+                    measure = gp.Measure()
+                    
+                    # Add basic voice with at least one beat
+                    voice = gp.Voice()
+                    beat = gp.Beat()
+                    
+                    # Set beat duration
+                    try:
+                        if hasattr(gp, 'DurationType'):
+                            beat.duration = gp.Duration(value=gp.DurationType.quarter)
+                        else:
+                            beat.duration = gp.Duration(value=4)
+                    except:
+                        # Fallback - create minimal duration
+                        beat.duration = gp.Duration()
+                    
+                    # If we have note data for this measure, add it
+                    if i < len(measures_data):
+                        measure_notes = measures_data[i].get('notes', [])
+                        for note_data in measure_notes[:8]:  # Limit to 8 notes per measure for safety
+                            try:
+                                note = gp.Note()
+                                note.value = min(max(note_data.get('fret', 0), 0), 24)  # Clamp fret 0-24
+                                note.string = min(max(note_data.get('string', 1), 1), 6)  # Clamp string 1-6
+                                note.velocity = min(max(note_data.get('velocity', 80), 1), 127)  # Clamp velocity
+                                beat.notes.append(note)
+                            except Exception as note_error:
+                                logger.warning(f"Failed to add note: {note_error}")
+                                continue
+                    
+                    voice.beats.append(beat)
+                    measure.voices.append(voice)
+                    track.measures.append(measure)
+            
+            # Save to temporary file
             temp_file = tempfile.NamedTemporaryFile(suffix='.gp5', delete=False)
+            temp_file.close()  # Close file handle
+            
+            # Write the file
             gp.write(song, temp_file.name)
+            logger.info(f"Successfully created GP5 file: {temp_file.name}")
             
             return temp_file.name
             
@@ -411,6 +437,60 @@ class ExportManager:
         """Convert tab position to MIDI note number."""
         return tuning[string] + fret
     
+    def generate_gp5_bytes(self, tab_data: Optional[Dict] = None) -> bytes:
+        """
+        Generate Guitar Pro 5 file as bytes for direct HTTP response.
+        """
+        gp5_path = self.generate_gp5(tab_data)
+        if not gp5_path:
+            return b""
+            
+        try:
+            with open(gp5_path, 'rb') as f:
+                content = f.read()
+            os.unlink(gp5_path)  # Clean up temp file
+            return content
+        except Exception as e:
+            logger.error(f"Error reading GP5 file: {str(e)}")
+            return b""
+    
+    def generate_ascii_tab(self, tab_data: Optional[Dict] = None) -> str:
+        """
+        Generate ASCII tab representation.
+        Can use custom tab_data (e.g., from a variant) or default to transcription's data.
+        """
+        # Use provided tab_data or fall back to transcription's data
+        if tab_data is None:
+            tab_data = self.tab_data
+            
+        if not tab_data:
+            return ""
+            
+        from .tab_generator import TabGenerator
+        
+        # Reconstruct notes from tab data
+        notes = []
+        for measure in tab_data.get('measures', []):
+            for note in measure['notes']:
+                notes.append({
+                    'start_time': note['time'] + measure.get('start_time', 0),
+                    'end_time': note['time'] + measure.get('start_time', 0) + note['duration'],
+                    'midi_note': self._tab_to_midi(
+                        note['string'] - 1,  # Convert to 0-indexed
+                        note['fret'],
+                        tab_data.get('tuning', [40, 45, 50, 55, 59, 64])
+                    ),
+                    'velocity': note.get('velocity', 80)
+                })
+        
+        generator = TabGenerator(
+            notes,
+            tab_data.get('tempo', 120),
+            tab_data.get('time_signature', '4/4')
+        )
+        
+        return generator.to_ascii_tab()
+    
     def _midi_to_note_name(self, midi_note: int) -> tuple:
         """Convert MIDI note to note name and octave."""
         notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
@@ -443,3 +523,256 @@ class ExportManager:
             return 8  # Eighth note
         else:
             return 16  # Sixteenth note
+    
+    # Multi-track export methods
+    
+    def generate_multitrack_musicxml(self, tracks) -> str:
+        """
+        Generate MusicXML with multiple tracks/parts.
+        
+        Args:
+            tracks: List of Track model instances
+            
+        Returns:
+            MusicXML string
+        """
+        try:
+            score = stream.Score()
+            score.metadata = stream.Metadata()
+            score.metadata.title = self.transcription.filename
+            score.metadata.composer = 'RiffScribe Multi-track'
+            
+            # Add tempo marking
+            if self.transcription.estimated_tempo:
+                tempo_marking = tempo.MetronomeMark(number=self.transcription.estimated_tempo)
+                score.insert(0, tempo_marking)
+            
+            # Process each track
+            for track_idx, track in enumerate(tracks):
+                if not track.guitar_notes or track.track_type == 'original':
+                    continue
+                    
+                part = stream.Part()
+                part.id = f'track_{track_idx}'
+                
+                # Set instrument based on track type
+                if track.instrument_type == 'bass':
+                    instr = instrument.ElectricBass()
+                elif track.instrument_type == 'drums':
+                    instr = instrument.Percussion()
+                elif track.instrument_type == 'acoustic_guitar':
+                    instr = instrument.AcousticGuitar()
+                else:
+                    instr = instrument.ElectricGuitar()
+                    
+                part.append(instr)
+                part.partName = track.display_name
+                
+                # Add measures from track's tab data
+                if isinstance(track.guitar_notes, dict):
+                    for measure_data in track.guitar_notes.get('measures', []):
+                        measure = stream.Measure(number=measure_data['number'])
+                        
+                        # Add time signature to first measure
+                        if measure_data['number'] == 1:
+                            ts = meter.TimeSignature('4/4')
+                            measure.append(ts)
+                        
+                        # Add notes
+                        for note_data in measure_data['notes']:
+                            try:
+                                midi_note = self._tab_to_midi(
+                                    note_data['string'],
+                                    note_data['fret'],
+                                    track.guitar_notes.get('tuning', [40, 45, 50, 55, 59, 64])
+                                )
+                                
+                                n = note.Note(midi_note)
+                                n.duration.quarterLength = note_data.get('duration', 0.25)
+                                measure.append(n)
+                            except Exception as e:
+                                logger.warning(f"Error adding note to track {track.display_name}: {str(e)}")
+                                continue
+                        
+                        part.append(measure)
+                
+                score.append(part)
+            
+            # Convert to MusicXML
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as temp_file:
+                score.write('musicxml', fp=temp_file.name)
+                with open(temp_file.name, 'r') as f:
+                    musicxml = f.read()
+            
+            return musicxml
+            
+        except Exception as e:
+            logger.error(f"Error generating multi-track MusicXML: {str(e)}")
+            return ""
+    
+    def generate_multitrack_midi(self, tracks) -> str:
+        """
+        Generate MIDI file with multiple tracks.
+        
+        Args:
+            tracks: List of Track model instances
+            
+        Returns:
+            Path to generated MIDI file
+        """
+        try:
+            # Create MIDI file with multiple tracks
+            midi = MIDIFile(numTracks=len(tracks))
+            
+            tempo_val = self.transcription.estimated_tempo or 120
+            
+            for track_idx, track_obj in enumerate(tracks):
+                if not track_obj.guitar_notes or track_obj.track_type == 'original':
+                    continue
+                    
+                # Set track name and instrument
+                midi.addTrackName(track_idx, 0, track_obj.display_name)
+                midi.addTempo(track_idx, 0, tempo_val)
+                
+                # Set program (instrument) based on track type
+                if track_obj.instrument_type == 'bass':
+                    program = 33  # Electric Bass
+                elif track_obj.instrument_type == 'drums':
+                    program = 0  # Standard drum kit (channel 10)
+                elif track_obj.instrument_type == 'acoustic_guitar':
+                    program = 25  # Acoustic Guitar
+                else:
+                    program = 30  # Electric Guitar (overdrive)
+                
+                channel = 9 if track_obj.instrument_type == 'drums' else track_idx % 16
+                midi.addProgramChange(track_idx, channel, 0, program)
+                
+                # Add notes from track data
+                if isinstance(track_obj.guitar_notes, dict):
+                    current_time = 0
+                    for measure_data in track_obj.guitar_notes.get('measures', []):
+                        for note_data in measure_data['notes']:
+                            try:
+                                midi_note = self._tab_to_midi(
+                                    note_data['string'],
+                                    note_data['fret'],
+                                    track_obj.guitar_notes.get('tuning', [40, 45, 50, 55, 59, 64])
+                                )
+                                
+                                midi.addNote(
+                                    track_idx,
+                                    channel,
+                                    midi_note,
+                                    current_time,
+                                    note_data.get('duration', 0.25),
+                                    note_data.get('velocity', 100)
+                                )
+                                
+                                current_time += note_data.get('duration', 0.25)
+                            except Exception as e:
+                                logger.warning(f"Error adding MIDI note: {str(e)}")
+                                continue
+            
+            # Save MIDI file
+            temp_file = tempfile.NamedTemporaryFile(
+                suffix='.mid',
+                prefix=f'{self.transcription.filename}_multitrack_',
+                delete=False
+            )
+            
+            with open(temp_file.name, 'wb') as f:
+                midi.writeFile(f)
+            
+            return temp_file.name
+            
+        except Exception as e:
+            logger.error(f"Error generating multi-track MIDI: {str(e)}")
+            return ""
+    
+    def generate_stem_archive(self, tracks) -> str:
+        """
+        Generate ZIP archive with all audio stems.
+        
+        Args:
+            tracks: List of Track model instances
+            
+        Returns:
+            Path to generated ZIP file
+        """
+        import zipfile
+        import shutil
+        
+        try:
+            # Create temporary directory for stems
+            temp_dir = tempfile.mkdtemp(prefix='stems_')
+            
+            # Copy each track's audio file
+            for track in tracks:
+                if track.separated_audio:
+                    try:
+                        filename = f"{track.display_name.replace(' ', '_')}.wav"
+                        dest_path = os.path.join(temp_dir, filename)
+                        shutil.copy2(track.separated_audio.path, dest_path)
+                    except Exception as e:
+                        logger.warning(f"Error copying track {track.display_name}: {str(e)}")
+            
+            # Create ZIP archive
+            zip_path = tempfile.NamedTemporaryFile(
+                suffix='.zip',
+                prefix=f'{self.transcription.filename}_stems_',
+                delete=False
+            ).name
+            
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(temp_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, temp_dir)
+                        zipf.write(file_path, arcname)
+            
+            # Clean up temp directory
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            
+            return zip_path
+            
+        except Exception as e:
+            logger.error(f"Error generating stems archive: {str(e)}")
+            return ""
+    
+    def export_multitrack(self, format_type: str, tracks) -> Optional[str]:
+        """
+        Main method to export multi-track transcription.
+        
+        Args:
+            format_type: Export format ('musicxml', 'midi', 'stems')
+            tracks: List of Track model instances
+            
+        Returns:
+            Path to exported file or None
+        """
+        if not tracks:
+            logger.warning("No tracks provided for multi-track export")
+            return None
+        
+        if format_type == 'musicxml':
+            xml_content = self.generate_multitrack_musicxml(tracks)
+            if xml_content:
+                temp_file = tempfile.NamedTemporaryFile(
+                    suffix='.xml',
+                    prefix=f'{self.transcription.filename}_multitrack_',
+                    delete=False,
+                    mode='w'
+                )
+                temp_file.write(xml_content)
+                temp_file.close()
+                return temp_file.name
+                
+        elif format_type == 'midi':
+            return self.generate_multitrack_midi(tracks)
+            
+        elif format_type == 'stems':
+            return self.generate_stem_archive(tracks)
+            
+        else:
+            logger.error(f"Unsupported multi-track export format: {format_type}")
+            return None

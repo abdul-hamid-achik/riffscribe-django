@@ -14,15 +14,45 @@
                 Experience the future of music transcription with precision and elegance.
             </p>
             <div class="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
-                <a href="{% url 'transcriber:upload' %}" 
-                   class="btn-primary inline-flex items-center text-lg font-semibold animate-float musical-note">
-                    Start Transcribing
-                </a>
-                <a href="{% url 'transcriber:library' %}" 
-                   class="btn-secondary inline-flex items-center text-lg font-semibold">
-                    Browse Library
-                </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'transcriber:upload' %}" 
+                       class="btn-primary inline-flex items-center text-lg font-semibold animate-float musical-note">
+                        Start Transcribing
+                    </a>
+                    <a href="{% url 'transcriber:library' %}" 
+                       class="btn-secondary inline-flex items-center text-lg font-semibold">
+                        Browse Library
+                    </a>
+                {% else %}
+                    <button onclick="showAuthModal('signin')" 
+                            class="btn-primary inline-flex items-center text-lg font-semibold animate-float musical-note">
+                        Start Transcribing
+                    </button>
+                    <a href="{% url 'transcriber:library' %}" 
+                       class="btn-secondary inline-flex items-center text-lg font-semibold">
+                        Browse Library
+                    </a>
+                {% endif %}
             </div>
+            
+            {% if not user.is_authenticated %}
+            <div class="mt-8 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl max-w-lg mx-auto">
+                <p class="font-body text-sm text-blue-800 text-center mb-4">
+                    <span class="font-semibold text-base">Join thousands of musicians</span><br>
+                    Create a free account to save transcriptions and access advanced features!
+                </p>
+                <div class="flex justify-center space-x-3">
+                    <button onclick="showAuthModal('signup')" 
+                            class="btn-primary text-sm py-2 px-6">
+                        Sign Up Free
+                    </button>
+                    <button onclick="showAuthModal('signin')" 
+                            class="btn-secondary text-sm py-2 px-6">
+                        Sign In
+                    </button>
+                </div>
+            </div>
+            {% endif %}
         </div>
         <!-- Decorative staff lines -->
         <div class="absolute inset-0 opacity-30 staff-background"></div>
@@ -166,10 +196,22 @@
             <p class="font-body text-nyt-gray-medium mb-8">
                 Upload your first audio file to begin creating professional guitar tabs with AI precision.
             </p>
-            <a href="{% url 'transcriber:upload' %}" 
-               class="btn-primary inline-flex items-center musical-note">
-                Upload Your First Song
-            </a>
+            {% if user.is_authenticated %}
+                <a href="{% url 'transcriber:upload' %}" 
+                   class="btn-primary inline-flex items-center musical-note">
+                    Upload Your First Song
+                </a>
+            {% else %}
+                <div class="space-y-4">
+                    <button onclick="showAuthModal('signin')" 
+                            class="btn-primary inline-flex items-center musical-note">
+                        Upload Your First Song
+                    </button>
+                    <p class="font-body text-xs text-nyt-gray-light">
+                        Sign in or create a free account to save and manage your transcriptions
+                    </p>
+                </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}

@@ -1,0 +1,15 @@
+{
+  "name": "riffscribe-django",
+  "version": "1.0.0",
+  "description": "Tailwind CSS build for RiffScribe Django app",
+  "scripts": {
+    "build-css": "tailwindcss -i ./transcriber/static/transcriber/css/input.css -o ./transcriber/static/transcriber/css/output.css --minify",
+    "watch-css": "tailwindcss -i ./transcriber/static/transcriber/css/input.css -o ./transcriber/static/transcriber/css/output.css --watch",
+    "dev": "npm run watch-css"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.33"
+  }
+}

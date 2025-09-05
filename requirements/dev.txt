@@ -1,0 +1,21 @@
+# Development dependencies
+# Only installed in development images
+
+# Testing
+pytest>=7.4
+pytest-django>=4.7
+pytest-cov>=6.0
+pytest-asyncio>=1.0
+pytest-playwright>=0.7
+
+# Code quality
+black>=23.12
+ruff>=0.1
+ipython>=8.18
+
+# Monitoring
+flower>=2.0
+
+# UI components (only needed in dev)
+django-crispy-forms>=2.1
+crispy-tailwind>=1.0.3
