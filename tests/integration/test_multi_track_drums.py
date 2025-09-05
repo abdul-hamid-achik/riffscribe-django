@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.core.files.base import ContentFile
 from unittest.mock import Mock, patch, MagicMock, PropertyMock
 from transcriber.models import Transcription, Track, User
+from model_bakery import baker
 from transcriber.services.multi_track_service import MultiTrackService
 from transcriber.services.drum_transcriber import DrumHit
 
@@ -25,11 +26,10 @@ class MultiTrackDrumTestCase(TestCase):
             password='testpass'
         )
         
-        self.transcription = Transcription.objects.create(
-            user=self.user,
-            filename='test_song.mp3',
-            status='processing'
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_basic',
+                                              user=self.user,
+                                              filename='test_song.mp3',
+                                              status='processing')
         
         # Create mock audio file
         with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
@@ -125,12 +125,9 @@ class MultiTrackDrumTestCase(TestCase):
     def test_process_drum_track(self):
         """Test drum track processing"""
         # Create a drum track
-        drum_track = Track.objects.create(
-            transcription=self.transcription,
-            track_type='drums',
-            instrument_type='drums',
-            track_order=0
-        )
+        drum_track = baker.make_recipe('transcriber.track_drums',
+                                      transcription=self.transcription,
+                                      track_order=0)
         
         # Save a mock audio file
         drum_track.separated_audio.save(
@@ -326,25 +323,21 @@ class DrumExportTestCase(TestCase):
     
     def setUp(self):
         self.user = User.objects.create_user('testuser')
-        self.transcription = Transcription.objects.create(
-            user=self.user,
-            filename='test.mp3',
-            status='completed'
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                              user=self.user,
+                                              filename='test.mp3')
         
-        self.drum_track = Track.objects.create(
-            transcription=self.transcription,
-            track_type='drums',
-            is_processed=True,
-            guitar_notes={
-                'drum_tab': self.generate_sample_drum_tab(),
-                'format': 'drum_notation'
-            },
-            midi_data={
-                'tempo': 120,
-                'drum_hits': self.generate_sample_hits()
-            }
-        )
+        self.drum_track = baker.make_recipe('transcriber.track_drums',
+                                           transcription=self.transcription,
+                                           is_processed=True,
+                                           guitar_notes={
+                                               'drum_tab': self.generate_sample_drum_tab(),
+                                               'format': 'drum_notation'
+                                           },
+                                           midi_data={
+                                               'tempo': 120,
+                                               'drum_hits': self.generate_sample_hits()
+                                           })
     
     def generate_sample_drum_tab(self):
         """Generate sample drum tab"""
@@ -392,16 +385,12 @@ BD |o-------o-------|"""
     def test_multi_track_with_drums_export(self):
         """Test exporting multi-track with drums included"""
         # Add other tracks
-        Track.objects.create(
-            transcription=self.transcription,
-            track_type='bass',
-            is_processed=True
-        )
-        Track.objects.create(
-            transcription=self.transcription,
-            track_type='other',
-            is_processed=True
-        )
+        baker.make_recipe('transcriber.track_bass',
+                         transcription=self.transcription,
+                         is_processed=True)
+        baker.make_recipe('transcriber.track_guitar',
+                         transcription=self.transcription,
+                         is_processed=True)
         
         # Get all tracks
         tracks = self.transcription.tracks.all()

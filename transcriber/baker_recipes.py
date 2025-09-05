@@ -40,36 +40,36 @@ from .models import (
 # Helpers (callables) used by recipes
 # -----------------------------------------------------------------------------
 
-def _fake_audio_file(ext: str = 'wav'):
+def _fake_audio_file():
     """Return a small in-memory audio-ish file suitable for FileField."""
-    name = f"sample_{uuid.uuid4().hex}.{ext}"
+    name = f"sample_{uuid.uuid4().hex[:8]}.wav"
     # Minimal bytes; tests don't parse actual audio
     return ContentFile(b"RIFF\x00\x00WAVEdata", name)
 
 
 def _fake_gp5_file():
-    return _fake_audio_file('gp5')
-
-
-def _fake_file(ext: str = 'bin', magic: bytes = b'file'):
-    """Generic small in-memory file for arbitrary formats."""
-    name = f"sample_{uuid.uuid4().hex}.{ext}"
-    return ContentFile(magic, name)
+    name = f"sample_{uuid.uuid4().hex[:8]}.gp5"
+    return ContentFile(b"GP5FILE", name)
 
 
 def _fake_midi_file():
-    # Minimal MIDI header magic
-    return _fake_file('mid', b'MThd\x00\x00')
+    name = f"sample_{uuid.uuid4().hex[:8]}.mid"
+    return ContentFile(b'MThd\x00\x00', name)
 
 
 def _fake_zip_file():
-    # Minimal ZIP local file header magic
-    return _fake_file('zip', b'PK\x03\x04')
+    name = f"sample_{uuid.uuid4().hex[:8]}.zip"
+    return ContentFile(b'PK\x03\x04', name)
 
 
 def _fake_pdf_file():
-    # Minimal PDF header
-    return _fake_file('pdf', b'%PDF-1.4')
+    name = f"sample_{uuid.uuid4().hex[:8]}.pdf"
+    return ContentFile(b'%PDF-1.4', name)
+
+
+def _fake_txt_file():
+    name = f"sample_{uuid.uuid4().hex[:8]}.txt"
+    return ContentFile(b'ASCII TAB\nE|---\nB|---\n', name)
 
 
 def _sample_midi_notes():
@@ -150,7 +150,6 @@ user = Recipe(
 transcription_basic = Recipe(
     Transcription,
     filename=seq('riff_', suffix='.wav'),
-    original_audio=_fake_audio_file,
     status='pending',
     duration=2.5,
     sample_rate=22050,
@@ -257,7 +256,6 @@ track_drums = Recipe(
     instrument_type='drums',
     track_name='Drums',
     track_order=0,
-    separated_audio=_fake_audio_file,
     volume_level=0.2,
     prominence_score=0.5,
     midi_data={'tempo': 120, 'drum_hits': []},
@@ -311,9 +309,6 @@ multi_export_musicxml = Recipe(
     MultiTrackExport,
     transcription=foreign_key(transcription_completed),
     format='musicxml',
-    file=_fake_audio_file,  # will be saved under multi_exports/%Y/%m/%d/
-    # include both guitar and drums by default
-    included_tracks=related(track_guitar, track_drums),
     export_settings={'parts': ['guitar', 'drums']},
 )
 
@@ -321,8 +316,6 @@ multi_export_midi = Recipe(
     MultiTrackExport,
     transcription=foreign_key(transcription_completed),
     format='midi',
-    file=_fake_midi_file,
-    included_tracks=related(track_guitar, track_bass),
     export_settings={'quantize': True},
 )
 
@@ -330,8 +323,6 @@ multi_export_stems = Recipe(
     MultiTrackExport,
     transcription=foreign_key(transcription_completed),
     format='stems',
-    file=_fake_zip_file,
-    included_tracks=related(track_guitar, track_drums, track_bass),
     export_settings={'bitrate': '128k'},
 )
 
@@ -344,22 +335,18 @@ tab_export_musicxml = Recipe(
     TabExport,
     transcription=foreign_key(transcription_completed),
     format='musicxml',
-    file=_fake_audio_file,
 )
 
 tab_export_gp5 = tab_export_musicxml.extend(
     format='gp5',
-    file=_fake_gp5_file,
 )
 
 tab_export_ascii = tab_export_musicxml.extend(
     format='ascii',
-    file=_fake_file('txt', b'ASCII TAB\nE|---\nB|---\n'),
 )
 
 tab_export_pdf = tab_export_musicxml.extend(
     format='pdf',
-    file=_fake_pdf_file,
 )
 
 

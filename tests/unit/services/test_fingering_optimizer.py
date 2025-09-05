@@ -54,13 +54,13 @@ class TestFingeringOptimizer:
         """Test finding positions for open string notes"""
         optimizer = FingeringOptimizer()
         
-        # Test E2 (MIDI 40) - lowest open string
+        # Test E2 (MIDI 40) - lowest open string (index 0 = string 1 in 1-indexed)
         positions = optimizer.get_possible_positions(40)
-        assert any(pos.string == 6 and pos.fret == 0 for pos in positions)
-        
-        # Test high E (MIDI 64) - highest open string
-        positions = optimizer.get_possible_positions(64)
         assert any(pos.string == 1 and pos.fret == 0 for pos in positions)
+        
+        # Test high E (MIDI 64) - highest open string (index 5 = string 6 in 1-indexed)
+        positions = optimizer.get_possible_positions(64)
+        assert any(pos.string == 6 and pos.fret == 0 for pos in positions)
         
     def test_position_window_calculation(self):
         """Test position window mapping"""

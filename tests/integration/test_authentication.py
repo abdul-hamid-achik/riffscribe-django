@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase, Client
 from django.urls import reverse
 from transcriber.models import UserProfile, Transcription
+from model_bakery import baker
 
 
 class AuthenticationTestCase(TestCase):
@@ -142,16 +143,12 @@ class TranscriptionOwnershipTestCase(TestCase):
         )
         
         # Create transcriptions for each user
-        self.trans1 = Transcription.objects.create(
-            user=self.user1,
-            filename='user1_audio.mp3',
-            status='completed'
-        )
-        self.trans2 = Transcription.objects.create(
-            user=self.user2,
-            filename='user2_audio.mp3',
-            status='completed'
-        )
+        self.trans1 = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                       user=self.user1,
+                                       filename='user1_audio.mp3')
+        self.trans2 = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                       user=self.user2,
+                                       filename='user2_audio.mp3')
         
     def test_user_can_view_own_transcription(self):
         """Test user can view their own transcriptions"""
@@ -263,11 +260,9 @@ class UserProfileUsageTestCase(TestCase):
         self.client.login(username='testuser', password='testpass123')
         
         # Create a transcription
-        trans = Transcription.objects.create(
-            user=self.user,
-            filename='test.mp3',
-            status='completed'
-        )
+        trans = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                 user=self.user,
+                                 filename='test.mp3')
         
         profile = self.user.profile
         

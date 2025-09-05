@@ -118,3 +118,6 @@ tmp/*
 !tmp/.gitkeep
 coverage.xml
 exports/
+audio/
+media/
+.ruff_cache/

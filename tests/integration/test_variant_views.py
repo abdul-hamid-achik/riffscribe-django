@@ -9,6 +9,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from unittest.mock import patch, Mock
 from transcriber.models import Transcription, FingeringVariant, PlayabilityMetrics
+from model_bakery import baker
 
 
 class TestVariantViews(TestCase):
@@ -19,60 +20,32 @@ class TestVariantViews(TestCase):
         self.client = Client()
         
         # Create a completed transcription
-        self.transcription = Transcription.objects.create(
-            filename='test_song.mp3',
-            status='completed',
-            estimated_tempo=120,
-            estimated_key='C',
-            guitar_notes={
-                'tempo': 120,
-                'tuning': [40, 45, 50, 55, 59, 64],
-                'time_signature': '4/4',
-                'measures': [
-                    {
-                        'number': 1,
-                        'start_time': 0.0,
-                        'notes': [
-                            {'string': 3, 'fret': 5, 'time': 0.0, 'duration': 0.5, 'velocity': 80}
-                        ]
-                    }
-                ]
-            },
-            midi_data={
-                'notes': [
-                    {'midi_note': 60, 'start_time': 0.0, 'end_time': 0.5, 'velocity': 80}
-                ]
-            }
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed',
+                                              filename='test_song.mp3',
+                                              estimated_tempo=120,
+                                              estimated_key='C')
         
         # Create variants
-        self.easy_variant = FingeringVariant.objects.create(
-            transcription=self.transcription,
-            variant_name='easy',
-            difficulty_score=30,
-            playability_score=70,
-            tab_data=self.transcription.guitar_notes,
-            is_selected=True
-        )
+        self.easy_variant = baker.make_recipe('transcriber.fingering_variant_easy',
+                                             transcription=self.transcription,
+                                             difficulty_score=30,
+                                             playability_score=70,
+                                             is_selected=True)
         
-        self.technical_variant = FingeringVariant.objects.create(
-            transcription=self.transcription,
-            variant_name='technical',
-            difficulty_score=70,
-            playability_score=30,
-            tab_data=self.transcription.guitar_notes,
-            is_selected=False
-        )
+        self.technical_variant = baker.make_recipe('transcriber.fingering_variant_technical',
+                                                  transcription=self.transcription,
+                                                  difficulty_score=70,
+                                                  playability_score=30,
+                                                  is_selected=False)
         
         # Create metrics
-        self.metrics = PlayabilityMetrics.objects.create(
-            transcription=self.transcription,
-            playability_score=70,
-            recommended_skill_level='intermediate',
-            max_fret_span=4,
-            position_changes=2,
-            open_strings_used=0
-        )
+        self.metrics = baker.make_recipe('transcriber.playability_metrics',
+                                        transcription=self.transcription,
+                                        playability_score=70,
+                                        recommended_skill_level='intermediate',
+                                        max_fret_span=4,
+                                        position_changes=2,
+                                        open_strings_used=0)
         
     def test_variants_list_view(self):
         """Test listing all variants for a transcription"""

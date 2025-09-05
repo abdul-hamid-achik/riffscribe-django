@@ -12,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from unittest.mock import Mock, patch, MagicMock
 from transcriber.models import Transcription, Track, FingeringVariant, UserProfile
+from model_bakery import baker
 from transcriber.tasks import process_transcription
 import numpy as np
 

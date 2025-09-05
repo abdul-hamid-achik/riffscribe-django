@@ -67,12 +67,20 @@ def sample_audio_file():
 
 
 @pytest.fixture
-def sample_transcription(sample_audio_file):
+def sample_transcription():
     """Create a sample transcription in the database using Model Bakery."""
-    transcription = baker.make(
-        Transcription,
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    
+    audio_file = SimpleUploadedFile(
+        "test_audio.wav",
+        b"fake audio content",
+        content_type="audio/wav"
+    )
+    
+    transcription = baker.make_recipe(
+        'transcriber.transcription_basic',
         filename="test_audio.wav",
-        original_audio=sample_audio_file,
+        original_audio=audio_file,
         status="pending"
     )
     return transcription
@@ -81,29 +89,36 @@ def sample_transcription(sample_audio_file):
 @pytest.fixture
 def completed_transcription():
     """Create a completed transcription with results using Model Bakery."""
-    transcription = baker.make(
-        Transcription,
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    
+    audio_file = SimpleUploadedFile(
+        "completed.wav",
+        b"fake completed audio content",
+        content_type="audio/wav"
+    )
+    
+    transcription = baker.make_recipe(
+        'transcriber.transcription_completed',
         filename="completed.wav",
-        status="completed",
+        original_audio=audio_file,
         duration=30.5,
         estimated_tempo=120,
         estimated_key="C Major",
         complexity="moderate",
-        detected_instruments=["guitar"],
-        guitar_notes={
-            "tempo": 120,
-            "time_signature": "4/4",
-            "measures": [
-                {
-                    "notes": [
-                        {"string": 0, "fret": 3, "time": 0.0, "duration": 0.5}
-                    ]
-                }
-            ]
-        }
+        detected_instruments=["guitar"]
     )
     return transcription
 
+
+@pytest.fixture
+def real_audio_file():
+    """Get path to a real sample audio file."""
+    import os
+    samples_dir = Path(__file__).parent.parent / "samples"
+    simple_riff = samples_dir / "simple-riff.wav"
+    if simple_riff.exists():
+        return str(simple_riff)
+    return None
 
 @pytest.fixture
 def live_server_url():

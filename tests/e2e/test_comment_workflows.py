@@ -10,6 +10,8 @@ import time
 from unittest.mock import patch
 
 from transcriber.models import Comment, Transcription
+from model_bakery import baker
+from model_bakery.recipe import seq
 
 
 @pytest.mark.e2e
@@ -48,25 +50,21 @@ class CommentE2ETest(LiveServerTestCase):
         )
         
         # Create test transcription
-        self.transcription = Transcription.objects.create(
-            user=self.author_user,
-            filename='test_song.mp3',
-            status='completed',
-            duration=180.5
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                              user=self.author_user,
+                                              filename='test_song.mp3',
+                                              duration=180.5)
         
         # Create existing comments for testing
-        self.existing_auth_comment = Comment.objects.create(
-            transcription=self.transcription,
-            user=self.author_user,
-            content='Original author comment'
-        )
+        self.existing_auth_comment = baker.make_recipe('transcriber.comment_authenticated',
+                                                       transcription=self.transcription,
+                                                       user=self.author_user,
+                                                       content='Original author comment')
         
-        self.existing_anon_comment = Comment.objects.create(
-            transcription=self.transcription,
-            anonymous_name='Music Fan',
-            content='Great transcription!'
-        )
+        self.existing_anon_comment = baker.make_recipe('transcriber.comment_anonymous',
+                                                      transcription=self.transcription,
+                                                      anonymous_name='Music Fan',
+                                                      content='Great transcription!')
         
         self.page = self.browser.new_page()
     
@@ -249,17 +247,16 @@ class CommentE2ETest(LiveServerTestCase):
         if counter.is_visible():
             counter_element = counter.first
             # Should have warning styling for long text
-            expect(counter_element).to_have_class(/text-yellow-500|text-red-500/)
+            expect(counter_element).to_have_class(r"/text-yellow-500|text-red-500/")
     
     def test_comment_pagination(self):
         """Test comment pagination in browser"""
         # Create many comments to trigger pagination
-        for i in range(15):
-            Comment.objects.create(
-                transcription=self.transcription,
-                user=self.author_user,
-                content=f'Pagination test comment {i}'
-            )
+        baker.make_recipe('transcriber.comment_authenticated',
+                         transcription=self.transcription,
+                         user=self.author_user,
+                         content=seq('Pagination test comment '),
+                         _quantity=15)
         
         # Navigate to transcription detail page
         detail_url = f"{self.live_server_url}{reverse('transcriber:detail', kwargs={'pk': self.transcription.pk})}"
@@ -453,11 +450,9 @@ class CommentPerformanceE2ETest(LiveServerTestCase):
             password='perfpass123'
         )
         
-        self.transcription = Transcription.objects.create(
-            user=self.user,
-            filename='perf_song.mp3',
-            status='completed'
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                              user=self.user,
+                                              filename='perf_song.mp3')
         
         self.page = self.browser.new_page()
     
@@ -468,12 +463,11 @@ class CommentPerformanceE2ETest(LiveServerTestCase):
     def test_comment_loading_performance(self):
         """Test comment loading performance with many comments"""
         # Create many comments
-        for i in range(50):
-            Comment.objects.create(
-                transcription=self.transcription,
-                user=self.user,
-                content=f'Performance test comment {i}'
-            )
+        baker.make_recipe('transcriber.comment_authenticated',
+                         transcription=self.transcription,
+                         user=self.user,
+                         content=seq('Performance test comment '),
+                         _quantity=50)
         
         # Navigate to page and measure loading time
         detail_url = f"{self.live_server_url}{reverse('transcriber:detail', kwargs={'pk': self.transcription.pk})}"

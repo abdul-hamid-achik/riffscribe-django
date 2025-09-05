@@ -12,6 +12,7 @@ from unittest.mock import patch, Mock
 from django.db import transaction
 
 from transcriber.models import Comment, Transcription, UserProfile
+from model_bakery import baker
 from transcriber.forms import CommentForm, AnonymousCommentForm
 
 
@@ -42,19 +43,16 @@ class CommentWorkflowIntegrationTest(TestCase):
         )
         
         # Create test transcription
-        self.transcription = Transcription.objects.create(
-            user=self.author_user,
-            filename='test_song.mp3',
-            status='completed',
-            duration=180.5
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                              user=self.author_user,
+                                              filename='test_song.mp3',
+                                              duration=180.5)
         
         # Create processing transcription (should not show comments)
-        self.processing_transcription = Transcription.objects.create(
-            user=self.author_user,
-            filename='processing_song.mp3',
-            status='processing'
-        )
+        self.processing_transcription = baker.make_recipe('transcriber.transcription_basic',
+                                                          user=self.author_user,
+                                                          filename='processing_song.mp3',
+                                                          status='processing')
     
     def test_complete_authenticated_user_comment_workflow(self):
         """Test complete workflow: login -> view -> comment -> see result"""
@@ -153,11 +151,10 @@ class CommentWorkflowIntegrationTest(TestCase):
     def test_comment_priority_sorting_workflow(self):
         """Test that authenticated users get priority in comment sorting"""
         # Create anonymous comment first
-        anon_comment = Comment.objects.create(
-            transcription=self.transcription,
-            anonymous_name='Early Anonymous',
-            content='I was here first!'
-        )
+        anon_comment = baker.make_recipe('transcriber.comment_anonymous',
+                                        transcription=self.transcription,
+                                        anonymous_name='Early Anonymous',
+                                        content='I was here first!')
         
         # Then create authenticated comment
         self.client.login(username='commenter', password='commenterpass123')
@@ -277,11 +274,10 @@ class CommentWorkflowIntegrationTest(TestCase):
         self.client.post(add_comment_url, {'content': 'Authenticated comment'})
         
         # Add anonymous comment (simulated)
-        Comment.objects.create(
-            transcription=self.transcription,
-            anonymous_name='Anonymous Fan',
-            content='Anonymous comment'
-        )
+        baker.make_recipe('transcriber.comment_anonymous',
+                         transcription=self.transcription,
+                         anonymous_name='Anonymous Fan',
+                         content='Anonymous comment')
         
         # View comments list and verify both appear correctly
         comments_url = reverse('transcriber:comments_list', kwargs={'pk': self.transcription.pk})
@@ -364,11 +360,9 @@ class CommentDatabaseIntegrationTest(TransactionTestCase):
             password='testpass123'
         )
         
-        self.transcription = Transcription.objects.create(
-            user=self.user,
-            filename='test_song.mp3',
-            status='completed'
-        )
+        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
+                                              user=self.user,
+                                              filename='test_song.mp3')
         
         self.client = Client()
     
@@ -395,11 +389,10 @@ class CommentDatabaseIntegrationTest(TransactionTestCase):
     def test_comment_cascade_deletion_integration(self):
         """Test cascade deletion in integrated environment"""
         # Create comment
-        comment = Comment.objects.create(
-            transcription=self.transcription,
-            user=self.user,
-            content='Test comment for deletion'
-        )
+        comment = baker.make_recipe('transcriber.comment_authenticated',
+                                   transcription=self.transcription,
+                                   user=self.user,
+                                   content='Test comment for deletion')
         
         comment_id = comment.id
         self.assertTrue(Comment.objects.filter(id=comment_id).exists())

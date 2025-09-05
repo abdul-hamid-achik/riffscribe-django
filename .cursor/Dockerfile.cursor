@@ -1,0 +1,68 @@
+# Dockerfile optimized for Cursor Background Agents
+# Based on the development stage of the main Dockerfile but streamlined for agent usage
+
+FROM python:3.11-slim-bookworm
+
+# Python optimizations
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_NO_CACHE=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+# Install system dependencies needed for audio processing and Django
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Build tools
+    build-essential \
+    gcc \
+    g++ \
+    git \
+    curl \
+    # Audio processing libraries
+    ffmpeg \
+    libsndfile1-dev \
+    libsndfile1 \
+    libportaudio2 \
+    portaudio19-dev \
+    libgomp1 \
+    # Database clients
+    postgresql-client \
+    # SSL and crypto
+    libffi-dev \
+    libssl-dev \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && /root/.local/bin/uv --version \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Add UV to PATH
+ENV PATH="/root/.local/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Create a non-root user for security
+RUN groupadd -r django && useradd -r -g django -s /bin/bash django
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/media /app/static /app/staticfiles /app/tmp /app/audio /app/exports \
+    && chown -R django:django /app
+
+# Copy project files (this will be done by Cursor during setup)
+# The background agent will checkout the repository automatically
+
+# Set up environment variables that are common for development
+ENV DJANGO_SETTINGS_MODULE=riffscribe.settings \
+    PYTHONPATH=/app \
+    DEBUG=True
+
+# Switch to non-root user
+USER django
+
+# The install command from environment.json will handle:
+# - uv sync (install dependencies)
+# - python manage.py migrate (setup database)
+# - python manage.py collectstatic --noinput (collect static files)
+
+# Default command - can be overridden by terminals in environment.json
+CMD ["/bin/bash"]
