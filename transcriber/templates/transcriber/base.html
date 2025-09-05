@@ -1,25 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}RiffScribe - Guitar Tab Transcription{% endblock %}</title>
-    
+    <title>{% block title %}RiffScribe - Tab Transcription{% endblock %}</title>
+
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    
+
     <!-- Alpine.js for lightweight interactivity -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+
     <!-- Load compiled Tailwind CSS -->
     {% load static %}
     <link rel="stylesheet" href="{% static 'transcriber/css/output.css' %}">
-    
+
     <!-- Load custom CSS for additional styles -->
     <link rel="stylesheet" href="{% static 'transcriber/css/style.css' %}">
-    
+
     {% block extra_head %}{% endblock %}
 </head>
+
 <body class="min-h-screen font-body text-nyt-black">
     <!-- Navigation - NYT Style -->
     <nav class="nyt-nav sticky top-0 z-50">
@@ -31,91 +33,90 @@
                     </a>
                     <div class="hidden md:block ml-10">
                         <div class="flex items-baseline space-x-8">
-                            <a href="{% url 'transcriber:index' %}" 
-                               class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
+                            <a href="{% url 'transcriber:index' %}"
+                                class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
                                 Home
                             </a>
-                            <a href="{% url 'transcriber:library' %}" 
-                               class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
+                            <a href="{% url 'transcriber:library' %}"
+                                class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold">
                                 Library
                             </a>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Mobile menu toggle -->
                 <div class="md:hidden">
-                    <button x-data x-on:click="document.getElementById('mobile-menu').classList.toggle('hidden')" 
-                            class="text-gray-300 hover:text-white">
+                    <button x-data x-on:click="document.getElementById('mobile-menu').classList.toggle('hidden')"
+                        class="text-gray-300 hover:text-white">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
                 </div>
-                
+
                 <div class="flex items-center space-x-4">
                     {% if user.is_authenticated %}
-                        <!-- User Menu for Authenticated Users -->
-                        <div class="relative" x-data="{ open: false }">
-                            <button @click="open = !open" 
-                                    class="flex items-center space-x-2 text-gray-300 hover:text-white font-body text-sm font-medium transition duration-300">
-                                <div class="h-8 w-8 rounded-full bg-musical-gold flex items-center justify-center text-nyt-black font-semibold">
-                                    {{ user.username|first|upper }}
-                                </div>
-                                <span>{{ user.username }}</span>
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
-                            
-                            <!-- Dropdown Menu -->
-                            <div x-show="open" 
-                                 @click.away="open = false" 
-                                 x-transition:enter="transition ease-out duration-100"
-                                 x-transition:enter-start="transform opacity-0 scale-95"
-                                 x-transition:enter-end="transform opacity-100 scale-100"
-                                 x-transition:leave="transition ease-in duration-75"
-                                 x-transition:leave-start="transform opacity-100 scale-100"
-                                 x-transition:leave-end="transform opacity-0 scale-95"
-                                 class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                                <div class="py-2">
-                                    <a href="{% url 'transcriber:dashboard' %}" 
-                                       class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
-                                        Dashboard
-                                    </a>
-                                    <a href="{% url 'transcriber:profile' %}" 
-                                       class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
-                                        Profile
-                                    </a>
-                                    <div class="border-t border-gray-200 my-1"></div>
-                                    <form method="post" action="{% url 'account_logout' %}">
-                                        {% csrf_token %}
-                                        <button type="submit" 
-                                                class="block w-full text-left px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
-                                            Sign out
-                                        </button>
-                                    </form>
-                                </div>
+                    <!-- User Menu for Authenticated Users -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                            class="flex items-center space-x-2 text-gray-300 hover:text-white font-body text-sm font-medium transition duration-300">
+                            <div
+                                class="h-8 w-8 rounded-full bg-musical-gold flex items-center justify-center text-nyt-black font-semibold">
+                                {{ user.username|first|upper }}
+                            </div>
+                            <span>{{ user.username }}</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div x-show="open" @click.away="open = false"
+                            x-transition:enter="transition ease-out duration-100"
+                            x-transition:enter-start="transform opacity-0 scale-95"
+                            x-transition:enter-end="transform opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="transform opacity-100 scale-100"
+                            x-transition:leave-end="transform opacity-0 scale-95"
+                            class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                            <div class="py-2">
+                                <a href="{% url 'transcriber:dashboard' %}"
+                                    class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                    Dashboard
+                                </a>
+                                <a href="{% url 'transcriber:profile' %}"
+                                    class="block px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                    Profile
+                                </a>
+                                <div class="border-t border-gray-200 my-1"></div>
+                                <form method="post" action="{% url 'account_logout' %}">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="block w-full text-left px-4 py-2 text-sm text-nyt-black hover:bg-sheet-ivory transition duration-200">
+                                        Sign out
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                        <a href="{% url 'transcriber:upload' %}" 
-                           class="btn-primary inline-flex items-center musical-note">
-                            Upload Audio
-                        </a>
+                    </div>
+                    <a href="{% url 'transcriber:upload' %}" class="btn-primary inline-flex items-center musical-note">
+                        Upload Audio
+                    </a>
                     {% else %}
-                        <!-- Authentication Buttons for Anonymous Users -->
-                        <button onclick="showAuthModal('signin')" 
-                                class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold px-3 py-2">
-                            Sign In
-                        </button>
-                        <button onclick="showAuthModal('signup')" 
-                                class="btn-secondary inline-flex items-center">
-                            Sign Up
-                        </button>
-                        <button onclick="showAuthModal('signin')" 
-                                class="btn-primary inline-flex items-center musical-note">
-                            Upload Audio
-                        </button>
+                    <!-- Authentication Buttons for Anonymous Users -->
+                    <button onclick="showAuthModal('signin')"
+                        class="text-gray-300 hover:text-white font-body text-sm font-medium tracking-wide transition duration-300 border-b-2 border-transparent hover:border-musical-gold px-3 py-2">
+                        Sign In
+                    </button>
+                    <button onclick="showAuthModal('signup')" class="btn-secondary inline-flex items-center">
+                        Sign Up
+                    </button>
+                    <button onclick="showAuthModal('signin')" class="btn-primary inline-flex items-center musical-note">
+                        Upload Audio
+                    </button>
                     {% endif %}
                 </div>
             </div>
@@ -123,39 +124,38 @@
         <!-- Mobile menu -->
         <div id="mobile-menu" class="md:hidden px-4 pb-3 hidden">
             <div class="flex flex-col space-y-2">
-                <a href="{% url 'transcriber:index' %}" 
-                   class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                <a href="{% url 'transcriber:index' %}"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
                     Home
                 </a>
-                <a href="{% url 'transcriber:library' %}" 
-                   class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                <a href="{% url 'transcriber:library' %}"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
                     Library
                 </a>
                 {% if user.is_authenticated %}
-                    <a href="{% url 'transcriber:dashboard' %}" 
-                       class="text-gray-300 hover:text-white font-body text-sm font-medium">
-                        Dashboard
-                    </a>
-                    <a href="{% url 'transcriber:profile' %}" 
-                       class="text-gray-300 hover:text-white font-body text-sm font-medium">
-                        Profile
-                    </a>
-                    <form method="post" action="{% url 'account_logout' %}" class="mt-2">
-                        {% csrf_token %}
-                        <button type="submit" 
-                                class="text-gray-300 hover:text-white font-body text-sm font-medium">
-                            Sign out
-                        </button>
-                    </form>
+                <a href="{% url 'transcriber:dashboard' %}"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                    Dashboard
+                </a>
+                <a href="{% url 'transcriber:profile' %}"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                    Profile
+                </a>
+                <form method="post" action="{% url 'account_logout' %}" class="mt-2">
+                    {% csrf_token %}
+                    <button type="submit" class="text-gray-300 hover:text-white font-body text-sm font-medium">
+                        Sign out
+                    </button>
+                </form>
                 {% else %}
-                    <button onclick="showAuthModal('signin')" 
-                            class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
-                        Sign In
-                    </button>
-                    <button onclick="showAuthModal('signup')" 
-                            class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
-                        Sign Up
-                    </button>
+                <button onclick="showAuthModal('signin')"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
+                    Sign In
+                </button>
+                <button onclick="showAuthModal('signup')"
+                    class="text-gray-300 hover:text-white font-body text-sm font-medium text-left">
+                    Sign Up
+                </button>
                 {% endif %}
             </div>
         </div>
@@ -174,12 +174,13 @@
             <div class="text-center">
                 <div class="font-display text-2xl mb-4 treble-clef">RiffScribe</div>
                 <p class="font-body text-gray-400 text-sm max-w-md mx-auto">
-                    AI-powered guitar tab transcription. Transform any song into accurate tablature 
+                    AI-powered tab transcription. Transform any song into accurate tablature
                     with advanced machine learning technology.
                 </p>
                 <div class="mt-6 pt-6 border-t border-gray-700">
                     <p class="font-body text-gray-500 text-xs">
-                        &copy; {% now "Y" %} RiffScribe. Created by Abdul Hamid. Built with precision and passion for music.
+                        &copy; {% now "Y" %} RiffScribe. Created by Abdul Hamid. Built with precision and passion for
+                        music.
                     </p>
                 </div>
             </div>
@@ -192,7 +193,7 @@
         document.body.addEventListener('htmx:configRequest', (event) => {
             event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
         });
-        
+
         // Add subtle parallax effect to staff lines
         window.addEventListener('scroll', () => {
             const scrolled = window.pageYOffset;
@@ -204,17 +205,17 @@
         });
     </script>
     {% block extra_scripts %}{% endblock %}
-    
+
     <!-- Authentication Modal -->
     {% include 'transcriber/partials/auth_modal_container.html' %}
-    
+
     <!-- Show modal on page load if needed -->
     <script>
-    // Show authentication modal when non-auth users click protected actions
-    function showAuthForAction(message) {
-        // You can customize this message based on the action
-        const modal = document.createElement('div');
-        modal.innerHTML = `
+        // Show authentication modal when non-auth users click protected actions
+        function showAuthForAction(message) {
+            // You can customize this message based on the action
+            const modal = document.createElement('div');
+            modal.innerHTML = `
             <div id="auth-modal" 
                  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white rounded-lg shadow-xl max-w-md w-full m-4 transform transition-all">
@@ -246,8 +247,9 @@
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
-    }
+            document.body.appendChild(modal);
+        }
     </script>
 </body>
+
 </html>

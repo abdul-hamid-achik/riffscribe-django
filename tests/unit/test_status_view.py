@@ -9,6 +9,7 @@ def test_task_status_success_json():
     with patch('transcriber.views.AsyncResult') as mock_async_result_class:
         # Configure the mock instance that gets returned when AsyncResult('test-task-id') is called
         mock_result_instance = MagicMock()
+        # Explicitly set state to SUCCESS (not PENDING which is default)
         mock_result_instance.state = 'SUCCESS'
         mock_result_instance.info = {'status': 'Done'}
         mock_async_result_class.return_value = mock_result_instance

@@ -5,7 +5,7 @@
 [![HTMX](https://img.shields.io/badge/HTMX-1.9-purple)](https://htmx.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-**RiffScribe** is an AI-powered guitar tab transcription tool that converts audio recordings into accurate guitar tablature. Built with Django and HTMX for a smooth, server-rendered experience with modern interactivity.
+**RiffScribe** is an AI-powered tab transcription tool that converts audio recordings into accurate guitar tablature. Built with Django and HTMX for a smooth, server-rendered experience with modern interactivity.
 
 ## ✨ Features
 
