@@ -33,13 +33,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # SSL and crypto
     libffi-dev \
     libssl-dev \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && /root/.local/bin/uv --version \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Add UV to PATH
+# Install UV in a separate layer for better caching and reliability
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add UV to PATH and verify installation
 ENV PATH="/root/.local/bin:$PATH"
+RUN uv --version
 
 # Configure PostgreSQL
 USER postgres
