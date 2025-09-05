@@ -48,6 +48,7 @@ def safe_json_dumps(obj: Any, **kwargs) -> str:
 def clean_analysis_result(result: Dict[str, Any]) -> Dict[str, Any]:
     """
     Clean analysis result dictionary to ensure all values are JSON-serializable.
+    Removes None values and empty collections.
     
     Args:
         result: Analysis result dictionary
@@ -55,4 +56,15 @@ def clean_analysis_result(result: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Cleaned dictionary with JSON-serializable values
     """
-    return ensure_json_serializable(result)
+    if not result:
+        return {}
+    
+    cleaned = ensure_json_serializable(result)
+    
+    # Remove None values and empty collections
+    filtered = {}
+    for key, value in cleaned.items():
+        if value is not None and not (isinstance(value, (list, dict)) and not value):
+            filtered[key] = value
+    
+    return filtered

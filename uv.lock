@@ -2433,6 +2433,7 @@ dev = [
 [package.dev-dependencies]
 dev = [
     { name = "model-bakery" },
+    { name = "playwright" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-django" },
@@ -2498,6 +2499,7 @@ provides-extras = ["dev"]
 [package.metadata.requires-dev]
 dev = [
     { name = "model-bakery", specifier = ">=1.19" },
+    { name = "playwright", specifier = ">=1.55.0" },
     { name = "pytest", specifier = ">=8.4.2" },
     { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-django", specifier = ">=4.11.1" },

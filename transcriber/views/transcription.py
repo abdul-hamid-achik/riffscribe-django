@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
-from celery.result import AsyncResult
+from . import AsyncResult
 from ..models import Transcription
 from ..decorators import htmx_login_required
 import json

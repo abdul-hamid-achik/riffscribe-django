@@ -107,4 +107,5 @@ dev = [
     "pytest-env>=1.1",
     "pytest-dotenv>=0.5",
     "model-bakery>=1.19",
+    "playwright>=1.55.0",
 ]

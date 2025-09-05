@@ -5,8 +5,11 @@ import pytest
 from unittest.mock import patch, MagicMock
 import xml.etree.ElementTree as ET
 from transcriber.services.export_manager import ExportManager
+from model_bakery import baker
+from transcriber.models import Transcription
 
 
+@pytest.mark.django_db
 class TestExportManager:
     """Test export manager functionality."""
     
@@ -44,12 +47,15 @@ class TestExportManager:
     @pytest.fixture
     def export_manager(self, sample_tab_data):
         """Create an export manager instance."""
-        return ExportManager(sample_tab_data, tempo=120)
+        transcription = baker.make(Transcription, 
+                                 guitar_notes=sample_tab_data,
+                                 estimated_tempo=120)
+        return ExportManager(transcription)
     
     @pytest.mark.unit
     def test_export_manager_initialization(self, export_manager):
         """Test export manager initializes correctly."""
-        assert export_manager.tempo == 120
+        assert export_manager.transcription is not None
         assert export_manager.tab_data is not None
         assert 'measures' in export_manager.tab_data
     

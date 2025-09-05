@@ -14,6 +14,7 @@ urlpatterns = [
     path('transcription/<uuid:pk>/delete/', views.delete_transcription, name='delete'),
     path('transcription/<uuid:pk>/favorite/', views.toggle_favorite, name='toggle_favorite'),
     path('transcription/<uuid:pk>/preview/', views.preview_tab, name='preview'),
+    path('transcription/<uuid:pk>/preview/tab/', views.preview_tab, name='preview_tab'),  # Alias for templates
     path('transcription/<uuid:pk>/preview/tab-api/', views.tab_preview_api, name='tab_preview_api'),
     path('transcription/<uuid:pk>/preview/midi-api/', views.midi_preview_api, name='midi_preview_api'),
     path('transcription/<uuid:pk>/preview/sheet/', views.sheet_music_preview, name='sheet_music_preview'),

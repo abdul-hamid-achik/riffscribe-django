@@ -198,15 +198,17 @@ class TestWhisperService:
         """Test behavior when no client is configured"""
         whisper_service.client = None
         
-        result = whisper_service.transcribe_audio('dummy.mp3')
+        result = whisper_service.transcribe_audio('dummy.wav')
         assert result['status'] == 'error'
         assert 'not configured' in result['error']
         
-        result = whisper_service.analyze_music('dummy.mp3')
+        result = whisper_service.analyze_music('dummy.wav')
         assert result['status'] == 'error'
+        assert 'not configured' in result['error']
         
-        result = whisper_service.detect_chords_and_notes('dummy.mp3')
+        result = whisper_service.detect_chords_and_notes('dummy.wav')
         assert result['status'] == 'error'
+        assert 'not configured' in result['error']
     
     def test_temperature_parameter(self, whisper_service):
         """Test temperature parameter in transcription"""
@@ -218,12 +220,13 @@ class TestWhisperService:
             whisper_service.client.audio.transcriptions.create = Mock(return_value=mock_response)
             
             # Test with custom temperature
-            whisper_service.transcribe_audio('test.mp3', temperature=0.5)
+            whisper_service.transcribe_audio('dummy.wav', temperature=0.5)
             
             call_args = whisper_service.client.audio.transcriptions.create.call_args
+            assert call_args is not None
             assert call_args[1]['temperature'] == 0.5
             
             # Test with default temperature
-            whisper_service.transcribe_audio('test.mp3')
+            whisper_service.transcribe_audio('dummy.wav')
             call_args = whisper_service.client.audio.transcriptions.create.call_args
             assert call_args[1]['temperature'] == 0.0

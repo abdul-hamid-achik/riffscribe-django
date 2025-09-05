@@ -77,6 +77,10 @@ class WhisperService:
             Dict containing transcription results
         """
         try:
+            # Check if client is configured first
+            if not self.client:
+                return {"status": "error", "error": "Whisper client not configured", "text": "", "segments": []}
+                
             # Validate and prepare audio file
             audio_file = self._prepare_audio_file(audio_path)
             
@@ -96,8 +100,6 @@ class WhisperService:
                 
             # Call Whisper API
             logger.info(f"Transcribing audio with Whisper: {audio_path}")
-            if not self.client:
-                return {"status": "error", "error": "Whisper client not configured", "text": "", "segments": []}
             # The client may return either objects with attributes or plain dicts in tests
             response = self.client.audio.transcriptions.create(**params)
             
@@ -184,12 +186,20 @@ class WhisperService:
         )
         
         try:
+            # Check if client is configured first
+            if not self.client:
+                return {"status": "error", "error": "Whisper client not configured"}
+                
             # Get transcription with music prompt
             transcription = self.transcribe_audio(
                 audio_path,
                 prompt=music_prompt,
                 temperature=0.2  # Slightly higher temperature for creative interpretation
             )
+            
+            # If transcribe_audio failed, return error
+            if transcription.get("status") == "error":
+                return transcription
             
             # Analyze transcription for musical elements
             analysis = self._extract_musical_elements(transcription)
@@ -198,6 +208,7 @@ class WhisperService:
             audio_features = self._analyze_audio_features(audio_path)
             
             return clean_analysis_result({
+                "status": "success",
                 "transcription": transcription,
                 "musical_elements": analysis,
                 "audio_features": audio_features,
@@ -230,12 +241,20 @@ class WhisperService:
         )
         
         try:
+            # Check if client is configured first
+            if not self.client:
+                return {"status": "error", "error": "Whisper client not configured", "chords": [], "notes": [], "techniques": []}
+                
             # Get transcription with chord detection prompt
             result = self.transcribe_audio(
                 audio_path,
                 prompt=chord_prompt,
                 temperature=0.1  # Low temperature for accuracy
             )
+            
+            # If transcribe_audio failed, return error
+            if result.get("status") == "error":
+                return {"status": "error", "error": result.get("error", "Unknown error"), "chords": [], "notes": [], "techniques": []}
             
             # Parse detected elements
             detected = {
@@ -267,6 +286,7 @@ class WhisperService:
                         "time": segment["start"]
                     } for tech in techniques])
                     
+            detected["status"] = "success"
             return detected
             
         except Exception as e:

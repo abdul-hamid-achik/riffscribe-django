@@ -103,8 +103,8 @@ class TestTasksWhisperIntegration(TestCase):
             # Mock task update_state
             mock_task = Mock()
             
-            # Execute the task
-            result = process_transcription(mock_task, self.transcription.id)
+            # Execute the task directly (bypass Celery for testing)
+            result = process_transcription.run(self.transcription.id)
         
         # Verify the result
         assert result['status'] == 'success'
@@ -187,7 +187,7 @@ class TestTasksWhisperIntegration(TestCase):
             mock_audio.path = '/path/to/audio.mp3'
             
             mock_task = Mock()
-            result = process_transcription(mock_task, self.transcription.id)
+            result = process_transcription.run(self.transcription.id)
         
         # Verify processing completed despite Whisper failure
         assert result['status'] == 'success'
@@ -230,7 +230,7 @@ class TestTasksWhisperIntegration(TestCase):
             mock_variant_gen.return_value.generate_all_variants.return_value = []
             
             mock_task = Mock()
-            process_transcription(mock_task, self.transcription.id)
+            process_transcription.run(self.transcription.id)
         
         # Verify specific Whisper progress steps were called
         progress_calls = mock_task.update_state.call_args_list
@@ -275,7 +275,7 @@ class TestTasksWhisperIntegration(TestCase):
             mock_variant_gen.return_value.generate_all_variants.return_value = []
             
             mock_task = Mock()
-            result = process_transcription(mock_task, self.transcription.id)
+            result = process_transcription.run(self.transcription.id)
         
         # Verify processing works without Whisper
         assert result['status'] == 'success'

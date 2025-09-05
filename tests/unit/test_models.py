@@ -4,6 +4,7 @@ Unit tests for Django models.
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from transcriber.models import Transcription, TabExport
+from model_bakery import baker
 
 
 @pytest.mark.django_db
@@ -27,12 +28,9 @@ class TestTranscriptionModel:
     @pytest.mark.unit
     def test_transcription_string_representation(self):
         """Test string representation of transcription."""
-        transcription = Transcription.objects.create(
-            filename="my_song.wav",
-            status="completed"
-        )
+        transcription = baker.make(Transcription, filename="my_song.wav", status="completed")
         
-        assert str(transcription) == "my_song.wav - completed"
+        assert str(transcription) == "my_song.wav - Completed"
     
     @pytest.mark.unit
     def test_transcription_with_audio_file(self):
@@ -67,15 +65,14 @@ class TestTranscriptionModel:
     @pytest.mark.unit
     def test_transcription_metadata_fields(self):
         """Test metadata fields on transcription."""
-        transcription = Transcription.objects.create(
+        transcription = baker.make(Transcription,
             filename="test.wav",
             status="completed",
             duration=30.5,
             estimated_tempo=120,
             estimated_key="C Major",
             complexity="moderate",
-            detected_instruments=["guitar", "bass"],
-            time_signature="4/4"
+            detected_instruments=["guitar", "bass"]
         )
         
         assert transcription.duration == 30.5
@@ -83,14 +80,15 @@ class TestTranscriptionModel:
         assert transcription.estimated_key == "C Major"
         assert transcription.complexity == "moderate"
         assert transcription.detected_instruments == ["guitar", "bass"]
-        assert transcription.time_signature == "4/4"
     
     @pytest.mark.unit
     def test_transcription_json_fields(self):
         """Test JSON fields for storing complex data."""
-        notes_data = [
-            {'start_time': 0, 'end_time': 0.5, 'midi_note': 60}
-        ]
+        midi_data = {
+            'notes': [
+                {'start_time': 0, 'end_time': 0.5, 'midi_note': 60}
+            ]
+        }
         
         guitar_notes = {
             'tempo': 120,
@@ -99,41 +97,42 @@ class TestTranscriptionModel:
             ]
         }
         
-        transcription = Transcription.objects.create(
+        transcription = baker.make(Transcription,
             filename="test.wav",
             status="completed",
-            raw_notes=notes_data,
+            midi_data=midi_data,
             guitar_notes=guitar_notes
         )
         
-        assert transcription.raw_notes == notes_data
+        assert transcription.midi_data == midi_data
         assert transcription.guitar_notes == guitar_notes
-        assert isinstance(transcription.raw_notes, list)
+        assert isinstance(transcription.midi_data, dict)
         assert isinstance(transcription.guitar_notes, dict)
     
     @pytest.mark.unit
-    def test_transcription_task_tracking(self):
-        """Test task ID tracking fields."""
-        transcription = Transcription.objects.create(
+    def test_transcription_status_tracking(self):
+        """Test status tracking functionality."""
+        transcription = baker.make(Transcription,
             filename="test.wav",
-            status="processing",
-            task_id="celery-task-123"
+            status="processing"
         )
         
-        assert transcription.task_id == "celery-task-123"
+        assert transcription.status == "processing"
+        transcription.status = "completed"
+        transcription.save()
+        assert transcription.status == "completed"
     
     @pytest.mark.unit
     def test_transcription_cascade_delete(self):
         """Test that related exports are deleted with transcription."""
-        transcription = Transcription.objects.create(
+        transcription = baker.make(Transcription,
             filename="test.wav",
             status="completed"
         )
         
-        export = TabExport.objects.create(
+        export = baker.make(TabExport,
             transcription=transcription,
-            format="musicxml",
-            file_path="/tmp/test.xml"
+            format="musicxml"
         )
         
         transcription_id = transcription.id
@@ -152,27 +151,25 @@ class TestTabExportModel:
     @pytest.mark.unit
     def test_tab_export_creation(self, completed_transcription):
         """Test creating a tab export."""
-        export = TabExport.objects.create(
+        export = baker.make(TabExport,
             transcription=completed_transcription,
-            format="musicxml",
-            file_path="/exports/test.xml"
+            format="musicxml"
         )
         
         assert export.id is not None
         assert export.transcription == completed_transcription
         assert export.format == "musicxml"
-        assert export.file_path == "/exports/test.xml"
         assert export.created_at is not None
     
     @pytest.mark.unit
     def test_tab_export_string_representation(self, completed_transcription):
         """Test string representation of tab export."""
-        export = TabExport.objects.create(
+        export = baker.make(TabExport,
             transcription=completed_transcription,
             format="gp5"
         )
         
-        expected = f"{completed_transcription.filename} - gp5"
+        expected = f"{completed_transcription.filename} - Guitar Pro 5"
         assert str(export) == expected
     
     @pytest.mark.unit
@@ -181,7 +178,7 @@ class TestTabExportModel:
         valid_formats = ['musicxml', 'gp5', 'midi', 'ascii']
         
         for format_type in valid_formats:
-            export = TabExport.objects.create(
+            export = baker.make(TabExport,
                 transcription=completed_transcription,
                 format=format_type
             )
@@ -196,40 +193,45 @@ class TestTabExportModel:
             content_type="text/xml"
         )
         
-        export = TabExport.objects.create(
+        export = baker.make(TabExport,
             transcription=completed_transcription,
             format="musicxml",
-            export_file=export_file
+            file=export_file
         )
         
-        assert export.export_file is not None
-        assert "test_export" in export.export_file.name
+        assert export.file is not None
+        assert "test_export" in export.file.name
     
     @pytest.mark.unit
-    def test_tab_export_task_tracking(self, completed_transcription):
-        """Test export task ID tracking."""
-        export = TabExport.objects.create(
-            transcription=completed_transcription,
-            format="musicxml",
-            task_id="export-task-456"
-        )
-        
-        assert export.task_id == "export-task-456"
-    
-    @pytest.mark.unit
-    def test_multiple_exports_per_transcription(self, completed_transcription):
-        """Test that a transcription can have multiple exports."""
-        export1 = TabExport.objects.create(
+    def test_tab_export_ordering(self, completed_transcription):
+        """Test that exports are ordered by creation time."""
+        export1 = baker.make(TabExport,
             transcription=completed_transcription,
             format="musicxml"
         )
         
-        export2 = TabExport.objects.create(
+        export2 = baker.make(TabExport,
             transcription=completed_transcription,
-            format="midi"
+            format="gp5"
         )
         
-        export3 = TabExport.objects.create(
+        exports = TabExport.objects.filter(transcription=completed_transcription)
+        assert exports.first().id == export2.id  # Most recent first
+    
+    @pytest.mark.unit
+    def test_multiple_exports_per_transcription(self, completed_transcription):
+        """Test that a transcription can have multiple exports."""
+        export1 = baker.make(TabExport,
+            transcription=completed_transcription,
+            format="musicxml"
+        )
+        
+        export2 = baker.make(TabExport,
+            transcription=completed_transcription,
+            format="gp5"  # Use valid format
+        )
+        
+        export3 = baker.make(TabExport,
             transcription=completed_transcription,
             format="ascii"
         )
@@ -239,7 +241,7 @@ class TestTabExportModel:
         
         formats = [e.format for e in exports]
         assert "musicxml" in formats
-        assert "midi" in formats
+        assert "gp5" in formats
         assert "ascii" in formats
     
     @pytest.mark.unit

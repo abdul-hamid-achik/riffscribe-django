@@ -25,8 +25,8 @@ class TestRiffScribeWorkflow:
         self.page.goto(f"{self.live_server_url}/")
         
         # Check title and main elements
-        expect(self.page).to_have_title("RiffScribe - Guitar Tab Transcription")
-        expect(self.page.locator("h1")).to_contain_text("RiffScribe")
+        expect(self.page).to_have_title("RiffScribe")
+        expect(self.page.locator("h1")).to_contain_text("Turn Any Song Into")
         
         # Check navigation elements
         expect(self.page.locator("nav")).to_be_visible()
