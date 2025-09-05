@@ -3,281 +3,410 @@
 <!-- Tab Display Partial for completed transcriptions -->
 <div id="tab-display">
     {% if transcription.status == 'completed' %}
-        <!-- Musical Analysis Card -->
-        <div class="sheet-card rounded-lg p-6 mb-6">
-            <h2 class="font-headline text-lg font-medium text-nyt-black flex items-center gap-2 mb-4">
-                <span class="text-accent-gold">♪</span>
-                Musical Analysis
-            </h2>
-            
-            <!-- Primary Metrics -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <!-- Key Signature -->
-                {% if transcription.estimated_key %}
-                <div class="text-center py-3 border border-nyt-border rounded">
-                    <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Key</div>
-                    <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_key }}</div>
-                </div>
-                {% endif %}
-                
-                <!-- Tempo -->
-                {% if transcription.estimated_tempo %}
-                <div class="text-center py-3 border border-nyt-border rounded">
-                    <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Tempo</div>
-                    <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_tempo }}<span class="text-sm font-normal"> BPM</span></div>
-                </div>
-                {% endif %}
-                
-                <!-- Complexity -->
-                {% if transcription.complexity %}
-                <div class="text-center py-3 border border-nyt-border rounded">
-                    <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Complexity</div>
-                    <div class="text-lg font-headline text-nyt-black">{{ transcription.get_complexity_display }}</div>
-                </div>
-                {% endif %}
-                
-                <!-- Duration -->
-                <div class="text-center py-3 border border-nyt-border rounded">
-                    <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Duration</div>
-                    <div class="text-xl font-headline text-nyt-black">{{ transcription.duration_formatted }}</div>
-                </div>
+    <!-- Musical Analysis Card -->
+    <div class="sheet-card rounded-lg p-6 mb-6">
+        <h2 class="font-headline text-lg font-medium text-nyt-black flex items-center gap-2 mb-4">
+            <span class="text-accent-gold">♪</span>
+            Musical Analysis
+        </h2>
+
+        <!-- Primary Metrics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <!-- Key Signature -->
+            {% if transcription.estimated_key %}
+            <div class="text-center py-3 border border-nyt-border rounded">
+                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Key</div>
+                <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_key }}</div>
             </div>
-            
-            <!-- Secondary Information -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-nyt-border">
-                <!-- Detected Instruments -->
-                {% if transcription.detected_instruments %}
-                <div>
-                    <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Instruments</h4>
-                    <div class="space-y-1">
-                        {% for instrument in transcription.detected_instruments %}
-                            <span class="inline-block text-xs font-medium text-nyt-gray-dark bg-sheet-ivory border border-nyt-border px-2 py-1 rounded mr-1">
-                                {{ instrument|capfirst }}
-                            </span>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Technical Details -->
-                <div>
-                    <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Audio Properties</h4>
-                    <div class="text-sm text-nyt-gray-dark space-y-1">
-                        {% if transcription.sample_rate %}
-                        <div class="flex justify-between">
-                            <span>Sample Rate:</span>
-                            <span class="font-medium">{{ transcription.sample_rate|floatformat:0 }} Hz</span>
-                        </div>
-                        {% endif %}
-                        {% if transcription.channels %}
-                        <div class="flex justify-between">
-                            <span>Channels:</span>
-                            <span class="font-medium">{{ transcription.channels }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                
-                <!-- Playability -->
-                {% if transcription.metrics %}
-                <div>
-                    <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Playability</h4>
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between text-sm">
-                            <span class="text-nyt-gray-dark">Score:</span>
-                            <span class="font-medium text-nyt-black">{{ transcription.metrics.playability_score|default:0|floatformat:0 }}/100</span>
-                        </div>
-                        <div class="w-full bg-nyt-border rounded-full h-1.5">
-                            <div class="bg-accent-gold h-1.5 rounded-full transition-all duration-300" style="width: {{ transcription.metrics.playability_score|default:0 }}%"></div>
-                        </div>
-                        {% if transcription.metrics.recommended_skill_level %}
-                        <div class="text-xs text-nyt-gray-medium">
-                            Recommended for: <span class="font-medium text-nyt-black">{{ transcription.metrics.get_recommended_skill_level_display }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
+            {% endif %}
+
+            <!-- Tempo -->
+            {% if transcription.estimated_tempo %}
+            <div class="text-center py-3 border border-nyt-border rounded">
+                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Tempo</div>
+                <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_tempo }}<span
+                        class="text-sm font-normal"> BPM</span></div>
+            </div>
+            {% endif %}
+
+            <!-- Complexity -->
+            {% if transcription.complexity %}
+            <div class="text-center py-3 border border-nyt-border rounded">
+                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Complexity</div>
+                <div class="text-lg font-headline text-nyt-black">{{ transcription.get_complexity_display }}</div>
+            </div>
+            {% endif %}
+
+            <!-- Duration -->
+            <div class="text-center py-3 border border-nyt-border rounded">
+                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Duration</div>
+                <div class="text-xl font-headline text-nyt-black">{{ transcription.duration_formatted }}</div>
             </div>
         </div>
 
-        <!-- Guitar Tab Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="font-headline text-xl font-bold text-gray-900 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
-                    </svg>
-                    Guitar Tab
-                </h2>
+        <!-- Secondary Information -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-nyt-border">
+            <!-- Detected Instruments -->
+            {% if transcription.detected_instruments %}
+            <div>
+                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Instruments</h4>
+                <div class="space-y-1">
+                    {% for instrument in transcription.detected_instruments %}
+                    <span
+                        class="inline-block text-xs font-medium text-nyt-gray-dark bg-sheet-ivory border border-nyt-border px-2 py-1 rounded mr-1">
+                        {{ instrument|capfirst }}
+                    </span>
+                    {% endfor %}
+                </div>
             </div>
-            
-            <!-- Tab Content -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                {% if transcription.guitar_notes %}
-                    
-                    <!-- Interactive Tab Display -->
-                    <div class="space-y-4">
-                        <!-- Tab Preview Container -->
-                        <div class="bg-white border rounded-lg p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <h4 class="font-semibold text-gray-900">Interactive Guitar Tab</h4>
-                                <div class="flex items-center gap-2">
-                                    <button id="preview-btn" 
-                                            class="px-4 py-2 bg-musical-gold hover:bg-musical-treble text-white rounded-lg transition-colors"
-                                            onclick="showTabPreview()">
-                                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                        Preview Tab
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <!-- AlphaTab Container -->
-                            <div id="alphaTab" class="min-h-96 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                                <div class="text-center text-gray-500">
-                                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
-                                    </svg>
-                                    <p class="text-lg font-medium mb-2">Interactive Guitar Tab Preview</p>
-                                    <p class="text-sm">Click "Preview Tab" to see the notation and hear playback</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Player Controls -->
-                            <div id="player-controls" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border">
+            {% endif %}
+
+            <!-- Technical Details -->
+            <div>
+                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Audio Properties</h4>
+                <div class="text-sm text-nyt-gray-dark space-y-1">
+                    {% if transcription.sample_rate %}
+                    <div class="flex justify-between">
+                        <span>Sample Rate:</span>
+                        <span class="font-medium">{{ transcription.sample_rate|floatformat:0 }} Hz</span>
+                    </div>
+                    {% endif %}
+                    {% if transcription.channels %}
+                    <div class="flex justify-between">
+                        <span>Channels:</span>
+                        <span class="font-medium">{{ transcription.channels }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Playability -->
+            {% if transcription.metrics %}
+            <div>
+                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Playability</h4>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-nyt-gray-dark">Score:</span>
+                        <span class="font-medium text-nyt-black">{{
+                            transcription.metrics.playability_score|default:0|floatformat:0 }}/100</span>
+                    </div>
+                    <div class="w-full bg-nyt-border rounded-full h-1.5">
+                        <div class="bg-accent-gold h-1.5 rounded-full transition-all duration-300"
+                            style="width: {{ transcription.metrics.playability_score|default:0 }}%"></div>
+                    </div>
+                    {% if transcription.metrics.recommended_skill_level %}
+                    <div class="text-xs text-nyt-gray-medium">
+                        Recommended for: <span class="font-medium text-nyt-black">{{
+                            transcription.metrics.get_recommended_skill_level_display }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Guitar Tab Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="font-headline text-xl font-bold text-gray-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+                </svg>
+                Guitar Tab
+            </h2>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+            {% if transcription.guitar_notes %}
+
+            <!-- Interactive Tab Display -->
+            <div class="space-y-4">
+                <!-- Tab Preview Container -->
+                <div class="bg-white border rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-semibold text-gray-900">Interactive Guitar Tab</h4>
+                        <div class="flex items-center gap-2">
+                            <button id="preview-btn"
+                                class="px-4 py-2 bg-musical-gold hover:bg-musical-treble text-white rounded-lg transition-colors"
+                                onclick="showTabPreview()">
+                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                                Preview Tab
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- AlphaTab Container -->
+                    <div id="alphaTab"
+                        class="min-h-96 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+
+                        <!-- Initial Preview State -->
+                        <div id="preview-placeholder" class="h-full flex flex-col">
+                            <!-- Header Bar -->
+                            <div class="bg-gradient-to-r from-musical-gold to-musical-treble text-white p-4">
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-4">
-                                        <button id="play-pause-btn" class="w-12 h-12 bg-musical-gold hover:bg-musical-treble text-white rounded-full flex items-center justify-center transition-colors">
-                                            <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
-                                            </svg>
-                                        </button>
-                                        <div class="flex-1 max-w-md">
-                                            <div class="flex items-center justify-between text-sm text-gray-600 mb-1">
-                                                <span id="current-time">0:00</span>
-                                                <span id="total-time">{{ transcription.duration_formatted|default:"3:04" }}</span>
+                                    <div class="flex items-center space-x-3">
+                                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                                        </svg>
+                                        <div>
+                                            <h4 class="font-semibold">{{ transcription.filename|truncatechars:40 }}</h4>
+                                            <p class="text-xs opacity-90">
+                                                {{ transcription.estimated_tempo|default:"120" }} BPM •
+                                                {{ transcription.estimated_key|default:"Unknown" }} •
+                                                {{ transcription.complexity|capfirst|default:"Moderate" }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-xs opacity-90">
+                                        <div>{{ transcription.duration_formatted }}</div>
+                                        <div>{{ transcription.detected_instruments|join:", "|default:"Guitar" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview Content -->
+                            <div class="flex-1 flex items-center justify-center p-8">
+                                <div class="text-center max-w-md">
+                                    <div class="bg-gray-50 rounded-lg p-6 mb-6 border border-gray-100">
+                                        <pre class="text-xs font-mono text-gray-700 leading-relaxed overflow-x-auto">
+e|--0---2---3---2---0-------0---2---3---5---3---2---0-------
+B|----3---3---3---3---3---3---3---3---3---3---3---3---3-----
+G|----------------------------------------------------------
+D|----------------------------------------------------------
+A|----------------------------------------------------------
+E|----------------------------------------------------------</pre>
+                                        <p class="text-xs text-gray-500 mt-3 italic">Sample tablature notation</p>
+                                    </div>
+
+                                    <div class="space-y-3">
+                                        <h5 class="text-lg font-medium text-gray-900">Ready to Preview</h5>
+                                        <p class="text-sm text-gray-600">
+                                            Click the preview button above to load the interactive guitar tab with:
+                                        </p>
+                                        <div class="grid grid-cols-1 gap-2 text-sm text-gray-600">
+                                            <div class="flex items-center justify-center space-x-2">
+                                                <svg class="w-4 h-4 text-green-500" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                <span>Interactive tablature notation</span>
                                             </div>
-                                            <div class="w-full bg-gray-200 rounded-full h-2 cursor-pointer" id="progress-bar">
-                                                <div class="bg-musical-gold h-2 rounded-full transition-all" style="width: 0%" id="progress"></div>
+                                            <div class="flex items-center justify-center space-x-2">
+                                                <svg class="w-4 h-4 text-green-500" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                <span>Audio playback with highlighting</span>
+                                            </div>
+                                            <div class="flex items-center justify-center space-x-2">
+                                                <svg class="w-4 h-4 text-green-500" fill="currentColor"
+                                                    viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                <span>Zoom and navigation controls</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm text-gray-600">Volume:</span>
-                                        <input type="range" min="0" max="100" value="80" class="w-20" id="volume-slider">
+                                </div>
+                            </div>
+
+                            <!-- Footer Hint -->
+                            <div class="bg-gray-50 px-4 py-3 border-t border-gray-100">
+                                <p class="text-xs text-gray-500 text-center">
+                                    💡 Tip: Use the export options above to download in your preferred format (MusicXML,
+                                    Guitar Pro, MIDI, etc.)
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Loading State (Hidden initially) -->
+                        <div id="preview-loading" class="hidden h-full flex items-center justify-center">
+                            <div class="text-center">
+                                <div
+                                    class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-musical-gold border-t-transparent mb-4">
+                                </div>
+                                <p class="text-lg font-medium text-gray-900">Loading Interactive Tab...</p>
+                                <p class="text-sm text-gray-600">This may take a few moments for complex pieces</p>
+                            </div>
+                        </div>
+
+                        <!-- Error State (Hidden initially) -->
+                        <div id="preview-error" class="hidden h-full flex items-center justify-center">
+                            <div class="text-center max-w-md">
+                                <svg class="w-16 h-16 mx-auto mb-4 text-red-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                <h5 class="text-lg font-medium text-gray-900 mb-2">Preview Unavailable</h5>
+                                <p class="text-sm text-gray-600 mb-4">
+                                    We couldn't load the tab preview. This might be due to complex notation or a
+                                    temporary issue.
+                                </p>
+                                <button onclick="retryPreview()"
+                                    class="px-4 py-2 bg-musical-gold hover:bg-musical-treble text-white rounded-lg text-sm transition-colors">
+                                    Try Again
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Player Controls -->
+                    <div id="player-controls" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <button id="play-pause-btn"
+                                    class="w-12 h-12 bg-musical-gold hover:bg-musical-treble text-white rounded-full flex items-center justify-center transition-colors">
+                                    <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                                    </svg>
+                                </button>
+                                <div class="flex-1 max-w-md">
+                                    <div class="flex items-center justify-between text-sm text-gray-600 mb-1">
+                                        <span id="current-time">0:00</span>
+                                        <span id="total-time">{{ transcription.duration_formatted|default:"3:04"
+                                            }}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2 cursor-pointer" id="progress-bar">
+                                        <div class="bg-musical-gold h-2 rounded-full transition-all" style="width: 0%"
+                                            id="progress"></div>
                                     </div>
                                 </div>
                             </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-600">Volume:</span>
+                                <input type="range" min="0" max="100" value="80" class="w-20" id="volume-slider">
+                            </div>
                         </div>
                     </div>
-                {% else %}
-                    <div class="text-center py-8 text-gray-500">
-                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
-                        </svg>
-                        <p>No tab data available. Try reprocessing the transcription.</p>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
+                </svg>
+                <p>No tab data available. Try reprocessing the transcription.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Fingering Variants -->
+    {% if transcription.variants.exists %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="font-headline text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
+            Fingering Variants
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for variant in transcription.variants.all %}
+            <div
+                class="border rounded-lg p-4 transition-all {% if variant.is_selected %}border-musical-gold bg-musical-gold/5{% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="font-medium text-gray-900">{{ variant.variant_name|title }}</h4>
+                    {% if variant.is_selected %}
+                    <span class="px-2 py-1 bg-musical-gold text-white text-xs font-medium rounded-full">
+                        Selected
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2 text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Difficulty:</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full"
+                                    style="width: {{ variant.difficulty_score|floatformat:0 }}0%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium">{{ variant.difficulty_score|floatformat:1 }}</span>
+                        </div>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Playability:</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full"
+                                    style="width: {{ variant.playability_score|floatformat:0 }}0%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium">{{ variant.playability_score|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Stretch:</span>
+                        <div class="flex items-center gap-2">
+                            <div class="w-16 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full"
+                                    style="width: {{ variant.stretch_score|floatformat:0 }}0%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium">{{ variant.stretch_score|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not variant.is_selected %}
+                <button type="button"
+                    class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+                    hx-post="{% url 'transcriber:select_variant' variant.id %}" hx-target="#tab-display"
+                    hx-swap="outerHTML">
+                    Select Variant
+                </button>
                 {% endif %}
             </div>
+            {% endfor %}
         </div>
-
-        <!-- Fingering Variants -->
-        {% if transcription.variants.exists %}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-            <h2 class="font-headline text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
-                </svg>
-                Fingering Variants
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {% for variant in transcription.variants.all %}
-                <div class="border rounded-lg p-4 transition-all {% if variant.is_selected %}border-musical-gold bg-musical-gold/5{% else %}border-gray-200 hover:border-gray-300{% endif %}">
-                    <div class="flex justify-between items-start mb-3">
-                        <h4 class="font-medium text-gray-900">{{ variant.variant_name|title }}</h4>
-                        {% if variant.is_selected %}
-                            <span class="px-2 py-1 bg-musical-gold text-white text-xs font-medium rounded-full">
-                                Selected
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="space-y-2 text-sm mb-4">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Difficulty:</span>
-                            <div class="flex items-center gap-2">
-                                <div class="w-16 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-red-500 h-2 rounded-full" style="width: {{ variant.difficulty_score|floatformat:0 }}0%"></div>
-                                </div>
-                                <span class="text-gray-900 font-medium">{{ variant.difficulty_score|floatformat:1 }}</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Playability:</span>
-                            <div class="flex items-center gap-2">
-                                <div class="w-16 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-500 h-2 rounded-full" style="width: {{ variant.playability_score|floatformat:0 }}0%"></div>
-                                </div>
-                                <span class="text-gray-900 font-medium">{{ variant.playability_score|floatformat:1 }}</span>
-                            </div>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Stretch:</span>
-                            <div class="flex items-center gap-2">
-                                <div class="w-16 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: {{ variant.stretch_score|floatformat:0 }}0%"></div>
-                                </div>
-                                <span class="text-gray-900 font-medium">{{ variant.stretch_score|floatformat:1 }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {% if not variant.is_selected %}
-                    <button type="button"
-                            class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
-                            hx-post="{% url 'transcriber:select_variant' variant.id %}"
-                            hx-target="#tab-display"
-                            hx-swap="outerHTML">
-                        Select Variant
-                    </button>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
+    </div>
+    {% endif %}
 
     {% elif transcription.status == 'failed' %}
-        <div class="bg-red-50 border border-red-200 rounded-xl p-6">
-            <div class="flex items-start gap-3">
-                <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <div>
-                    <h3 class="font-medium text-red-800">Transcription Failed</h3>
-                    {% if transcription.error_message %}
-                        <p class="mt-1 text-red-700">{{ transcription.error_message }}</p>
-                    {% endif %}
-                    <button class="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
-                            hx-post="{% url 'transcriber:reprocess' pk=transcription.pk %}"
-                            hx-target="#tab-display"
-                            hx-swap="outerHTML">
-                        Try Again
-                    </button>
-                </div>
+    <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h3 class="font-medium text-red-800">Transcription Failed</h3>
+                {% if transcription.error_message %}
+                <p class="mt-1 text-red-700">{{ transcription.error_message }}</p>
+                {% endif %}
+                <button
+                    class="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                    hx-post="{% url 'transcriber:reprocess' pk=transcription.pk %}" hx-target="#tab-display"
+                    hx-swap="outerHTML">
+                    Try Again
+                </button>
             </div>
         </div>
+    </div>
     {% else %}
-        <!-- Still processing, keep polling -->
-        <div hx-get="{% url 'transcriber:transcription_status' transcription.id %}"
-             hx-trigger="every 2s"
-             hx-target="#tab-display"
-             hx-swap="outerHTML">
-            {% include 'transcriber/partials/processing_status.html' %}
-        </div>
+    <!-- Still processing, keep polling -->
+    <div hx-get="{% url 'transcriber:transcription_status' transcription.id %}" hx-trigger="every 2s"
+        hx-target="#tab-display" hx-swap="outerHTML">
+        {% include 'transcriber/partials/processing_status.html' %}
+    </div>
     {% endif %}
 </div>

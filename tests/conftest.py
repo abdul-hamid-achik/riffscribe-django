@@ -1,3 +1,4 @@
+
 """
 Pytest configuration and fixtures for RiffScribe tests.
 """
@@ -6,6 +7,17 @@ import sys
 import pytest
 import django
 from pathlib import Path
+
+# Reclassify legacy markers into primary categories
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        if item.get_closest_marker("slow"):
+            item.add_marker(pytest.mark.integration)
+        if item.get_closest_marker("captcha"):
+            item.add_marker(pytest.mark.integration)
+        if item.get_closest_marker("comment"):
+            item.add_marker(pytest.mark.integration)
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -16,7 +28,9 @@ django.setup()
 
 from django.test import Client
 from django.core.files.uploadedfile import SimpleUploadedFile
+from model_bakery import baker
 from transcriber.models import Transcription
+import pytest
 
 
 @pytest.fixture
@@ -54,8 +68,9 @@ def sample_audio_file():
 
 @pytest.fixture
 def sample_transcription(sample_audio_file):
-    """Create a sample transcription in the database."""
-    transcription = Transcription.objects.create(
+    """Create a sample transcription in the database using Model Bakery."""
+    transcription = baker.make(
+        Transcription,
         filename="test_audio.wav",
         original_audio=sample_audio_file,
         status="pending"
@@ -65,8 +80,9 @@ def sample_transcription(sample_audio_file):
 
 @pytest.fixture
 def completed_transcription():
-    """Create a completed transcription with results."""
-    transcription = Transcription.objects.create(
+    """Create a completed transcription with results using Model Bakery."""
+    transcription = baker.make(
+        Transcription,
         filename="completed.wav",
         status="completed",
         duration=30.5,

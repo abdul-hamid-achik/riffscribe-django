@@ -14,11 +14,11 @@ except ImportError:
     psutil = None
 
 from .models import Transcription, TabExport
-from .ml_pipeline import MLPipeline
-from .tab_generator import TabGenerator
-from .export_manager import ExportManager
-from .variant_generator import VariantGenerator
-from .json_utils import ensure_json_serializable
+from .services.ml_pipeline import MLPipeline
+from .services.tab_generator import TabGenerator
+from .services.export_manager import ExportManager
+from .services.variant_generator import VariantGenerator
+from .utils.json_utils import ensure_json_serializable
 
 logger = logging.getLogger(__name__)
 

@@ -117,10 +117,10 @@ class DrumWorkflowIntegrationTest(TestCase):
         with patch('transcriber.tab_generator.TabGenerator.generate_optimized_tabs') as mock_tabs:
             mock_tabs.return_value = {'measures': [], 'strings': 6}
             
-            with patch('transcriber.export_manager.ExportManager.generate_musicxml') as mock_xml:
+            with patch('transcriber.services.export_manager.ExportManager.generate_musicxml') as mock_xml:
                 mock_xml.return_value = '<musicxml>Mock</musicxml>'
                 
-                with patch('transcriber.export_manager.ExportManager.generate_gp5') as mock_gp5:
+                with patch('transcriber.services.export_manager.ExportManager.generate_gp5') as mock_gp5:
                     mock_gp5.return_value = '/tmp/mock.gp5'
                     
                     with patch('transcriber.variant_generator.VariantGenerator.generate_all_variants') as mock_variants:
@@ -203,12 +203,12 @@ class DrumWorkflowIntegrationTest(TestCase):
         self.assertEqual(len(tracks), 1)
         self.assertEqual(tracks[0].track_type, 'drums')
     
-    @patch('transcriber.drum_transcriber.librosa.load')
-    @patch('transcriber.drum_transcriber.librosa.beat.beat_track')
-    @patch('transcriber.drum_transcriber.librosa.onset.onset_detect')
+    @patch('transcriber.services.drum_transcriber.librosa.load')
+    @patch('transcriber.services.drum_transcriber.librosa.beat.beat_track')
+    @patch('transcriber.services.drum_transcriber.librosa.onset.onset_detect')
     def test_drum_analysis_accuracy(self, mock_onset, mock_beat, mock_load):
         """Test accuracy of drum analysis"""
-        from transcriber.drum_transcriber import DrumTranscriber
+        from transcriber.services.drum_transcriber import DrumTranscriber
         
         # Setup mocks for a simple drum pattern
         sample_rate = 22050
@@ -324,7 +324,7 @@ class DrumPatternRecognitionTest(TestCase):
     
     def test_rock_beat_pattern(self):
         """Test recognition of standard rock beat"""
-        from transcriber.drum_transcriber import DrumTranscriber, DrumHit
+        from transcriber.services.drum_transcriber import DrumTranscriber, DrumHit
         
         transcriber = DrumTranscriber()
         
@@ -354,7 +354,7 @@ class DrumPatternRecognitionTest(TestCase):
     
     def test_drum_fill_detection(self):
         """Test detection of drum fills"""
-        from transcriber.drum_transcriber import DrumTranscriber, DrumHit
+        from transcriber.services.drum_transcriber import DrumTranscriber, DrumHit
         
         transcriber = DrumTranscriber()
         

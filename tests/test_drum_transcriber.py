@@ -8,7 +8,7 @@ import tempfile
 import os
 from django.test import TestCase
 from unittest.mock import Mock, patch, MagicMock
-from transcriber.drum_transcriber import DrumTranscriber, DrumHit
+from transcriber.services.drum_transcriber import DrumTranscriber, DrumHit
 
 
 class DrumTranscriberTestCase(TestCase):

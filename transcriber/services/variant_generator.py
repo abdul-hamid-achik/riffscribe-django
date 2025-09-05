@@ -10,7 +10,7 @@ from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
-from .models import (
+from ..models import (
     Transcription, FingeringVariant, 
     PlayabilityMetrics, FingeringMeasureStat
 )
@@ -492,7 +492,7 @@ class VariantGenerator:
         Returns:
             List of created TrackVariant objects
         """
-        from .models import TrackVariant  # Import here to avoid circular imports
+        from ..models import TrackVariant  # Import here to avoid circular imports
         
         variants = []
         

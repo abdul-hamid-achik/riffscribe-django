@@ -9,7 +9,7 @@ import logging
 from typing import Dict, List, Optional, Tuple
 import tempfile
 import gc
-from .json_utils import clean_analysis_result
+from ..utils.json_utils import clean_analysis_result
 import soundfile as sf
 from django.conf import settings
 
@@ -54,7 +54,7 @@ class MLPipeline:
     Integrates multiple models for source separation, pitch detection, and analysis.
     """
     
-    def __init__(self, use_gpu=False, demucs_model='htdemucs_ft', basic_pitch_model='default', use_whisper=None, enable_multitrack=True):
+    def __init__(self, use_gpu=False, demucs_model='htdemucs', basic_pitch_model='default', use_whisper=None, enable_multitrack=True):
         self.use_gpu = use_gpu and torch.cuda.is_available()
         self.device = torch.device('cuda' if self.use_gpu else 'cpu')
         self.demucs_model_name = demucs_model
@@ -141,7 +141,7 @@ class MLPipeline:
             try:
                 whisper_analysis = self.whisper_service.analyze_music(audio_path)
                 # Ensure the whisper analysis is JSON serializable
-                from .json_utils import ensure_json_serializable
+                from ..utils.json_utils import ensure_json_serializable
                 result['whisper_analysis'] = ensure_json_serializable(whisper_analysis)
                 
                 # Merge Whisper-detected instruments

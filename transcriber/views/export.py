@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods
 from celery.result import AsyncResult
 from ..models import Transcription, TabExport, FingeringVariant
 from ..tasks import generate_export
-from ..export_manager import ExportManager
+from ..services.export_manager import ExportManager
 import os
 
 

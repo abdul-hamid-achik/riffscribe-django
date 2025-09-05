@@ -2,7 +2,7 @@
 Unit tests for the tab generator with DP optimization.
 """
 import pytest
-from transcriber.tab_generator import TabGenerator, GuitarNote, Technique
+from transcriber.services.tab_generator import TabGenerator, GuitarNote, Technique
 
 
 class TestTabGenerator:

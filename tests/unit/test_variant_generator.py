@@ -7,10 +7,10 @@ import json
 from unittest.mock import Mock, patch, MagicMock
 from django.test import TestCase
 from transcriber.models import Transcription, FingeringVariant, PlayabilityMetrics
-from transcriber.variant_generator import (
+from transcriber.services.variant_generator import (
     VariantGenerator, TechniqueInference, MetricsCalculator
 )
-from transcriber.fingering_optimizer import FretChoice, FINGERING_PRESETS
+from transcriber.services.fingering_optimizer import FretChoice, FINGERING_PRESETS
 
 
 class TestTechniqueInference(TestCase):
@@ -251,7 +251,7 @@ class TestVariantGenerator(TestCase):
         """Test conversion of optimizer output to tab format"""
         generator = VariantGenerator(self.transcription)
         
-        from transcriber.fingering_optimizer import Note, FretChoice
+        from transcriber.services.fingering_optimizer import Note, FretChoice
         
         notes = [
             Note(midi_note=60, time=0.0, duration=0.5),
@@ -278,7 +278,7 @@ class TestVariantGenerator(TestCase):
     @patch('transcriber.fingering_optimizer.FingeringOptimizer.optimize_sequence')
     def test_generate_variant(self, mock_optimize, mock_extract):
         """Test single variant generation"""
-        from transcriber.fingering_optimizer import Note, FretChoice
+        from transcriber.services.fingering_optimizer import Note, FretChoice
         
         # Mock the note extraction
         mock_extract.return_value = [
@@ -304,7 +304,7 @@ class TestVariantGenerator(TestCase):
         """Test weight adjustment for original preset"""
         generator = VariantGenerator(self.transcription)
         
-        from transcriber.fingering_optimizer import OptimizationWeights
+        from transcriber.services.fingering_optimizer import OptimizationWeights
         
         weights = OptimizationWeights()
         original_center = weights.pref_fret_center

@@ -21,7 +21,7 @@ class Note:
     velocity: int = 80
     
     
-@dataclass
+@dataclass(frozen=True)
 class FretChoice:
     """A possible fret/string combination for a note"""
     string: int  # 1-6 (1=highest pitch string)

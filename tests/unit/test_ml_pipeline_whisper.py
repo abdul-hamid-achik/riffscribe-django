@@ -4,7 +4,7 @@ import tempfile
 import json
 from django.test import TestCase
 
-from transcriber.ml_pipeline import MLPipeline
+from transcriber.services.ml_pipeline import MLPipeline
 
 
 class TestMLPipelineWhisperIntegration(TestCase):
@@ -17,7 +17,7 @@ class TestMLPipelineWhisperIntegration(TestCase):
             f.write(b'fake audio data')
             return f.name
     
-    @patch('transcriber.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
     def test_pipeline_init_with_whisper(self, mock_whisper_service):
         """Test ML pipeline initialization with Whisper enabled"""
         mock_service_instance = Mock()
@@ -33,7 +33,7 @@ class TestMLPipelineWhisperIntegration(TestCase):
             assert pipeline.whisper_service == mock_service_instance
             mock_whisper_service.assert_called_once_with(api_key='test-key', model='whisper-1')
     
-    @patch('transcriber.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
     def test_pipeline_init_without_whisper(self, mock_whisper_service):
         """Test ML pipeline initialization with Whisper disabled"""
         with patch('django.conf.settings') as mock_settings:
@@ -44,8 +44,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             assert pipeline.whisper_service is None
             mock_whisper_service.assert_not_called()
     
-    @patch('transcriber.ml_pipeline.WhisperService')
-    @patch('transcriber.ml_pipeline.librosa')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.librosa')
     def test_analyze_audio_with_whisper(self, mock_librosa, mock_whisper_service, sample_audio_file):
         """Test audio analysis with Whisper enhancement"""
         # Mock librosa
@@ -73,7 +73,7 @@ class TestMLPipelineWhisperIntegration(TestCase):
             
             pipeline = MLPipeline(use_gpu=False)
             
-            with patch('transcriber.ml_pipeline.os.path.exists', return_value=True):
+            with patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True):
                 result = pipeline.analyze_audio(sample_audio_file)
             
             # Verify Whisper was called
@@ -85,8 +85,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             assert 'Am' in result['whisper_analysis']['musical_elements']['chords']
             assert result['whisper_analysis']['musical_elements']['tempo'] == 120
     
-    @patch('transcriber.ml_pipeline.WhisperService')
-    @patch('transcriber.ml_pipeline.librosa')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.librosa')
     def test_analyze_audio_whisper_fallback(self, mock_librosa, mock_whisper_service, sample_audio_file):
         """Test audio analysis with Whisper failure fallback"""
         # Mock librosa
@@ -107,8 +107,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             
             pipeline = MLPipeline(use_gpu=False)
             
-            with patch('transcriber.ml_pipeline.os.path.exists', return_value=True), \
-                 patch('transcriber.ml_pipeline.logger') as mock_logger:
+            with patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True), \
+                 patch('transcriber.services.ml_pipeline.logger') as mock_logger:
                 
                 result = pipeline.analyze_audio(sample_audio_file)
             
@@ -120,8 +120,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             assert 'tempo' in result
             assert 'whisper_analysis' not in result  # Should be excluded on failure
     
-    @patch('transcriber.ml_pipeline.WhisperService')
-    @patch('transcriber.ml_pipeline.basic_pitch')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.basic_pitch')
     def test_transcribe_with_whisper_context(self, mock_basic_pitch, mock_whisper_service, sample_audio_file):
         """Test transcription with Whisper context enhancement"""
         # Mock basic_pitch
@@ -157,8 +157,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
                 'detected_instruments': ['guitar']
             }
             
-            with patch('transcriber.ml_pipeline.os.path.exists', return_value=True), \
-                 patch('transcriber.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)):
+            with patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True), \
+                 patch('transcriber.services.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)):
                 
                 result = pipeline.transcribe(sample_audio_file, context=context)
             
@@ -192,8 +192,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             
             pipeline = MLPipeline(use_gpu=False)
             
-            with patch('transcriber.ml_pipeline.os.path.exists', return_value=True), \
-                 patch('transcriber.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)):
+            with patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True), \
+                 patch('transcriber.services.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)):
                 
                 result = pipeline.transcribe(sample_audio_file)
             
@@ -218,8 +218,8 @@ class TestMLPipelineWhisperIntegration(TestCase):
             
             pipeline = MLPipeline(use_gpu=False)
             
-            with patch('transcriber.ml_pipeline.logger') as mock_logger, \
-                 patch('transcriber.ml_pipeline.os.path.exists', return_value=False):
+            with patch('transcriber.services.ml_pipeline.logger') as mock_logger, \
+                 patch('transcriber.services.ml_pipeline.os.path.exists', return_value=False):
                 
                 # Should handle the error gracefully
                 result = pipeline.analyze_audio('nonexistent.mp3')

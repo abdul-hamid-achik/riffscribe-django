@@ -7,19 +7,104 @@ authors = [
     { name = "abdul hamid", email = "abdulachik@icloud.com" }
 ]
 requires-python = ">=3.11"
-# Note: Dependencies are managed in requirements/ folder for better Docker layering
-# Use: pip install -r requirements/base.txt -r requirements/ml.txt
-dependencies = []
+dependencies = [
+    # Django and web framework
+    "django>=5.0",
+    "django-htmx>=1.17",
+    "django-cors-headers>=4.3",
+    "whitenoise>=6.6",
+    "gunicorn>=21.2",
+    "python-decouple>=3.8",
+    
+    # Storage
+    "django-storages[boto3]>=1.14",
+    "boto3>=1.26",
+    
+    # Database
+    "psycopg2-binary>=2.9",
+    
+    # Celery and task queue
+    "celery>=5.3,<5.4",
+    "vine==5.0.0",
+    "kombu>=5.3,<5.4", 
+    "amqp>=5.2,<5.3",
+    "redis>=5.0",
+    "flower>=2.0",
+    
+    # System monitoring
+    "psutil>=5.9.0",
+    
+    # File handling
+    "pillow>=10.0",
+    
+    # Authentication and forms
+    "django-allauth>=0.57.0",
+    "PyJWT>=2.8.0",
+    "cryptography>=41.0.0",
+    "django-crispy-forms>=2.1",
+    "crispy-tailwind>=1.0.3",
+    "django-tailwind[reload]>=3.8",
+    "django-simple-captcha>=0.6.0",
+    "requests>=2.31",
+    
+    # ML and Audio processing
+    "numpy>=1.24,<2.0",
+    "scipy>=1.11",
+    "librosa>=0.10",
+    "soundfile>=0.12", 
+    "pydub>=0.25",
+    "audioread>=3.0",
+    "resampy>=0.4",
+    
+    # PyTorch (latest versions with Python 3.13 support)
+    "torch>=2.5.0",
+    "torchaudio>=2.5.0",
+    
+    # AI/ML APIs
+    "openai>=1.0",
+    
+    # Music processing  
+    "pretty-midi>=0.2",
+    "music21>=9.1",
+    "midiutil>=1.2",
+    
+    # Guitar tab formats
+    "pyguitarpro>=0.10",
+    
+    # Advanced audio models (commented until Python 3.13 support)
+    # "demucs>=4.0",  # Requires older Python
+    # "basic-pitch>=0.3",  # Requires older Python
+]
 
 [project.optional-dependencies]
 dev = [
-    "django-debug-toolbar>=4.2",
     "pytest>=7.4",
-    "pytest-django>=4.7",
+    "pytest-django>=4.7", 
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=1.0",
+    "pytest-playwright>=0.7",
+    "pytest-env>=1.1",
+    "pytest-dotenv>=0.5",
+    "model-bakery>=1.19",
     "black>=23.12",
     "ruff>=0.1",
+    "ipython>=8.18",
 ]
 
 [build-system]
-requires = ["uv_build>=0.8.15,<0.9.0"]
-build-backend = "uv_build"
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["riffscribe*", "transcriber*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-cov>=6.2.1",
+    "pytest-django>=4.11.1",
+    "pytest-env>=1.1",
+    "pytest-dotenv>=0.5",
+    "model-bakery>=1.19",
+]

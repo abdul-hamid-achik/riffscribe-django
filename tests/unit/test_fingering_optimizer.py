@@ -4,7 +4,7 @@ Unit tests for the fingering optimizer
 
 import pytest
 from unittest.mock import Mock, patch
-from transcriber.fingering_optimizer import (
+from transcriber.services.fingering_optimizer import (
     FingeringOptimizer, OptimizationWeights, FINGERING_PRESETS,
     Note, FretChoice, STANDARD_TUNING
 )

@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required
 from celery.result import AsyncResult
 from ..models import Transcription, FingeringVariant, PlayabilityMetrics
 from ..tasks import generate_variants
-from ..export_manager import ExportManager
+from ..services.export_manager import ExportManager
 import json
 
 
@@ -120,21 +120,33 @@ def variant_preview(request, pk, variant_id):
     
     if request.headers.get('HX-Request'):
         # Convert tab data to displayable format
-        from ..tab_generator import TabGenerator
-        tab_gen = TabGenerator([], 120)  # Dummy init
-        ascii_tab = tab_gen._format_as_ascii_tab(preview_data)
+        from ..services.tab_generator import TabGenerator
+        # Generate a minimal ASCII preview using the generator's public API
+        notes = []
+        if isinstance(preview_data, dict) and 'measures' in preview_data:
+            # Flatten notes for a quick preview
+            for measure in preview_data['measures']:
+                for n in measure.get('notes', []):
+                    notes.append({
+                        'start_time': measure.get('start_time', 0) + n.get('time', 0),
+                        'end_time': measure.get('start_time', 0) + n.get('time', 0) + n.get('duration', 0.25),
+                        'midi_note': preview_data.get('tuning', TabGenerator.STANDARD_TUNING)[n.get('string', 0)] + n.get('fret', 0),
+                        'velocity': n.get('velocity', 80)
+                    })
+        tab_gen = TabGenerator(notes, preview_data.get('tempo', 120), preview_data.get('time_signature', '4/4'))
+        ascii_tab = tab_gen.to_ascii_tab(measures_per_line=2)
         
         return render(request, 'transcriber/partials/variant_preview.html', {
             'variant': variant,
             'ascii_tab': ascii_tab,
-            'measure_count': preview_measures
+            'measure_count': preview_measures,
+            'transcription': transcription
         })
     
-    return JsonResponse({
-        'variant_id': str(variant.id),
-        'variant_name': variant.variant_name,
-        'preview_data': preview_data
-    })
+    # Non-HTMX: return MusicXML preview for compatibility with tests
+    export_manager = ExportManager(transcription)
+    xml = export_manager.generate_musicxml(preview_data)
+    return HttpResponse(xml, content_type='application/xml')
 
 
 def regenerate_variants(request, pk):

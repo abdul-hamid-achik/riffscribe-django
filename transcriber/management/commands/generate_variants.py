@@ -5,8 +5,8 @@ Management command to generate fingering variants for transcriptions
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from transcriber.models import Transcription, FingeringVariant
-from transcriber.variant_generator import VariantGenerator
-from transcriber.fingering_optimizer import FINGERING_PRESETS
+from transcriber.services.variant_generator import VariantGenerator
+from transcriber.services.fingering_optimizer import FINGERING_PRESETS
 import uuid
 
 

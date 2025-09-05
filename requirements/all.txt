@@ -1,5 +1,0 @@
-# Install all requirements
--r base.txt
--r ml.txt
--r storage.txt
--r dev.txt

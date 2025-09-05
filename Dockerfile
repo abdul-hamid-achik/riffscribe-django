@@ -9,18 +9,16 @@ FROM python:3.11-slim-bookworm AS python-base
 # Python optimizations
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_DEFAULT_TIMEOUT=100 \
-    POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_CREATE=false
+    UV_NO_CACHE=1 \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 # ============================================
 # BUILDER BASE - For compiling dependencies
 # ============================================
 FROM python-base AS builder-base
 
-# Install build dependencies in a single layer
+# Install build dependencies and UV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     gcc \
@@ -31,31 +29,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     portaudio19-dev \
     git \
+    curl \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && /root/.local/bin/uv --version \
     && rm -rf /var/lib/apt/lists/*
+
+# Add UV to PATH
+ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /tmp
 
 # ============================================
-# DEPENDENCY BUILDER - Compile Python packages
+# DEPENDENCY BUILDER - Compile Python packages with UV
 # ============================================
 FROM builder-base AS dependency-builder
 
-# Use BuildKit cache mount for pip
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements/base.txt,target=base.txt \
-    pip install --user --no-warn-script-location -r base.txt
+WORKDIR /tmp
 
-# Build ML dependencies separately for better caching
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements/ml.txt,target=ml.txt \
-    pip install --user --no-warn-script-location -r ml.txt
+# Copy pyproject.toml and minimal project structure for dependency resolution
+COPY pyproject.toml ./
+COPY riffscribe ./riffscribe
+COPY transcriber ./transcriber
+
+# Install dependencies using UV with cache mount  
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv venv /opt/venv \
+    && uv pip install --python=/opt/venv/bin/python -e .
 
 # ============================================
 # RUNTIME BASE - Minimal runtime dependencies
 # ============================================
 FROM python-base AS runtime-base
 
-# Install only runtime dependencies
+# Install runtime dependencies and UV
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
@@ -63,8 +69,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libportaudio2 \
     postgresql-client \
     curl \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Add UV to PATH
+ENV PATH="/root/.local/bin:$PATH"
 
 # Create non-root user
 RUN groupadd -r django && useradd -r -g django django
@@ -76,14 +86,16 @@ FROM runtime-base AS development
 
 WORKDIR /app
 
-# Copy compiled dependencies from builder
-COPY --from=dependency-builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+# Copy UV virtual environment from builder
+COPY --from=dependency-builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Install dev dependencies with cache mount
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements/dev.txt,target=dev.txt \
-    pip install --no-warn-script-location -r dev.txt
+# Copy pyproject.toml for dev dependencies
+COPY pyproject.toml ./
+
+# Install dev dependencies with UV
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --python=/opt/venv/bin/python --editable ".[dev]"
 
 # Copy application code
 COPY --chown=django:django . .
@@ -104,8 +116,9 @@ FROM runtime-base AS production
 
 WORKDIR /app
 
-# Copy compiled dependencies from builder
-COPY --from=dependency-builder --chown=django:django /root/.local /usr/local
+# Copy UV virtual environment from builder
+COPY --from=dependency-builder --chown=django:django /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy only necessary application files
 COPY --chown=django:django manage.py ./

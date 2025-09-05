@@ -4,7 +4,7 @@ Unit tests for the export manager.
 import pytest
 from unittest.mock import patch, MagicMock
 import xml.etree.ElementTree as ET
-from transcriber.export_manager import ExportManager
+from transcriber.services.export_manager import ExportManager
 
 
 class TestExportManager:
@@ -113,7 +113,7 @@ class TestExportManager:
     @pytest.mark.unit
     def test_generate_gp5_with_pyguitarpro(self, export_manager):
         """Test GP5 generation when guitarpro is available."""
-        with patch('transcriber.export_manager.guitarpro') as mock_gp:
+        with patch('transcriber.services.export_manager.guitarpro') as mock_gp:
             mock_song = MagicMock()
             mock_gp.Song.return_value = mock_song
             mock_gp.Track = MagicMock()
@@ -129,7 +129,7 @@ class TestExportManager:
     @pytest.mark.unit
     def test_generate_gp5_without_pyguitarpro(self, export_manager):
         """Test GP5 generation when guitarpro is not available."""
-        with patch('transcriber.export_manager.guitarpro', None):
+        with patch('transcriber.services.export_manager.guitarpro', None):
             result = export_manager.generate_gp5(export_manager.tab_data)
             
             # Should return None when library not available
@@ -138,7 +138,7 @@ class TestExportManager:
     @pytest.mark.unit
     def test_export_midi_with_notes(self, export_manager):
         """Test MIDI export with notes."""
-        with patch('transcriber.export_manager.PrettyMIDI') as mock_midi:
+        with patch('transcriber.services.export_manager.PrettyMIDI') as mock_midi:
             mock_pm = MagicMock()
             mock_midi.return_value = mock_pm
             mock_instrument = MagicMock()

@@ -1,6 +1,8 @@
 services:
   website:
-    build: .
+    build:
+      context: .
+      target: development
     command: python manage.py runserver 0.0.0.0:8000
     restart: unless-stopped
     ports:
@@ -30,7 +32,9 @@ services:
       - riffscribe_network
 
   workers:
-    build: .
+    build:
+      context: .
+      target: celery
     command: celery -A riffscribe worker -l info --concurrency=1 --max-memory-per-child=1000000
     restart: unless-stopped
     volumes:
@@ -63,7 +67,9 @@ services:
           memory: 1G
 
   scheduler:
-    build: .
+    build:
+      context: .
+      target: celery-beat
     command: celery -A riffscribe beat -l info
     restart: unless-stopped
     volumes:
@@ -105,8 +111,10 @@ services:
       - riffscribe_network
 
   monitor:
-    build: .
-    command: sh -c "pip install flower && celery -A riffscribe flower --port=5555"
+    build:
+      context: .
+      target: development
+    command: sh -c "uv add flower && celery -A riffscribe flower --port=5555"
     restart: unless-stopped
     ports:
       - "5555:5555"

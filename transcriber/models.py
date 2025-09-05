@@ -211,7 +211,7 @@ class Transcription(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save to ensure JSON fields don't contain numpy arrays"""
-        from .json_utils import ensure_json_serializable
+        from .utils.json_utils import ensure_json_serializable
         
         # Clean JSON fields
         if self.midi_data is not None:

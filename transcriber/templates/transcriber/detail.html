@@ -18,7 +18,7 @@
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'transcriber:library' %}" class="text-gray-500 hover:text-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                         </svg>
                     </a>
                     <div>
@@ -34,25 +34,25 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Status and Actions -->
                 <div class="flex items-center space-x-3">
                     {% include 'transcriber/partials/status_badge.html' with status=transcription.status %}
-                    
+
                     {% if transcription.status == 'completed' %}
-                    <button type="button" 
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                            hx-post="{% url 'transcriber:reprocess' transcription.id %}"
-                            hx-confirm="Reprocess this transcription? This will overwrite current results."
-                            hx-target="#main-content"
-                            hx-swap="innerHTML">
+                    <button type="button"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        hx-post="{% url 'transcriber:reprocess' transcription.id %}"
+                        hx-confirm="Reprocess this transcription? This will overwrite current results."
+                        hx-target="#main-content" hx-swap="innerHTML">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                         Reprocess
                     </button>
                     {% endif %}
-                    
+
                     {% include 'transcriber/partials/favorite_button.html' %}
                 </div>
             </div>
@@ -64,19 +64,19 @@
         <div class="mb-8">
             {% include 'transcriber/partials/status.html' %}
         </div>
-        
+
         {% if transcription.status == 'completed' %}
-            <!-- Content for completed transcriptions -->
-            <div class="space-y-8">
-                <!-- Tab Display Section -->
-                {% include 'transcriber/partials/tab_display.html' %}
-                
-                <!-- Export Section -->
-                {% include 'transcriber/partials/export_section.html' %}
-            </div>
+        <!-- Content for completed transcriptions -->
+        <div class="space-y-8">
+            <!-- Tab Display Section -->
+            {% include 'transcriber/partials/tab_display.html' %}
+
+            <!-- Export Section -->
+            {% include 'transcriber/partials/export_section.html' %}
+        </div>
         {% endif %}
     </div>
-    
+
     <!-- Comments Section -->
     {% if transcription.status == 'completed' %}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -84,8 +84,10 @@
             <div class="px-6 py-4 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        <svg class="w-5 h-5 mr-2 text-musical-gold" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                         Comments
                     </h3>
@@ -94,26 +96,22 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="p-6">
                 <!-- Comment Form Container -->
                 <div class="mb-8" id="comment-form-container">
-                    <div hx-get="{% url 'transcriber:get_comment_form' transcription.pk %}"
-                         hx-trigger="load"
-                         hx-target="this"
-                         hx-swap="innerHTML">
+                    <div hx-get="{% url 'transcriber:get_comment_form' transcription.pk %}" hx-trigger="load"
+                        hx-target="this" hx-swap="innerHTML">
                         <div class="animate-pulse">
                             <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
                             <div class="h-20 bg-gray-200 rounded mb-4"></div>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Comments List Container -->
-                <div hx-get="{% url 'transcriber:comments_list' transcription.pk %}"
-                     hx-trigger="load"
-                     hx-target="this"
-                     hx-swap="innerHTML">
+                <div hx-get="{% url 'transcriber:comments_list' transcription.pk %}" hx-trigger="load" hx-target="this"
+                    hx-swap="innerHTML">
                     <div class="animate-pulse space-y-4">
                         <div class="flex space-x-3">
                             <div class="h-10 w-10 bg-gray-200 rounded-full"></div>
@@ -131,79 +129,114 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-refresh for processing status
-    if ('{{ transcription.status }}' === 'processing') {
-        setInterval(function() {
-            htmx.trigger('#main-content', 'refresh');
-        }, 3000);
-    }
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        // Auto-refresh for processing status
+        if ('{{ transcription.status }}' === 'processing') {
+            setInterval(function () {
+                htmx.trigger('#main-content', 'refresh');
+            }, 3000);
+        }
+    });
 
-// AlphaTab integration
-let alphaTab = null;
-let isPlaying = false;
+    // AlphaTab integration
+    let alphaTab = null;
+    let isPlaying = false;
 
-function showTabPreview() {
-    const container = document.getElementById('alphaTab');
-    const playerControls = document.getElementById('player-controls');
-    const previewBtn = document.getElementById('preview-btn');
-    
-    // Show loading state
-    previewBtn.innerHTML = `
+    function showTabPreview() {
+        const container = document.getElementById('alphaTab');
+        const playerControls = document.getElementById('player-controls');
+        const previewBtn = document.getElementById('preview-btn');
+        const placeholderEl = document.getElementById('preview-placeholder');
+        const loadingEl = document.getElementById('preview-loading');
+        const errorEl = document.getElementById('preview-error');
+
+        // Show button loading state
+        previewBtn.innerHTML = `
         <svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
         Loading...
     `;
-    previewBtn.disabled = true;
-    
-    // Clear container
-    container.innerHTML = '';
-    
-    // Initialize AlphaTab
-    try {
-        // Convert guitar_notes data to AlphaTab format (simplified example)
-        const tabData = `\\title "{{ transcription.filename }}"
-\\subtitle "Generated by RiffScribe"
-\\tempo {{ transcription.estimated_tempo|default:"120" }}
+        previewBtn.disabled = true;
 
-.
-{{ transcription.guitar_notes|slice:":1000"|escapejs }}`;
+        // Hide placeholder and show loading
+        if (placeholderEl) placeholderEl.classList.add('hidden');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) errorEl.classList.add('hidden');
 
-        alphaTab = new alphaTab.AlphaTabApi(container, {
-            tex: true,
-            tracks: [0],
-            player: {
-                enablePlayer: true,
-                soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2'
-            }
-        });
-        
-        // Load the tab data
-        alphaTab.tex(tabData);
-        
-        // Setup player event listeners
-        alphaTab.playerReady.on(() => {
-            playerControls.classList.remove('hidden');
+        // Use HTMX to load the actual tab preview
+        htmx.ajax('GET', '{% url "transcriber:tab_preview_api" transcription.pk %}', {
+            target: '#alphaTab',
+            swap: 'innerHTML',
+            headers: { 'HX-Request': 'true' }
+        }).then(() => {
+            // Success - hide loading, show player controls
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (playerControls) playerControls.classList.remove('hidden');
+
+            // Reset button
             previewBtn.innerHTML = `
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            Refresh Preview
+        `;
+            previewBtn.disabled = false;
+
+        }).catch((error) => {
+            // Error - show error state
+            console.error('Failed to load tab preview:', error);
+            if (loadingEl) loadingEl.classList.add('hidden');
+            if (errorEl) errorEl.classList.remove('hidden');
+
+            // Reset button
+            previewBtn.innerHTML = `
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            Retry Preview
+        `;
+            previewBtn.disabled = false;
+        });
+    }
+
+    function retryPreview() {
+        showTabPreview();
+    }
+    tex: true,
+        tracks: [0],
+            player: {
+        enablePlayer: true,
+            soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2'
+    }
+        });
+
+    // Load the tab data
+    alphaTab.tex(tabData);
+
+    // Setup player event listeners
+    alphaTab.playerReady.on(() => {
+        playerControls.classList.remove('hidden');
+        previewBtn.innerHTML = `
                 <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 Tab Loaded
             `;
-            previewBtn.disabled = true;
-            previewBtn.classList.add('bg-green-600', 'hover:bg-green-700');
-        });
-        
-        alphaTab.playerStateChanged.on((e) => {
-            isPlaying = e.state === 1; // 1 = playing
-            updatePlayButton();
-        });
-        
-        alphaTab.playerPositionChanged.on((e) => {
-            updateProgress(e.currentTime, e.endTime);
-        });
+        previewBtn.disabled = true;
+        previewBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+    });
+
+    alphaTab.playerStateChanged.on((e) => {
+        isPlaying = e.state === 1; // 1 = playing
+        updatePlayButton();
+    });
+
+    alphaTab.playerPositionChanged.on((e) => {
+        updateProgress(e.currentTime, e.endTime);
+    });
         
     } catch (error) {
         console.error('Error loading tab:', error);
@@ -221,76 +254,76 @@ function showTabPreview() {
     }
 }
 
-function togglePlayback() {
-    if (!alphaTab) return;
-    
-    if (isPlaying) {
-        alphaTab.pause();
-    } else {
-        alphaTab.play();
-    }
-}
+    function togglePlayback() {
+        if (!alphaTab) return;
 
-function updatePlayButton() {
-    const button = document.getElementById('play-pause-btn');
-    if (isPlaying) {
-        button.innerHTML = `
+        if (isPlaying) {
+            alphaTab.pause();
+        } else {
+            alphaTab.play();
+        }
+    }
+
+    function updatePlayButton() {
+        const button = document.getElementById('play-pause-btn');
+        if (isPlaying) {
+            button.innerHTML = `
             <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.5 3.5A1.5 1.5 0 017 2h6a1.5 1.5 0 011.5 1.5v13A1.5 1.5 0 0113 18H7a1.5 1.5 0 01-1.5-1.5v-13z"/>
             </svg>
         `;
-    } else {
-        button.innerHTML = `
+        } else {
+            button.innerHTML = `
             <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
             </svg>
         `;
+        }
     }
-}
 
-function updateProgress(current, total) {
-    const progress = document.getElementById('progress');
-    const currentTime = document.getElementById('current-time');
-    const percentage = (current / total) * 100;
-    
-    progress.style.width = percentage + '%';
-    currentTime.textContent = formatTime(current);
-}
+    function updateProgress(current, total) {
+        const progress = document.getElementById('progress');
+        const currentTime = document.getElementById('current-time');
+        const percentage = (current / total) * 100;
 
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-
-// Setup event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    const playPauseBtn = document.getElementById('play-pause-btn');
-    if (playPauseBtn) {
-        playPauseBtn.addEventListener('click', togglePlayback);
+        progress.style.width = percentage + '%';
+        currentTime.textContent = formatTime(current);
     }
-    
-    const volumeSlider = document.getElementById('volume-slider');
-    if (volumeSlider) {
-        volumeSlider.addEventListener('input', function() {
-            if (alphaTab && alphaTab.masterVolume) {
-                alphaTab.masterVolume = this.value / 100;
-            }
-        });
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
-    
-    const progressBar = document.getElementById('progress-bar');
-    if (progressBar) {
-        progressBar.addEventListener('click', function(e) {
-            if (!alphaTab) return;
-            
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const percentage = x / rect.width;
-            // alphaTab.seekTo would be used here if available in your version
-        });
-    }
-});
+
+
+    // Setup event listeners
+    document.addEventListener('DOMContentLoaded', function () {
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        if (playPauseBtn) {
+            playPauseBtn.addEventListener('click', togglePlayback);
+        }
+
+        const volumeSlider = document.getElementById('volume-slider');
+        if (volumeSlider) {
+            volumeSlider.addEventListener('input', function () {
+                if (alphaTab && alphaTab.masterVolume) {
+                    alphaTab.masterVolume = this.value / 100;
+                }
+            });
+        }
+
+        const progressBar = document.getElementById('progress-bar');
+        if (progressBar) {
+            progressBar.addEventListener('click', function (e) {
+                if (!alphaTab) return;
+
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const percentage = x / rect.width;
+                // alphaTab.seekTo would be used here if available in your version
+            });
+        }
+    });
 </script>
 {% endblock %}

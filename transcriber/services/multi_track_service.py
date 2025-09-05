@@ -24,7 +24,7 @@ try:
 except ImportError:
     demucs = None
 
-from .models import Track, Transcription
+from ..models import Track, Transcription
 from .whisper_service import WhisperService
 from .drum_transcriber import DrumTranscriber
 

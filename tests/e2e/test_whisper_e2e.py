@@ -44,7 +44,7 @@ class TestWhisperEndToEndIntegration(TransactionTestCase):
         # Verify the processing task was queued
         mock_task_delay.assert_called_once_with(transcription.id)
     
-    @patch('transcriber.ml_pipeline.WhisperService')
+    @patch('transcriber.services.ml_pipeline.WhisperService')
     def test_status_endpoint_shows_whisper_progress(self, mock_whisper_service):
         """Test that status endpoint shows Whisper-enhanced progress"""
         
@@ -251,7 +251,7 @@ class TestWhisperEndToEndIntegration(TransactionTestCase):
         mock_service_instance.analyze_music.side_effect = Exception("Whisper API error")
         mock_whisper_service.return_value = mock_service_instance
         
-        with patch('transcriber.ml_pipeline.MLPipeline') as mock_pipeline, \
+        with patch('transcriber.services.ml_pipeline.MLPipeline') as mock_pipeline, \
              patch('transcriber.ml_pipeline.logger') as mock_logger:
             
             mock_pipeline_instance = Mock()
@@ -259,13 +259,13 @@ class TestWhisperEndToEndIntegration(TransactionTestCase):
             mock_pipeline.return_value = mock_pipeline_instance
             
             # This should handle the error and continue processing
-            from transcriber.ml_pipeline import MLPipeline
+            from transcriber.services.ml_pipeline import MLPipeline
             pipeline = MLPipeline(use_gpu=False)
             
             # The analyze_audio method should catch and log Whisper errors
-            with patch('transcriber.ml_pipeline.os.path.exists', return_value=True), \
-                 patch('transcriber.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)), \
-                 patch('transcriber.ml_pipeline.librosa.beat.tempo', return_value=(120.0, [0, 1])):
+            with patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True), \
+                 patch('transcriber.services.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)), \
+                 patch('transcriber.services.ml_pipeline.librosa.beat.tempo', return_value=(120.0, [0, 1])):
                 
                 result = pipeline.analyze_audio('/fake/path.mp3')
             
@@ -294,7 +294,7 @@ class TestWhisperEndToEndIntegration(TransactionTestCase):
                 mock_settings.OPENAI_API_KEY = api_key
                 mock_settings.WHISPER_MODEL = 'whisper-1'
                 
-                from transcriber.ml_pipeline import MLPipeline
+                from transcriber.services.ml_pipeline import MLPipeline
                 pipeline = MLPipeline(use_gpu=False)
                 
                 # Verify Whisper service is created only when appropriate

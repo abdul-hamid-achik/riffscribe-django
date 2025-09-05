@@ -1,153 +1,161 @@
+{% load custom_filters %}
 <!-- Comments List with Priority Sorting and Voting -->
 <div id="comments-list" class="space-y-4">
     {% if comments %}
-        {% for comment in comments %}
-        <div class="comment-item bg-gray-50 rounded-lg p-4 border 
-                    {% if comment.is_authenticated_user %}border-musical-gold border-l-4{% else %}border-gray-200{% endif %}" 
-             id="comment-{{ comment.id }}">
-             
-            <!-- Main Comment Layout with Voting -->
-            <div class="flex space-x-4">
-                <!-- Voting Buttons (Left Side) -->
-                {% if comment.is_authenticated_user %}
-                    {% include 'transcriber/partials/voting_buttons.html' with user_vote=comment|get_user_vote:request.user %}
-                {% endif %}
-                
-                <!-- Comment Content (Right Side) -->
-                <div class="flex-1">
-                    <!-- Comment Header -->
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-3">
-                            <!-- User Avatar/Icon -->
-                            <div class="flex-shrink-0">
-                                {% if comment.is_authenticated_user %}
-                                    <!-- Authenticated user icon -->
-                                    <div class="w-10 h-10 bg-musical-gold rounded-full flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                {% else %}
-                                    <!-- Anonymous user icon -->
-                                    <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <!-- Comment Author & Time -->
-                            <div>
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-medium text-gray-900">{{ comment.author_name }}</span>
-                                    {% if comment.is_authenticated_user %}
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-musical-gold text-white">
-                                            Verified User
-                                        </span>
-                                        <!-- User Karma Display -->
-                                        {% if comment.user.profile.karma_score > 0 %}
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ comment.user.profile.karma_badge_color }} text-white">
-                                            {{ comment.user.profile.karma_score }} karma
-                                        </span>
-                                        {% endif %}
-                                    {% endif %}
-                                </div>
-                                <time class="text-sm text-gray-500" datetime="{{ comment.created_at|date:'c' }}">
-                                    {{ comment.created_at|date:"M j, Y \a\t g:i A" }}
-                                </time>
-                            </div>
-                        </div>
-                        
-                        <!-- Comment Actions -->
-                        <div class="flex items-center space-x-2">
-                            {% if user.is_authenticated and comment.id %}
-                            <button onclick="flagComment({{ comment.id }})" 
-                                    class="text-gray-400 hover:text-red-500 transition-colors"
-                                    title="Flag as inappropriate">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H8.5l-1 1H5a2 2 0 01-2-2z"/>
+    {% for comment in comments %}
+    <div class="comment-item bg-gray-50 rounded-lg p-4 border 
+                    {% if comment.is_authenticated_user %}border-musical-gold border-l-4{% else %}border-gray-200{% endif %}"
+        id="comment-{{ comment.id }}">
+
+        <!-- Main Comment Layout with Voting -->
+        <div class="flex space-x-4">
+            <!-- Voting Buttons (Left Side) -->
+            {% if comment.is_authenticated_user %}
+            {% include 'transcriber/partials/voting_buttons.html' with user_vote=comment|get_user_vote:request.user %}
+            {% endif %}
+
+            <!-- Comment Content (Right Side) -->
+            <div class="flex-1">
+                <!-- Comment Header -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-3">
+                        <!-- User Avatar/Icon -->
+                        <div class="flex-shrink-0">
+                            {% if comment.is_authenticated_user %}
+                            <!-- Authenticated user icon -->
+                            <div class="w-10 h-10 bg-musical-gold rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                        clip-rule="evenodd" />
                                 </svg>
-                            </button>
+                            </div>
+                            {% else %}
+                            <!-- Anonymous user icon -->
+                            <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
                             {% endif %}
                         </div>
-                    </div>
-                    
-                    <!-- Comment Content -->
-                    <div class="text-gray-800 leading-relaxed mb-3">
-                        {{ comment.content|linebreaks }}
-                    </div>
-                    
-                    <!-- Comment Footer with Score (for anonymous comments or when not votable) -->
-                    {% if not comment.is_authenticated_user %}
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-500">
-                            Anonymous comments cannot be voted on
+
+                        <!-- Comment Author & Time -->
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-medium text-gray-900">{{ comment.author_name }}</span>
+                                {% if comment.is_authenticated_user %}
+                                <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-musical-gold text-white">
+                                    Verified User
+                                </span>
+                                <!-- User Karma Display -->
+                                {% if comment.user.profile.karma_score > 0 %}
+                                <span
+                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ comment.user.profile.karma_badge_color }} text-white">
+                                    {{ comment.user.profile.karma_score }} karma
+                                </span>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                            <time class="text-sm text-gray-500" datetime="{{ comment.created_at|date:'c' }}">
+                                {{ comment.created_at|date:"M j, Y \a\t g:i A" }}
+                            </time>
                         </div>
-                        
-                        {% if user.is_authenticated %}
-                        <div class="text-sm text-musical-gold">
-                            <a href="#" onclick="showAuthModal('signin')" class="hover:underline">
-                                Sign in to unlock voting and karma features
-                            </a>
-                        </div>
+                    </div>
+
+                    <!-- Comment Actions -->
+                    <div class="flex items-center space-x-2">
+                        {% if user.is_authenticated and comment.id %}
+                        <button onclick="flagComment({{ comment.id }})"
+                            class="text-gray-400 hover:text-red-500 transition-colors" title="Flag as inappropriate">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6H8.5l-1 1H5a2 2 0 01-2-2z" />
+                            </svg>
+                        </button>
                         {% endif %}
                     </div>
-                    {% endif %}
-                    
-                    {% if comment.is_flagged %}
-                        <div class="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
-                            This comment has been flagged for review
-                        </div>
+                </div>
+
+                <!-- Comment Content -->
+                <div class="text-gray-800 leading-relaxed mb-3">
+                    {{ comment.content|linebreaks }}
+                </div>
+
+                <!-- Comment Footer with Score (for anonymous comments or when not votable) -->
+                {% if not comment.is_authenticated_user %}
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-500">
+                        Anonymous comments cannot be voted on
+                    </div>
+
+                    {% if user.is_authenticated %}
+                    <div class="text-sm text-musical-gold">
+                        <a href="#" onclick="showAuthModal('signin')" class="hover:underline">
+                            Sign in to unlock voting and karma features
+                        </a>
+                    </div>
                     {% endif %}
                 </div>
+                {% endif %}
+
+                {% if comment.is_flagged %}
+                <div class="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                    This comment has been flagged for review
+                </div>
+                {% endif %}
             </div>
         </div>
-        {% endfor %}
-        
-        <!-- Pagination -->
-        {% if comments.has_other_pages %}
-        <div class="flex justify-center mt-6">
-            <nav class="flex space-x-2">
-                {% if comments.has_previous %}
-                    <a href="?page={{ comments.previous_page_number }}" 
-                       hx-get="{% url 'transcriber:comments_list' transcription.pk %}?page={{ comments.previous_page_number }}"
-                       hx-target="#comments-list"
-                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        Previous
-                    </a>
-                {% endif %}
-                
-                <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md">
-                    {{ comments.number }} of {{ comments.paginator.num_pages }}
-                </span>
-                
-                {% if comments.has_next %}
-                    <a href="?page={{ comments.next_page_number }}"
-                       hx-get="{% url 'transcriber:comments_list' transcription.pk %}?page={{ comments.next_page_number }}"
-                       hx-target="#comments-list"
-                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                        Next
-                    </a>
-                {% endif %}
-            </nav>
-        </div>
-        {% endif %}
-    {% else %}
-        <div class="text-center py-8">
-            <div class="w-16 h-16 mx-auto mb-4 text-gray-400">
-                <svg fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <p class="text-gray-500 text-lg font-medium">No comments yet</p>
-            <p class="text-gray-400">Be the first to share your thoughts!</p>
-            {% if user.is_authenticated %}
-            <p class="text-sm text-musical-gold mt-2">
-                Your comments will be prioritized and eligible for upvotes to earn karma!
-            </p>
+    </div>
+    {% endfor %}
+
+    <!-- Pagination -->
+    {% if comments.has_other_pages %}
+    <div class="flex justify-center mt-6">
+        <nav class="flex space-x-2">
+            {% if comments.has_previous %}
+            <a href="?page={{ comments.previous_page_number }}"
+                hx-get="{% url 'transcriber:comments_list' transcription.pk %}?page={{ comments.previous_page_number }}"
+                hx-target="#comments-list"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Previous
+            </a>
             {% endif %}
+
+            <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md">
+                {{ comments.number }} of {{ comments.paginator.num_pages }}
+            </span>
+
+            {% if comments.has_next %}
+            <a href="?page={{ comments.next_page_number }}"
+                hx-get="{% url 'transcriber:comments_list' transcription.pk %}?page={{ comments.next_page_number }}"
+                hx-target="#comments-list"
+                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                Next
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-8">
+        <div class="w-16 h-16 mx-auto mb-4 text-gray-400">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                    d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
+                    clip-rule="evenodd" />
+            </svg>
         </div>
+        <p class="text-gray-500 text-lg font-medium">No comments yet</p>
+        <p class="text-gray-400">Be the first to share your thoughts!</p>
+        {% if user.is_authenticated %}
+        <p class="text-sm text-musical-gold mt-2">
+            Your comments will be prioritized and eligible for upvotes to earn karma!
+        </p>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 
@@ -163,42 +171,42 @@
 </div>
 
 <script>
-function flagComment(commentId) {
-    if (confirm('Are you sure you want to flag this comment as inappropriate?')) {
-        htmx.ajax('POST', 
-            `{% url 'transcriber:flag_comment' transcription.pk 0 %}`.replace('0', commentId), {
-            target: `#comment-${commentId}`,
-            swap: 'outerHTML'
-        });
+    function flagComment(commentId) {
+        if (confirm('Are you sure you want to flag this comment as inappropriate?')) {
+            htmx.ajax('POST',
+                `{% url 'transcriber:flag_comment' transcription.pk 0 %}`.replace('0', commentId), {
+                target: `#comment-${commentId}`,
+                swap: 'outerHTML'
+            });
+        }
     }
-}
 
-// Show voting stats modal
-function showVotingStats() {
-    document.getElementById('voting-stats-modal').classList.remove('hidden');
-}
-
-// Hide voting stats modal
-function hideVotingStats() {
-    document.getElementById('voting-stats-modal').classList.add('hidden');
-}
-
-// Enhanced voting animations and feedback
-document.addEventListener('htmx:afterRequest', function(event) {
-    // Add success animations for voting
-    if (event.detail.target && event.detail.target.classList.contains('voting-container')) {
-        // Trigger success animation
-        const container = event.detail.target;
-        container.classList.add('vote-success');
-        setTimeout(() => {
-            container.classList.remove('vote-success');
-        }, 600);
+    // Show voting stats modal
+    function showVotingStats() {
+        document.getElementById('voting-stats-modal').classList.remove('hidden');
     }
-});
 
-// Add vote success animation styles
-const voteStyles = document.createElement('style');
-voteStyles.textContent = `
+    // Hide voting stats modal
+    function hideVotingStats() {
+        document.getElementById('voting-stats-modal').classList.add('hidden');
+    }
+
+    // Enhanced voting animations and feedback
+    document.addEventListener('htmx:afterRequest', function (event) {
+        // Add success animations for voting
+        if (event.detail.target && event.detail.target.classList.contains('voting-container')) {
+            // Trigger success animation
+            const container = event.detail.target;
+            container.classList.add('vote-success');
+            setTimeout(() => {
+                container.classList.remove('vote-success');
+            }, 600);
+        }
+    });
+
+    // Add vote success animation styles
+    const voteStyles = document.createElement('style');
+    voteStyles.textContent = `
 .vote-success {
     animation: vote-success-flash 0.6s ease-out;
 }
@@ -208,5 +216,5 @@ voteStyles.textContent = `
     50% { transform: scale(1.05); filter: brightness(1.1); }
 }
 `;
-document.head.appendChild(voteStyles);
+    document.head.appendChild(voteStyles);
 </script>

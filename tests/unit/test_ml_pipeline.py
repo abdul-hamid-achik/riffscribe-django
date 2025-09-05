@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
-from transcriber.ml_pipeline import MLPipeline
+from transcriber.services.ml_pipeline import MLPipeline
 
 
 class TestMLPipeline:

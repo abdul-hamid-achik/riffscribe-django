@@ -139,3 +139,14 @@ def complexity_level(complexity):
         'virtuoso': 5
     }
     return levels.get(complexity, 3)
+
+
+@register.filter
+def get_user_vote(comment, user):
+    """
+    Get the user's vote for a comment.
+    Usage: {{ comment|get_user_vote:request.user }}
+    """
+    if not user or not user.is_authenticated:
+        return None
+    return comment.get_user_vote(user)

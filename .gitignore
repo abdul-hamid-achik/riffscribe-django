@@ -116,3 +116,5 @@ transcriber/static/transcriber/css/output.css
 # Temporary artifacts folder
 tmp/*
 !tmp/.gitkeep
+coverage.xml
+exports/

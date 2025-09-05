@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 from unittest.mock import patch, MagicMock
 from pathlib import Path
-from transcriber import audio_processing
+from transcriber.utils import audio_processing
 
 
 class TestAudioProcessing:

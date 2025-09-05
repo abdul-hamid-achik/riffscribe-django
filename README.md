@@ -24,10 +24,11 @@
 
 ### Prerequisites
 
-- Python 3.10 or higher
-- uv (Python package manager)
+- Python 3.11 or higher
+- [UV](https://docs.astral.sh/uv/) (Modern Python package manager - replaces pip and venv)
 - Node.js 18+ and npm (for Tailwind CSS)
 - ffmpeg (for audio processing)
+- Docker & Docker Compose (optional, for containerized development)
 
 ### Installation
 
@@ -37,13 +38,13 @@ git clone https://github.com/abdul-hamid-achik/riffscribe-django.git
 cd riffscribe-django
 ```
 
-2. **Install Python dependencies using uv**
+2. **Install UV and project dependencies**
 ```bash
-# Install uv if you haven't already
+# Install UV (if you haven't already)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install project dependencies
-uv sync
+# Install all project dependencies (including dev dependencies)
+uv sync --dev
 ```
 
 3. **Install Node.js dependencies for Tailwind CSS**
@@ -139,16 +140,118 @@ When enabled, RiffScribe uses OpenAI's Whisper AI to significantly improve trans
 
 RiffScribe uses Tailwind CSS for styling with a custom build process for optimal performance.
 
-### Development
+## 🐳 Docker Development
+
+RiffScribe includes full Docker support with multi-stage builds optimized for UV:
 
 ```bash
-# Watch for CSS changes during development
-npm run watch-css
+# Build and start all services (PostgreSQL, Redis, MinIO, Celery, etc.)
+docker-compose up --build
 
-# Or run both Django and Tailwind watchers
-npm run dev &
-uv run python manage.py runserver
+# Or run in detached mode
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
 ```
+
+**Service URLs:**
+- **App**: http://localhost:8000
+- **Flower (Celery Monitor)**: http://localhost:5555
+- **MinIO Console**: http://localhost:9001 (admin/admin123)
+
+### Docker Architecture
+
+The Docker setup uses multi-stage builds optimized for UV:
+
+- **`development`** target: Full development environment with dev dependencies
+- **`production`** target: Optimized for production with Gunicorn
+- **`celery`** target: Dedicated worker processes
+- **`celery-beat`** target: Scheduled task management
+
+All stages leverage UV's fast dependency resolution and caching for significantly faster builds compared to traditional pip-based containers.
+
+### Development
+
+RiffScribe uses **UV** for fast and reliable Python package management, providing 10-100x faster installs than pip.
+
+#### Local Development (Recommended for Active Development)
+```bash
+# First time setup
+uv sync --dev                    # Install all dependencies
+
+# For local PostgreSQL/Redis (or use Docker services)
+uv run python manage.py migrate # Run database migrations
+uv run python manage.py createsuperuser  # Create admin user
+
+# Daily development  
+npm run dev &                    # Start Tailwind CSS watcher
+uv run python manage.py runserver  # Start Django server
+```
+
+#### Docker Development (Recommended for Full Stack)
+```bash
+# Uses optimized UV-powered Docker builds
+docker-compose up --build        # All services including workers
+
+# Just the web service for quick testing
+docker-compose up website
+```
+
+> **Note**: The `.env` file is configured for localhost services. Docker services automatically use service names (db, redis, minio).
+
+#### Testing
+```bash
+# Run all tests
+uv run pytest
+
+# Run specific test categories
+uv run pytest tests/unit/           # Unit tests only
+uv run pytest tests/integration/    # Integration tests only
+
+# Run with coverage report
+uv run pytest --cov=transcriber --cov-report=html
+
+# Run specific test file
+uv run pytest tests/unit/test_models.py -v
+```
+
+#### Package Management with UV
+```bash
+# Add new dependency
+uv add requests
+
+# Add development dependency  
+uv add pytest-mock --dev
+
+# Remove dependency
+uv remove requests
+
+# Update all dependencies
+uv sync --upgrade
+
+# Show dependency tree
+uv tree
+
+# Update UV itself
+uv self update
+
+# Create lock file for exact reproducibility
+uv lock
+
+# Export to requirements.txt format (if needed for legacy systems)
+uv pip freeze > requirements.txt
+```
+
+#### UV Migration Benefits
+- **10-100x faster** than pip for package installation
+- **Universal resolver** handles complex dependency conflicts
+- **Built-in virtual environment** management
+- **Lock files** for exact reproducibility
+- **Cross-platform consistency** with unified package management
 
 ### Production Build
 

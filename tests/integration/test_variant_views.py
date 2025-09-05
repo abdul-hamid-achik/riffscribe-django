@@ -253,7 +253,7 @@ class TestVariantViews(TestCase):
         assert 'attachment' in response['Content-Disposition']
         assert 'easy.xml' in response['Content-Disposition']
         
-    @patch('transcriber.export_manager.ExportManager.generate_gp5_bytes')
+    @patch('transcriber.services.export_manager.ExportManager.generate_gp5_bytes')
     def test_export_variant_gp5(self, mock_gp5):
         """Test exporting a variant as Guitar Pro 5"""
         mock_gp5.return_value = b'GP5 content'

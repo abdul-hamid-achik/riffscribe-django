@@ -105,9 +105,12 @@ logs/
 coverage.xml
 *.cover
 
-# Requirements (we use separated ones)
-requirements.txt.backup
-requirements.old
+# UV specific
+uv.lock
+.venv/
+
+# Requirements folder (replaced by pyproject.toml)
+requirements/
 
 # Scripts not needed in container
 scripts/

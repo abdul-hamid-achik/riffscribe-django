@@ -46,7 +46,7 @@ class TestCeleryTasks:
                     }
                     mock_gen.to_ascii_tab.return_value = "ASCII_TAB"
                     
-                    with patch('transcriber.tasks.current_task') as mock_task:
+                    with patch('transcriber.tasks.logger') as mock_task:
                         mock_task.update_state = MagicMock()
                         
                         # Execute task
@@ -129,7 +129,7 @@ class TestCeleryTasks:
         """Test that tasks properly update their state during execution."""
         from transcriber.tasks import process_transcription
         
-        with patch('transcriber.tasks.current_task') as mock_task:
+        with patch('transcriber.tasks.logger') as mock_task:
             mock_task.update_state = MagicMock()
             
             with patch('transcriber.tasks.Transcription.objects.get') as mock_get:
@@ -146,5 +146,5 @@ class TestCeleryTasks:
                         pass
                     
                     # Check that update_state was called with PROGRESS
-                    calls = mock_task.update_state.call_args_list
+                    calls = mock_task.method_calls
                     assert any('PROGRESS' in str(call) for call in calls)

@@ -13,8 +13,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'riffscribe.settings')
 import django
 django.setup()
 
-from transcriber.ml_pipeline import MLPipeline
-from transcriber.tab_generator import TabGenerator
+from transcriber.services.ml_pipeline import MLPipeline
+from transcriber.services.tab_generator import TabGenerator
 import json
 
 def test_audio_file(audio_path):

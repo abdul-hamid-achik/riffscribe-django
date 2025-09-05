@@ -10,8 +10,8 @@ from django.test import TestCase
 from django.core.files.base import ContentFile
 from unittest.mock import Mock, patch, MagicMock, PropertyMock
 from transcriber.models import Transcription, Track, User
-from transcriber.multi_track_service import MultiTrackService
-from transcriber.drum_transcriber import DrumHit
+from transcriber.services.multi_track_service import MultiTrackService
+from transcriber.services.drum_transcriber import DrumHit
 
 
 class MultiTrackDrumTestCase(TestCase):
@@ -54,7 +54,7 @@ class MultiTrackDrumTestCase(TestCase):
         
         # Check that drum transcriber is initialized
         self.assertIsNotNone(service.drum_transcriber)
-        from transcriber.drum_transcriber import DrumTranscriber
+        from transcriber.services.drum_transcriber import DrumTranscriber
         self.assertIsInstance(service.drum_transcriber, DrumTranscriber)
     
     @patch.object(MultiTrackService, 'separate_audio')

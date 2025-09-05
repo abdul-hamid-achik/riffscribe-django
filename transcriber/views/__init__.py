@@ -3,6 +3,8 @@ RiffScribe Views Package
 Organized view modules for better maintainability
 """
 
+from celery.result import AsyncResult  # re-exported for tests patching transcriber.views.AsyncResult
+from ..tasks import process_transcription  # re-export for tests patching transcriber.views.process_transcription
 # Import all views for backwards compatibility with URLs
 from .core import (
     index,
@@ -122,4 +124,7 @@ __all__ = [
     'variant_stats',
     'export_variant',
     'check_generation_status',
+    # Re-exported utilities
+    'AsyncResult',
+    'process_transcription',
 ]

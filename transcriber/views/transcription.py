@@ -16,7 +16,11 @@ def detail(request, pk):
     """
     Display transcription details page.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only fetch necessary fields, defer large JSON fields for performance
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'guitar_notes', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Check access permission
     if transcription.user and transcription.user != request.user:
@@ -127,7 +131,11 @@ def status(request, pk):
     Get transcription processing status.
     Returns appropriate partial HTML for HTMX requests.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only need basic fields for status checking, defer large data
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'guitar_notes', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Get task ID from session
     task_id = request.session.get(f'task_{transcription.id}')
@@ -195,6 +203,7 @@ def status(request, pk):
     
     # For non-HTMX requests, return JSON status
     return JsonResponse({
+        'id': str(transcription.id),
         'status': transcription.status,
         'error_message': transcription.error_message if transcription.status == 'failed' else None,
     })
@@ -211,7 +220,8 @@ def get_task_status(request, task_id):
         if result.state == 'PENDING':
             response = {
                 'state': result.state,
-                'status': 'Pending...'
+                'status': 'Pending...',
+                'task_id': task_id
             }
         elif result.state != 'FAILURE':
             response = {
@@ -219,6 +229,7 @@ def get_task_status(request, task_id):
                 'status': result.info.get('status', '') if isinstance(result.info, dict) else str(result.info),
                 'current': result.info.get('current', 0) if isinstance(result.info, dict) else 0,
                 'total': result.info.get('total', 1) if isinstance(result.info, dict) else 1,
+                'task_id': task_id
             }
             if result.state == 'SUCCESS':
                 response['result'] = result.info
@@ -227,6 +238,7 @@ def get_task_status(request, task_id):
             response = {
                 'state': result.state,
                 'status': str(result.info),
+                'task_id': task_id
             }
         
         return JsonResponse(response)
@@ -244,7 +256,11 @@ def toggle_favorite(request, pk):
     """
     Toggle favorite status for a transcription.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only need basic fields for favorite toggle
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'guitar_notes', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Check ownership
     if transcription.user != request.user and not request.user.is_superuser:
@@ -269,22 +285,23 @@ def toggle_favorite(request, pk):
     return JsonResponse({'is_favorite': is_favorite})
 
 
-@htmx_login_required
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "DELETE"])
 def delete_transcription(request, pk):
     """
     Delete a transcription and all associated files.
     """
+    # Need to load full object for deletion (including file fields)
     transcription = get_object_or_404(Transcription, pk=pk)
     
-    # Check ownership
-    if transcription.user != request.user and not request.user.is_superuser:
+    # Check ownership (only enforce if transcription has an owner)
+    if transcription.user and transcription.user != request.user and not request.user.is_superuser:
         return JsonResponse({'error': 'Access denied'}, status=403)
     
     # Delete associated files
     if transcription.original_audio:
         transcription.original_audio.delete()
-    if transcription.processed_audio:
+    # Remove any additional generated files if present (defensive)
+    if hasattr(transcription, 'processed_audio') and transcription.processed_audio:
         transcription.processed_audio.delete()
     
     # Delete all exports
@@ -296,9 +313,9 @@ def delete_transcription(request, pk):
     transcription.delete()
     
     # HTMX response
-    if request.headers.get('HX-Request'):
-        # Return empty response to remove the element
-        return HttpResponse('')
+    if request.headers.get('HX-Request') or request.method == 'DELETE':
+        # Return empty response for HTMX or DELETE method
+        return HttpResponse('', status=204)
     
     # Regular response - redirect to dashboard
     return redirect('transcriber:dashboard')
@@ -312,6 +329,7 @@ def reprocess(request, pk):
     """
     from ..tasks import process_transcription
     
+    # Need full object for reprocessing (will reset data fields)
     transcription = get_object_or_404(Transcription, pk=pk)
     
     # Check ownership

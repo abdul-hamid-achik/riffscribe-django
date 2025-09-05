@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from decouple import config
+from urllib.parse import urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -94,19 +95,63 @@ WSGI_APPLICATION = 'riffscribe.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    } if not config('DATABASE_URL', default=None) else {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'riffscribe',
-        'USER': 'riffscribe',
-        'PASSWORD': 'riffscribe_dev',
-        'HOST': 'db',
-        'PORT': '5432',
+_DATABASE_URL = config('DATABASE_URL', default=None)
+
+def _build_databases_from_url(db_url: str):
+    parsed = urlparse(db_url)
+    scheme = (parsed.scheme or '').lower()
+    if scheme in ('postgres', 'postgresql', 'psql', 'pgsql'):
+        return {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': (parsed.path or '').lstrip('/'),
+                'USER': parsed.username or '',
+                'PASSWORD': parsed.password or '',
+                'HOST': parsed.hostname or 'localhost',
+                'PORT': str(parsed.port or '5432'),
+            }
+        }
+    if scheme in ('sqlite', 'sqlite3'):
+        db_path = (parsed.path or '').lstrip('/')
+        if not db_path:
+            db_path = str(BASE_DIR / 'db.sqlite3')
+        return {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': db_path,
+            }
+        }
+    # Fallback to sqlite if unknown scheme
+    return {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+
+if _DATABASE_URL:
+    DATABASES = _build_databases_from_url(_DATABASE_URL)
+else:
+    # Allow explicit env vars without DATABASE_URL (useful for local tests)
+    db_host = config('DATABASE_HOST', default=None)
+    if db_host:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': config('DATABASE_NAME', default='riffscribe'),
+                'USER': config('DATABASE_USER', default='riffscribe'),
+                'PASSWORD': config('DATABASE_PASSWORD', default='riffscribe_dev'),
+                'HOST': db_host,
+                'PORT': str(config('DATABASE_PORT', default='5432')),
+            }
+        }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 
 # Password validation

@@ -18,7 +18,11 @@ def comments_list(request, pk):
     HTMX endpoint to load comments for a transcription with priority sorting.
     Authenticated user comments are shown first, then sorted by creation time.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only need basic info for comments, defer large data fields
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'guitar_notes', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Custom ordering: authenticated users first, then by creation time
     comments = Comment.objects.filter(
@@ -56,7 +60,11 @@ def add_comment(request, pk):
     HTMX endpoint to add a comment to a transcription.
     Handles both authenticated and anonymous comments.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only need basic info for comments, defer large data fields
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'guitar_notes', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     if request.user.is_authenticated:
         form = CommentForm(request.POST)
@@ -75,12 +83,21 @@ def add_comment(request, pk):
                     'form': CommentForm(),  # Fresh form
                     'transcription': transcription
                 })
+            return render(request, 'transcriber/comments.html', {
+                'transcription': transcription,
+                'comments': [comment],
+                'total_comments': 1
+            })
         else:
             if request.htmx:
                 return render(request, 'transcriber/partials/comment_form.html', {
                     'form': form,
                     'transcription': transcription
                 })
+            return render(request, 'transcriber/comments.html', {
+                'transcription': transcription,
+                'form': form
+            })
     else:
         form = AnonymousCommentForm(request.POST)
         if form.is_valid():
@@ -97,15 +114,26 @@ def add_comment(request, pk):
                     'form': AnonymousCommentForm(),  # Fresh form
                     'transcription': transcription
                 })
+            return render(request, 'transcriber/comments.html', {
+                'transcription': transcription,
+                'comments': [comment],
+                'total_comments': 1
+            })
         else:
             if request.htmx:
                 return render(request, 'transcriber/partials/anonymous_comment_form.html', {
                     'form': form,
                     'transcription': transcription
                 })
+            return render(request, 'transcriber/comments.html', {
+                'transcription': transcription,
+                'form': form
+            })
     
     # Non-HTMX fallback
-    return redirect('transcriber:detail', pk=transcription.pk)
+    return render(request, 'transcriber/comments.html', {
+        'transcription': transcription
+    })
 
 
 @htmx_login_required

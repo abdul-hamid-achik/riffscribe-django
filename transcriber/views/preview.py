@@ -7,7 +7,7 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from ..models import Transcription, FingeringVariant
-from ..export_manager import ExportManager
+from ..services.export_manager import ExportManager
 import json
 import base64
 
@@ -17,7 +17,11 @@ def preview_tab(request, pk):
     Main preview page for a transcription.
     Shows interactive tab viewer, MIDI player, and sheet music preview.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # For preview page, we only need basic info, not the large data fields
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'whisper_analysis'), 
+        pk=pk
+    )
     
     # Check access permission
     if transcription.user and transcription.user != request.user:
@@ -75,7 +79,11 @@ def tab_preview_api(request, pk):
     API endpoint for AlphaTab/tab preview data.
     Returns tab data in format suitable for AlphaTab rendering.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only load guitar_notes field needed for tab preview, defer large unrelated data
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Check access permission
     if transcription.user and transcription.user != request.user:
@@ -193,7 +201,11 @@ def sheet_music_preview(request, pk):
     Sheet music preview using MusicXML rendering.
     Can use OpenSheetMusicDisplay or similar library.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only load fields needed for sheet music, defer other large data
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'whisper_analysis'), 
+        pk=pk
+    )
     
     # Check access permission
     if transcription.user and transcription.user != request.user:
@@ -225,7 +237,11 @@ def ascii_tab_preview(request, pk):
     """
     ASCII tab preview for simple text-based viewing.
     """
-    transcription = get_object_or_404(Transcription, pk=pk)
+    # Only load guitar_notes field needed for ASCII tab, defer other large data
+    transcription = get_object_or_404(
+        Transcription.objects.defer('midi_data', 'whisper_analysis', 'musicxml_content'), 
+        pk=pk
+    )
     
     # Check access permission
     if transcription.user and transcription.user != request.user:

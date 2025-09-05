@@ -8,8 +8,8 @@ from unittest.mock import Mock, patch
 from django.test import TestCase
 import json
 
-from transcriber.whisper_service import WhisperService
-from transcriber.ml_pipeline import MLPipeline
+from transcriber.services.whisper_service import WhisperService
+from transcriber.services.ml_pipeline import MLPipeline
 from transcriber.models import Transcription
 
 
@@ -19,7 +19,7 @@ class TestWhisperIntegrationSuite(TestCase):
     def test_whisper_service_ml_pipeline_integration(self):
         """Test WhisperService integration with MLPipeline"""
         
-        with patch('transcriber.whisper_service.openai') as mock_openai, \
+        with patch('transcriber.services.whisper_service.openai') as mock_openai, \
              patch('django.conf.settings') as mock_settings:
             
             # Configure settings for Whisper
@@ -50,7 +50,7 @@ class TestWhisperIntegrationSuite(TestCase):
             
             # Test that Whisper service methods work through pipeline
             with patch('builtins.open', create=True), \
-                 patch('transcriber.ml_pipeline.os.path.exists', return_value=True):
+                 patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True):
                 
                 # Test music analysis
                 result = pipeline.whisper_service.analyze_music('test.mp3')
@@ -135,7 +135,7 @@ class TestWhisperIntegrationSuite(TestCase):
     def test_whisper_error_recovery_integration(self):
         """Test error recovery across the full Whisper integration"""
         
-        with patch('transcriber.whisper_service.openai') as mock_openai, \
+        with patch('transcriber.services.whisper_service.openai') as mock_openai, \
              patch('django.conf.settings') as mock_settings:
             
             mock_settings.USE_WHISPER = True
@@ -238,7 +238,7 @@ class TestWhisperIntegrationSuite(TestCase):
         
         # This test verifies that Whisper data flows correctly through the entire pipeline
         
-        with patch('transcriber.whisper_service.openai') as mock_openai, \
+        with patch('transcriber.services.whisper_service.openai') as mock_openai, \
              patch('django.conf.settings') as mock_settings:
             
             # Configure settings
@@ -274,9 +274,9 @@ class TestWhisperIntegrationSuite(TestCase):
             pipeline = MLPipeline(use_gpu=False)
             
             with patch('builtins.open', create=True), \
-                 patch('transcriber.ml_pipeline.os.path.exists', return_value=True), \
-                 patch('transcriber.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)), \
-                 patch('transcriber.ml_pipeline.librosa.beat.tempo', return_value=(108.0, [0, 1])):
+                 patch('transcriber.services.ml_pipeline.os.path.exists', return_value=True), \
+                 patch('transcriber.services.ml_pipeline.librosa.load', return_value=([0.1, 0.2], 22050)), \
+                 patch('transcriber.services.ml_pipeline.librosa.beat.tempo', return_value=(108.0, [0, 1])):
                 
                 # Test analysis
                 analysis_result = pipeline.analyze_audio('test.mp3')
@@ -293,7 +293,7 @@ class TestWhisperIntegrationSuite(TestCase):
                     'detected_instruments': ['guitar']
                 }
                 
-                with patch('transcriber.ml_pipeline.basic_pitch.predict', return_value=([[0.9]], [0], [0.9])):
+                with patch('transcriber.services.ml_pipeline.basic_pitch.predict', return_value=([[0.9]], [0], [0.9])):
                     transcription_result = pipeline.transcribe('test.mp3', context=context)
                 
                 # Verify chord detection was included

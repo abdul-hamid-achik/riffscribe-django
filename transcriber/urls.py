@@ -22,11 +22,13 @@ urlpatterns = [
     
     # Variant-related URLs
     path('transcription/<uuid:pk>/variants/', views.variants_list, name='variants_list'),
-    path('transcription/<uuid:pk>/variants/select/<uuid:variant_id>/', views.select_variant, name='select_variant'),
-    path('transcription/<uuid:pk>/variants/preview/<uuid:variant_id>/', views.variant_preview, name='variant_preview'),
+    path('transcription/<uuid:pk>/variants/select/<str:variant_id>/', views.select_variant, name='select_variant'),
+    path('transcription/<uuid:pk>/variants/preview/<str:variant_id>/', views.variant_preview, name='variant_preview'),
+    # Backward-compatible alias for tests/templates expecting 'preview_variant'
+    path('transcription/<uuid:pk>/variants/preview/<str:variant_id>/', views.variant_preview, name='preview_variant'),
     path('transcription/<uuid:pk>/variants/regenerate/', views.regenerate_variants, name='regenerate_variants'),
-    path('transcription/<uuid:pk>/variants/<uuid:variant_id>/stats/', views.variant_stats, name='variant_stats'),
-    path('transcription/<uuid:pk>/variants/<uuid:variant_id>/export/', views.export_variant, name='export_variant'),
+    path('transcription/<uuid:pk>/variants/<str:variant_id>/stats/', views.variant_stats, name='variant_stats'),
+    path('transcription/<uuid:pk>/variants/<str:variant_id>/export/', views.export_variant, name='export_variant'),
     path('transcription/<uuid:pk>/variants/status/<str:task_id>/', views.check_generation_status, name='check_generation_status'),
     
     # Export URLs

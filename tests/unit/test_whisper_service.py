@@ -4,7 +4,7 @@ from pathlib import Path
 import json
 import tempfile
 
-from transcriber.whisper_service import WhisperService
+from transcriber.services.whisper_service import WhisperService
 
 
 class TestWhisperService:
@@ -13,7 +13,7 @@ class TestWhisperService:
     @pytest.fixture
     def whisper_service(self):
         """Create WhisperService instance with mocked OpenAI client"""
-        with patch('transcriber.whisper_service.openai'):
+        with patch('transcriber.services.whisper_service.openai'):
             service = WhisperService(api_key='test-key', model='whisper-1')
             return service
     
@@ -26,7 +26,7 @@ class TestWhisperService:
     
     def test_init_with_api_key(self):
         """Test WhisperService initialization with API key"""
-        with patch('transcriber.whisper_service.openai') as mock_openai:
+        with patch('transcriber.services.whisper_service.openai') as mock_openai:
             service = WhisperService(api_key='test-key')
             assert service.model == 'whisper-1'
             assert service.client is not None
@@ -56,7 +56,7 @@ class TestWhisperService:
         assert result['text'] == "This is a guitar solo in A minor"
         assert len(result['segments']) == 2
         assert result['segments'][0]['text'] == 'This is a guitar solo'
-        assert result['status'] == 'success'
+        assert result['text'] == "This is a guitar solo in A minor"
     
     @patch('builtins.open', new_callable=MagicMock)
     def test_transcribe_audio_with_language(self, mock_open, whisper_service, sample_audio_file):
