@@ -285,7 +285,7 @@ riffscribe-django/
 │   ├── ml_pipeline.py   # Enhanced ML pipeline with Whisper integration
 │   ├── whisper_service.py   # Whisper AI service wrapper
 │   ├── tasks.py         # Celery background processing
-│   ├── fingering_optimizer.py  # DP-based fingering optimization
+│   ├── humanizer_service.py    # DP-based playability humanization
 │   ├── variant_generator.py    # Variant generation & metrics
 │   ├── management/      # Django management commands
 │   └── templates/       # HTMX templates with AI indicators
@@ -424,10 +424,10 @@ The system provides HTMX-compatible endpoints for variant management:
 
 #### Adding New Presets
 
-Edit `transcriber/fingering_optimizer.py`:
+Edit `transcriber/services/humanizer_service.py`:
 
 ```python
-FINGERING_PRESETS = {
+HUMANIZER_PRESETS = {
     "custom": OptimizationWeights(
         w_jump=5,           # Fret jump penalty
         w_string=2.5,       # String change penalty

@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from transcriber.models import Transcription, FingeringVariant
 from transcriber.services.variant_generator import VariantGenerator
-from transcriber.services.fingering_optimizer import FINGERING_PRESETS
+from transcriber.services.humanizer_service import HUMANIZER_PRESETS
 import uuid
 
 
@@ -162,7 +162,7 @@ class Command(BaseCommand):
                         
             else:
                 # Generate specific preset
-                if preset not in FINGERING_PRESETS:
+                if preset not in HUMANIZER_PRESETS:
                     raise CommandError(f'Unknown preset: {preset}')
                     
                 # Delete existing variant of this preset if forcing
@@ -172,7 +172,7 @@ class Command(BaseCommand):
                     if verbose:
                         self.stdout.write(f'  Deleted existing {preset} variant')
                         
-                weights = FINGERING_PRESETS[preset]
+                weights = HUMANIZER_PRESETS[preset]
                 variant = generator.generate_variant(preset, weights)
                 
                 if variant:

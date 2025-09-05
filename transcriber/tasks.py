@@ -341,11 +341,11 @@ def generate_variants(transcription_id, preset=None):
         
         if preset:
             # Generate specific variant
-            from .fingering_optimizer import FINGERING_PRESETS
-            if preset not in FINGERING_PRESETS:
+            from .services.humanizer_service import HUMANIZER_PRESETS
+            if preset not in HUMANIZER_PRESETS:
                 raise ValueError(f"Unknown preset: {preset}")
             
-            weights = FINGERING_PRESETS[preset]
+            weights = HUMANIZER_PRESETS[preset]
             logger.info(f"Generating variant with preset '{preset}', weights: {weights}")
             variant = variant_generator.generate_variant(preset, weights)
             

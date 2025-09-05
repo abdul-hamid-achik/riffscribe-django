@@ -1,5 +1,5 @@
 """
-Playability-aware fingering optimizer using dynamic programming
+Playability-aware humanizer service using dynamic programming
 """
 
 import math
@@ -50,8 +50,8 @@ class OptimizationWeights:
     max_jump: int = 12            # Maximum allowed jump
     
 
-# Preset configurations
-FINGERING_PRESETS = {
+# Preset configurations for humanizing different difficulty levels
+HUMANIZER_PRESETS = {
     "easy": OptimizationWeights(
         w_jump=6, w_string=3, w_span=8, span_cap=4,
         w_open=2, w_high=2, pref_fret_center=7,
@@ -75,12 +75,12 @@ FINGERING_PRESETS = {
 }
 
 
-class FingeringOptimizer:
-    """Dynamic programming optimizer for guitar fingering"""
+class HumanizerService:
+    """Dynamic programming service for humanizing guitar fingering positions"""
     
     def __init__(self, tuning: List[int] = None, weights: OptimizationWeights = None):
         self.tuning = tuning or STANDARD_TUNING
-        self.weights = weights or FINGERING_PRESETS["balanced"]
+        self.weights = weights or HUMANIZER_PRESETS["balanced"]
         self.num_strings = len(self.tuning)
         self.max_fret = 24
         

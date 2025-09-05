@@ -11,7 +11,7 @@ from model_bakery import baker
 from transcriber.services.variant_generator import (
     VariantGenerator, TechniqueInference, MetricsCalculator
 )
-from transcriber.services.fingering_optimizer import FretChoice, FINGERING_PRESETS
+from transcriber.services.humanizer_service import FretChoice, HUMANIZER_PRESETS
 
 
 class TestTechniqueInference(TestCase):
@@ -245,7 +245,7 @@ class TestVariantGenerator(TestCase):
         """Test conversion of optimizer output to tab format"""
         generator = VariantGenerator(self.transcription)
         
-        from transcriber.services.fingering_optimizer import Note, FretChoice
+        from transcriber.services.humanizer_service import Note, FretChoice
         
         notes = [
             Note(midi_note=60, time=0.0, duration=0.5),
@@ -270,10 +270,10 @@ class TestVariantGenerator(TestCase):
         
     def test_generate_variant(self):
         """Test single variant generation"""
-        from transcriber.services.fingering_optimizer import Note, FretChoice
+        from transcriber.services.humanizer_service import Note, FretChoice
         
         with patch('transcriber.services.variant_generator.VariantGenerator._extract_notes_from_midi') as mock_extract, \
-             patch('transcriber.services.fingering_optimizer.FingeringOptimizer.optimize_sequence') as mock_optimize:
+             patch('transcriber.services.humanizer_service.HumanizerService.optimize_sequence') as mock_optimize:
             
             # Mock the note extraction
             mock_extract.return_value = [
@@ -310,7 +310,7 @@ class TestVariantGenerator(TestCase):
         """Test weight adjustment for original preset"""
         generator = VariantGenerator(self.transcription)
         
-        from transcriber.services.fingering_optimizer import OptimizationWeights
+        from transcriber.services.humanizer_service import OptimizationWeights
         
         weights = OptimizationWeights()
         original_center = weights.pref_fret_center

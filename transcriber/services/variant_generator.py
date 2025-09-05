@@ -14,9 +14,9 @@ from ..models import (
     Transcription, FingeringVariant, 
     PlayabilityMetrics, FingeringMeasureStat
 )
-from .fingering_optimizer import (
-    FingeringOptimizer, OptimizationWeights, 
-    FINGERING_PRESETS, Note, FretChoice, STANDARD_TUNING
+from .humanizer_service import (
+    HumanizerService, OptimizationWeights, 
+    HUMANIZER_PRESETS, Note, FretChoice, STANDARD_TUNING
 )
 
 
@@ -257,7 +257,7 @@ class VariantGenerator:
         with transaction.atomic():
             FingeringVariant.objects.filter(transcription=self.transcription).delete()
             
-            for preset_name, weights in FINGERING_PRESETS.items():
+            for preset_name, weights in HUMANIZER_PRESETS.items():
                 variant = self.generate_variant(preset_name, weights)
                 if variant:
                     variants.append(variant)
@@ -286,7 +286,7 @@ class VariantGenerator:
             weights = self._adjust_weights_for_original(weights)
             
         # Run optimizer
-        optimizer = FingeringOptimizer(tuning=self.tuning, weights=weights)
+        optimizer = HumanizerService(tuning=self.tuning, weights=weights)
         optimized_positions = optimizer.optimize_sequence(notes)
         
         # Convert to tab data format
@@ -510,7 +510,7 @@ class VariantGenerator:
                 return variants
             
             # Generate variants for each preset
-            for preset_name, weights in FINGERING_PRESETS.items():
+            for preset_name, weights in HUMANIZER_PRESETS.items():
                 variant = self._generate_track_variant(track, preset_name, weights, notes, track_notes)
                 if variant:
                     variants.append(variant)
@@ -533,7 +533,7 @@ class VariantGenerator:
             weights = self._adjust_weights_for_track(weights, track_notes, track)
             
         # Run optimizer
-        optimizer = FingeringOptimizer(tuning=self.tuning, weights=weights)
+        optimizer = HumanizerService(tuning=self.tuning, weights=weights)
         optimized_positions = optimizer.optimize_sequence(notes)
         
         # Convert to tab data format
