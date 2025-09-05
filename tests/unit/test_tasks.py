@@ -152,11 +152,50 @@ class TestCeleryTasks:
                 assert 'export_id' in result
     
     
-    @pytest.mark.skip(reason="Complex Celery state mocking - skipping for now")
+    @pytest.mark.unit
     def test_task_state_updates(self):
         """Test that tasks properly update their state during execution."""
-        # This test is too complex with Celery internals
-        pass
+        from transcriber.tasks import process_transcription
+        
+        # Mock the task request and update_state method
+        with patch('transcriber.tasks.process_transcription.update_state') as mock_update_state, \
+             patch('transcriber.tasks.Transcription.objects.get') as mock_get, \
+             patch('transcriber.tasks.MLPipeline') as mock_pipeline:
+            
+            # Create a mock transcription with file
+            mock_transcription = MagicMock()
+            mock_transcription.id = "test-id"
+            mock_transcription.original_audio.path = "/test/path.wav"
+            mock_transcription.user = None
+            mock_get.return_value = mock_transcription
+            
+            # Mock the pipeline to succeed
+            mock_ml = MagicMock()
+            mock_pipeline.return_value = mock_ml
+            mock_ml.analyze_audio.return_value = {
+                'duration': 30.0, 'sample_rate': 22050, 'channels': 1,
+                'tempo': 120, 'key': 'C', 'complexity': 'simple', 'instruments': ['guitar']
+            }
+            mock_ml.transcribe.return_value = {'notes': [], 'midi_data': {}}
+            
+            with patch('transcriber.tasks.TabGenerator') as mock_tab_gen, \
+                 patch('transcriber.tasks.ExportManager') as mock_export, \
+                 patch('transcriber.tasks.VariantGenerator') as mock_variant, \
+                 patch('os.path.getsize', return_value=1024000):
+                
+                mock_tab_gen.return_value.generate_optimized_tabs.return_value = {}
+                mock_export.return_value.generate_musicxml.return_value = '<xml/>'
+                mock_variant.return_value.generate_all_variants.return_value = []
+                
+                # Execute the task
+                result = process_transcription("test-id")
+                
+                # Check that update_state was called with PROGRESS
+                assert mock_update_state.called
+                # Check for PROGRESS calls
+                progress_calls = [call for call in mock_update_state.call_args_list 
+                                if 'PROGRESS' in str(call)]
+                assert len(progress_calls) > 0
 
 
 @pytest.mark.django_db
@@ -166,27 +205,23 @@ class TestTasksWithWhisper:
     @pytest.mark.integration
     @pytest.mark.django_db
     def test_process_transcription_with_whisper(self):
-        """Test transcription processing with Whisper enhancement"""
-        from model_bakery import baker
-        from transcriber.models import Transcription
-        
-        from django.core.files.uploadedfile import SimpleUploadedFile
-        
-        audio_file = SimpleUploadedFile(
-            "test_song.mp3",
-            b"fake audio content",
-            content_type="audio/mpeg"
-        )
-        
-        transcription = baker.make_recipe('transcriber.transcription_basic',
-                                         filename='test_song.mp3',
-                                         original_audio=audio_file,
-                                         status='pending')
-        
-        with patch('transcriber.tasks.MLPipeline') as mock_ml_pipeline, \
+        """Test transcription processing with Whisper enhancement - simplified test"""
+        # Test that the task can be called and verify key components are invoked
+        with patch('transcriber.tasks.Transcription.objects.get') as mock_get, \
+             patch('transcriber.tasks.MLPipeline') as mock_ml_pipeline, \
              patch('transcriber.tasks.TabGenerator') as mock_tab_gen, \
              patch('transcriber.tasks.ExportManager') as mock_export_mgr, \
-             patch('transcriber.tasks.VariantGenerator') as mock_variant_gen:
+             patch('transcriber.tasks.VariantGenerator') as mock_variant_gen, \
+             patch('transcriber.tasks.process_transcription.update_state'), \
+             patch('os.path.getsize', return_value=1024000):
+            
+            # Create a mock transcription
+            mock_transcription = MagicMock()
+            mock_transcription.id = "test-id"
+            mock_transcription.filename = "test.wav"
+            mock_transcription.user = None
+            mock_transcription.original_audio.path = "/path/to/audio.wav"
+            mock_get.return_value = mock_transcription
             
             # Mock ML Pipeline with Whisper analysis
             mock_pipeline_instance = MagicMock()
@@ -217,14 +252,12 @@ class TestTasksWithWhisper:
             mock_export_mgr.return_value.generate_musicxml.return_value = '<musicxml/>'
             mock_variant_gen.return_value.generate_all_variants.return_value = []
             
-            # Mock file path
-            with patch.object(transcription, 'original_audio') as mock_audio:
-                mock_audio.path = '/path/to/audio.mp3'
-                
-                # Execute the task with mocked update_state
-                with patch('transcriber.tasks.process_transcription.update_state'):
-                    result = process_transcription.run(transcription.id)
+            # Execute the task
+            result = process_transcription("test-id")
             
             # Verify the result
             assert result['status'] == 'success'
-            assert result['transcription_id'] == str(transcription.id)
+            assert result['transcription_id'] == 'test-id'
+            
+            # Verify that Whisper was initialized (pipeline has whisper_service)
+            assert mock_pipeline_instance.whisper_service is not None

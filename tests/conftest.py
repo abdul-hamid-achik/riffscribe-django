@@ -111,14 +111,63 @@ def completed_transcription():
 
 
 @pytest.fixture
-def real_audio_file():
-    """Get path to a real sample audio file."""
-    import os
+def simple_riff_wav():
+    """Get path to simple-riff.wav sample file."""
     samples_dir = Path(__file__).parent.parent / "samples"
     simple_riff = samples_dir / "simple-riff.wav"
     if simple_riff.exists():
         return str(simple_riff)
     return None
+
+@pytest.fixture
+def complex_riff_wav():
+    """Get path to complex-riff.wav sample file."""
+    samples_dir = Path(__file__).parent.parent / "samples"
+    complex_riff = samples_dir / "complex-riff.wav"
+    if complex_riff.exists():
+        return str(complex_riff)
+    return None
+
+@pytest.fixture
+def sample_audio_files():
+    """Get dict of all available sample audio files."""
+    samples_dir = Path(__file__).parent.parent / "samples"
+    files = {}
+    
+    for name in ['simple-riff', 'complex-riff']:
+        for ext in ['wav', 'mp3', 'flac', 'm4a', 'ogg', 'aac']:
+            file_path = samples_dir / f"{name}.{ext}"
+            if file_path.exists():
+                files[f"{name}_{ext}"] = str(file_path)
+    
+    return files
+
+@pytest.fixture
+def transcription_with_real_audio(simple_riff_wav):
+    """Create a transcription with real sample audio file."""
+    if not simple_riff_wav:
+        pytest.skip("Sample audio file not available")
+    
+    from django.core.files import File
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    
+    # Read the real audio file and create an UploadedFile
+    with open(simple_riff_wav, 'rb') as f:
+        audio_content = f.read()
+    
+    audio_file = SimpleUploadedFile(
+        "simple-riff.wav",
+        audio_content,
+        content_type="audio/wav"
+    )
+    
+    transcription = baker.make_recipe(
+        'transcriber.transcription_basic',
+        filename="simple-riff.wav",
+        original_audio=audio_file,
+        status="pending"
+    )
+    return transcription
 
 @pytest.fixture
 def live_server_url():

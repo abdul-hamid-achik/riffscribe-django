@@ -268,12 +268,43 @@ class TestVariantGenerator(TestCase):
         assert measure['notes'][0]['string'] == 3
         assert measure['notes'][0]['fret'] == 5
         
-    @pytest.mark.skip(reason="Complex variant generation - skipping for now")
-    def test_generate_variant(self, mock_optimize, mock_extract):
+    def test_generate_variant(self):
         """Test single variant generation"""
-        # This test involves complex database operations and technique inference
-        # Skip for now and focus on simpler unit tests
-        pass
+        from transcriber.services.fingering_optimizer import Note, FretChoice
+        
+        with patch('transcriber.services.variant_generator.VariantGenerator._extract_notes_from_midi') as mock_extract, \
+             patch('transcriber.services.fingering_optimizer.FingeringOptimizer.optimize_sequence') as mock_optimize:
+            
+            # Mock the note extraction
+            mock_extract.return_value = [
+                Note(midi_note=60, time=0.0, duration=0.5),
+                Note(midi_note=62, time=0.5, duration=0.5),
+            ]
+            
+            # Mock the optimizer output
+            mock_optimize.return_value = [
+                FretChoice(string=3, fret=5, midi_note=60),
+                FretChoice(string=3, fret=7, midi_note=62),
+            ]
+        
+            generator = VariantGenerator(self.transcription)
+            
+            # Mock technique inference to avoid index errors
+            with patch('transcriber.services.variant_generator.TechniqueInference.infer_techniques', return_value={}), \
+                 patch('transcriber.services.variant_generator.MetricsCalculator.compute_metrics') as mock_metrics:
+                
+                mock_metrics.return_value = {
+                    'difficulty_score': 30,
+                    'playability_score': 70,
+                    'measure_stats': []
+                }
+                
+                variant = generator.generate_variant('easy', FINGERING_PRESETS['easy'])
+                
+                assert variant is not None
+                assert variant.variant_name == 'easy'
+                assert variant.transcription == self.transcription
+                assert 'measures' in variant.tab_data
         
     def test_adjust_weights_for_original(self):
         """Test weight adjustment for original preset"""
@@ -298,12 +329,28 @@ class TestVariantGenerator(TestCase):
         adjusted = generator._adjust_weights_for_original(weights)
         assert adjusted.span_cap < original_span
         
-    @pytest.mark.skip(reason="Complex database mocking - skipping for now")
-    def test_generate_all_variants(self, mock_filter):
+    def test_generate_all_variants(self):
         """Test generation of all preset variants"""
-        # This test is too complex with database operations
-        # Skip for now and focus on simpler unit tests
-        pass
+        # Mock the database operations to avoid complex mocking issues
+        with patch('transcriber.services.variant_generator.FingeringVariant.objects.filter') as mock_filter:
+            mock_filter.return_value.delete.return_value = None
+        
+            generator = VariantGenerator(self.transcription)
+            
+            # Mock the variant generation to avoid complex optimizer logic
+            with patch.object(generator, 'generate_variant') as mock_gen:
+                mock_variant = MagicMock()
+                mock_variant.playability_score = 80
+                mock_variant.is_selected = False
+                mock_gen.return_value = mock_variant
+                
+                # Mock the _update_parent_transcription to avoid database save issues
+                with patch.object(generator, '_update_parent_transcription'):
+                    variants = generator.generate_all_variants()
+                
+                # Should generate 4 variants (easy, balanced, technical, original)
+                assert mock_gen.call_count == 4
+                assert len(variants) == 4
             
     def test_update_parent_transcription(self):
         """Test updating parent transcription with selected variant"""
