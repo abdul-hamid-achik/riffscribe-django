@@ -24,6 +24,7 @@ except ImportError:
 try:
     from demucs import pretrained
     from demucs.apply import apply_model
+    demucs = True  # Set to True if imports succeed
 except ImportError:
     demucs = None
 
