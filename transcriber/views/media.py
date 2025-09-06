@@ -90,7 +90,7 @@ def audio_proxy(request, transcription_id):
         # For local development, serve directly from storage
         if settings.DEBUG and hasattr(settings, 'AWS_S3_ENDPOINT_URL'):
             endpoint = getattr(settings, 'AWS_S3_ENDPOINT_URL', '')
-            if 'localhost:' in endpoint or '127.0.0.1:' in endpoint:
+            if 'localhost:' in endpoint or '127.0.0.1:' in endpoint or 'storage:' in endpoint:
                 # Just redirect to the public file URL for development
                 file_url = transcription.original_audio.url
                 
