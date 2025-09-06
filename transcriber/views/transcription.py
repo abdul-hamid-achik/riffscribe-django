@@ -55,7 +55,7 @@ def detail(request, pk):
         transcription.complexity_level = complexity_map.get(transcription.complexity, 3)
     
     # Get file size in MB
-    if transcription.original_audio:
+    if transcription.original_audio.name:
         try:
             transcription.file_size_mb = transcription.original_audio.size / (1024 * 1024)
         except:
@@ -298,7 +298,7 @@ def delete_transcription(request, pk):
         return JsonResponse({'error': 'Access denied'}, status=403)
     
     # Delete associated files
-    if transcription.original_audio:
+    if transcription.original_audio.name:
         transcription.original_audio.delete()
     # Remove any additional generated files if present (defensive)
     if hasattr(transcription, 'processed_audio') and transcription.processed_audio:

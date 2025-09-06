@@ -2,7 +2,13 @@
 JSON utilities for handling numpy arrays and other non-serializable objects.
 """
 import json
-import numpy as np
+# Optional import for numpy (may not be available in web container)
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    np = None
+    HAS_NUMPY = False
 from typing import Any, Dict, List, Union
 
 
@@ -16,11 +22,11 @@ def ensure_json_serializable(obj: Any) -> Any:
     Returns:
         JSON-serializable version of the object
     """
-    if isinstance(obj, np.ndarray):
+    if HAS_NUMPY and isinstance(obj, np.ndarray):
         return obj.tolist()
-    elif isinstance(obj, np.integer):
+    elif HAS_NUMPY and isinstance(obj, np.integer):
         return int(obj)
-    elif isinstance(obj, np.floating):
+    elif HAS_NUMPY and isinstance(obj, np.floating):
         return float(obj)
     elif isinstance(obj, dict):
         return {key: ensure_json_serializable(value) for key, value in obj.items()}

@@ -433,8 +433,15 @@ class Command(BaseCommand):
         
         job_count = 0
         
-        # Process pending transcriptions
+        # Process pending transcriptions (only those with audio files)
         for transcription in pending_transcriptions:
+            # Skip transcriptions without audio files
+            if not transcription.original_audio.name:
+                self.stdout.write(
+                    self.style.WARNING(f'    ⚠️  Skipping {transcription.filename} - no audio file')
+                )
+                continue
+            
             try:
                 task = process_transcription.delay(str(transcription.id))
                 self.stdout.write(f'    ⚙️ Queued processing: {transcription.filename} (task: {task.id})')

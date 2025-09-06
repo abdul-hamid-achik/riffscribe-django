@@ -14,6 +14,7 @@ from django.db import transaction
 from transcriber.models import Comment, Transcription, UserProfile
 from model_bakery import baker
 from transcriber.forms import CommentForm, AnonymousCommentForm
+from tests.test_helpers import create_test_audio_file
 
 
 class CommentWorkflowIntegrationTest(TestCase):
@@ -43,16 +44,30 @@ class CommentWorkflowIntegrationTest(TestCase):
         )
         
         # Create test transcription
-        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                              user=self.author_user,
-                                              filename='test_song.mp3',
-                                              duration=180.5)
+        from django.core.files.base import ContentFile
+        from pathlib import Path
+        
+        def create_test_file():
+            sample_path = Path(__file__).parent.parent / 'samples' / 'simple-riff.wav'
+            if sample_path.exists():
+                with open(sample_path, 'rb') as f:
+                    return ContentFile(f.read(), 'simple-riff.wav')
+            else:
+                return ContentFile(b'test audio data', 'test.wav')
+        
+        self.transcription = baker.make('transcriber.Transcription',
+                                       user=self.author_user,
+                                       filename='test_song.mp3',
+                                       duration=180.5,
+                                       status='completed',
+                                       original_audio=create_test_file())
         
         # Create processing transcription (should not show comments)
-        self.processing_transcription = baker.make_recipe('transcriber.transcription_basic',
-                                                          user=self.author_user,
-                                                          filename='processing_song.mp3',
-                                                          status='processing')
+        self.processing_transcription = baker.make('transcriber.Transcription',
+                                                  user=self.author_user,
+                                                  filename='processing_song.mp3',
+                                                  status='processing',
+                                                  original_audio=create_test_file())
     
     def test_complete_authenticated_user_comment_workflow(self):
         """Test complete workflow: login -> view -> comment -> see result"""
@@ -151,10 +166,12 @@ class CommentWorkflowIntegrationTest(TestCase):
     def test_comment_priority_sorting_workflow(self):
         """Test that authenticated users get priority in comment sorting"""
         # Create anonymous comment first
-        anon_comment = baker.make_recipe('transcriber.comment_anonymous',
-                                        transcription=self.transcription,
-                                        anonymous_name='Early Anonymous',
-                                        content='I was here first!')
+        anon_comment = baker.make('transcriber.Comment',
+                                 transcription=self.transcription,
+                                 user=None,
+                                 anonymous_name='Early Anonymous',
+                                 content='I was here first!',
+                                 is_approved=True)
         
         # Then create authenticated comment
         self.client.login(username='commenter', password='commenterpass123')
@@ -274,7 +291,7 @@ class CommentWorkflowIntegrationTest(TestCase):
         self.client.post(add_comment_url, {'content': 'Authenticated comment'})
         
         # Add anonymous comment (simulated)
-        baker.make_recipe('transcriber.comment_anonymous',
+        baker.make('transcriber.Comment', anonymous',
                          transcription=self.transcription,
                          anonymous_name='Anonymous Fan',
                          content='Anonymous comment')
@@ -360,9 +377,11 @@ class CommentDatabaseIntegrationTest(TransactionTestCase):
             password='testpass123'
         )
         
-        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                              user=self.user,
-                                              filename='test_song.mp3')
+        self.transcription = baker.make('transcriber.Transcription',
+                                       user=self.user,
+                                       filename='test_song.mp3',
+                                       status='completed',
+                                       original_audio=create_test_audio_file())
         
         self.client = Client()
     
@@ -389,10 +408,11 @@ class CommentDatabaseIntegrationTest(TransactionTestCase):
     def test_comment_cascade_deletion_integration(self):
         """Test cascade deletion in integrated environment"""
         # Create comment
-        comment = baker.make_recipe('transcriber.comment_authenticated',
-                                   transcription=self.transcription,
-                                   user=self.user,
-                                   content='Test comment for deletion')
+        comment = baker.make('transcriber.Comment',
+                            transcription=self.transcription,
+                            user=self.user,
+                            content='Test comment for deletion',
+                            is_approved=True)
         
         comment_id = comment.id
         self.assertTrue(Comment.objects.filter(id=comment_id).exists())

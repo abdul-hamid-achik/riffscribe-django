@@ -411,21 +411,21 @@ class VariantGenerator:
             if midi_notes:
                 avg_midi = sum(midi_notes) / len(midi_notes)
                 
-                # Map average MIDI note to preferred fret position
-                # E2 (40) -> fret 0-5, E3 (52) -> fret 7-12, E4 (64) -> fret 12-17
+                # Map average MIDI note to adjust position weight
+                # Lower notes should have less position penalty (prefer lower frets)
                 if avg_midi < 48:
-                    weights.pref_fret_center = 3
+                    weights.w_position *= 0.5
                 elif avg_midi < 60:
-                    weights.pref_fret_center = 8
+                    weights.w_position *= 0.8
                 else:
-                    weights.pref_fret_center = 12
+                    weights.w_position *= 1.2
                     
-        # Adjust span cap based on tempo
+        # Adjust span constraints based on tempo
         if self.transcription.estimated_tempo:
             if self.transcription.estimated_tempo > 140:
-                weights.span_cap = max(4, weights.span_cap - 1)
+                weights.max_physical_span = max(4, weights.max_physical_span - 1)
             elif self.transcription.estimated_tempo < 80:
-                weights.span_cap = min(7, weights.span_cap + 1)
+                weights.max_physical_span = min(7, weights.max_physical_span + 1)
                 
         return weights
     
@@ -589,32 +589,32 @@ class VariantGenerator:
             # Adjust based on instrument type
             if track.instrument_type == 'bass':
                 # Bass guitars typically play in lower register
-                weights.pref_fret_center = min(7, weights.pref_fret_center)
-                weights.w_open = 3.0  # Encourage open strings for bass
-                weights.span_cap = min(4, weights.span_cap)  # Tighter spans for bass
+                weights.w_position *= 0.7  # Less penalty for low positions
+                weights.w_open_bonus *= 1.5  # Encourage open strings for bass
+                weights.max_physical_span = min(4, weights.max_physical_span)  # Tighter spans for bass
                 
             elif track.instrument_type == 'acoustic_guitar':
                 # Acoustic guitars often use more open chords
-                weights.w_open = 2.5
-                weights.pref_fret_center = min(9, weights.pref_fret_center)
+                weights.w_open_bonus *= 1.25
+                weights.w_position *= 0.9  # Slight preference for lower positions
                 
             elif track.instrument_type == 'electric_guitar':
                 # Electric guitars can handle more complex fingerings
                 if avg_midi > 60:  # Higher register
-                    weights.pref_fret_center = max(10, weights.pref_fret_center)
-                    weights.span_cap = min(7, weights.span_cap + 1)
+                    weights.w_position *= 1.1  # Higher penalty for low positions
+                    weights.max_physical_span = min(7, weights.max_physical_span + 1)
                     
         # Adjust based on track prominence
         if hasattr(track, 'prominence_score') and track.prominence_score:
             if track.prominence_score > 0.7:  # Prominent track
                 # More complex fingerings acceptable for lead parts
-                if weights.span_cap < 6:
-                    weights.span_cap += 1
+                if weights.max_physical_span < 6:
+                    weights.max_physical_span += 1
                     
             elif track.prominence_score < 0.3:  # Background track
                 # Simpler fingerings for rhythm parts
-                weights.w_open = min(3.0, weights.w_open * 1.5)
-                weights.span_cap = max(4, weights.span_cap - 1)
+                weights.w_open_bonus = min(3.0, weights.w_open_bonus * 1.5)
+                weights.max_physical_span = max(4, weights.max_physical_span - 1)
                 
         return weights
     

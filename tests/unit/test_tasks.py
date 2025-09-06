@@ -14,15 +14,21 @@ class TestCeleryTasks:
     @pytest.mark.unit
     def test_process_transcription_success(self, completed_transcription):
         """Test successful transcription processing."""
-        with patch('transcriber.tasks.Transcription.objects.get') as mock_get:
+        with patch('transcriber.tasks.settings') as mock_settings, \
+             patch('transcriber.tasks.Transcription.objects.get') as mock_get:
+            # Mock settings
+            mock_settings.OPENAI_API_KEY = 'test_api_key'
+            mock_settings.ENABLE_DRUMS = True
             mock_get.return_value = completed_transcription
             
-            with patch('transcriber.tasks.MLPipeline') as mock_pipeline:
-                mock_ml = MagicMock()
-                mock_pipeline.return_value = mock_ml
+            with patch('transcriber.tasks._get_ai_pipeline') as mock_get_pipeline:
+                mock_ai_pipeline_class = MagicMock()
+                mock_ai = MagicMock()
+                mock_get_pipeline.return_value = mock_ai_pipeline_class
+                mock_ai_pipeline_class.return_value = mock_ai
                 
                 # Mock analysis results
-                mock_ml.analyze_audio.return_value = {
+                mock_ai.analyze_audio.return_value = {
                     'duration': 30.5,
                     'sample_rate': 22050,
                     'channels': 1,
@@ -34,35 +40,41 @@ class TestCeleryTasks:
                 }
                 
                 # Mock transcription results
-                mock_ml.transcribe.return_value = {
+                mock_ai.transcribe.return_value = {
                     'notes': [
                         {'start_time': 0, 'end_time': 0.5, 'midi_note': 60, 'velocity': 80}
                     ],
                     'midi_data': {'notes': [{'midi_note': 60, 'velocity': 80}]}
                 }
                 
-                with patch('transcriber.tasks.TabGenerator') as mock_tab_gen:
+                with patch('transcriber.tasks._get_tab_generator') as mock_get_tab_gen:
+                    mock_tab_gen_class = MagicMock()
                     mock_gen = MagicMock()
-                    mock_tab_gen.return_value = mock_gen
+                    mock_get_tab_gen.return_value = mock_tab_gen_class
+                    mock_tab_gen_class.return_value = mock_gen
                     mock_gen.generate_optimized_tabs.return_value = {
                         'tempo': 120,
                         'measures': []
                     }
                     mock_gen.to_ascii_tab.return_value = "ASCII_TAB"
                     
-                    with patch('transcriber.tasks.ExportManager') as mock_export_mgr, \
-                         patch('transcriber.tasks.VariantGenerator') as mock_variant_gen, \
+                    with patch('transcriber.tasks._get_export_manager') as mock_get_export_mgr, \
+                         patch('transcriber.tasks._get_variant_generator') as mock_get_variant_gen, \
                          patch('transcriber.tasks.process_transcription.update_state') as mock_update_state:
                         
                         # Mock export manager
+                        mock_export_mgr_class = MagicMock()
                         mock_export = MagicMock()
-                        mock_export_mgr.return_value = mock_export
+                        mock_get_export_mgr.return_value = mock_export_mgr_class
+                        mock_export_mgr_class.return_value = mock_export
                         mock_export.generate_musicxml.return_value = '<musicxml>test</musicxml>'
                         mock_export.generate_gp5.return_value = '/tmp/test.gp5'
                         
                         # Mock variant generator
+                        mock_variant_gen_class = MagicMock()
                         mock_var_gen = MagicMock()
-                        mock_variant_gen.return_value = mock_var_gen
+                        mock_get_variant_gen.return_value = mock_variant_gen_class
+                        mock_variant_gen_class.return_value = mock_var_gen
                         mock_var_gen.generate_all_variants.return_value = []
                         
                         # Execute task
@@ -75,11 +87,17 @@ class TestCeleryTasks:
     @pytest.mark.unit
     def test_process_transcription_error_handling(self, sample_transcription):
         """Test error handling in transcription processing."""
-        with patch('transcriber.tasks.Transcription.objects.get') as mock_get:
+        with patch('transcriber.tasks.settings') as mock_settings, \
+             patch('transcriber.tasks.Transcription.objects.get') as mock_get:
+            # Mock settings
+            mock_settings.OPENAI_API_KEY = 'test_api_key'
+            mock_settings.ENABLE_DRUMS = True
             mock_get.return_value = sample_transcription
             
-            with patch('transcriber.tasks.MLPipeline') as mock_pipeline:
-                mock_pipeline.side_effect = Exception("ML Pipeline Error")
+            with patch('transcriber.tasks._get_ai_pipeline') as mock_get_pipeline:
+                mock_ai_pipeline_class = MagicMock()
+                mock_get_pipeline.return_value = mock_ai_pipeline_class
+                mock_ai_pipeline_class.side_effect = Exception("AI Pipeline Error")
                 
                 with patch.object(sample_transcription, 'save'):
                     try:
@@ -97,9 +115,11 @@ class TestCeleryTasks:
         with patch('transcriber.tasks.Transcription.objects.get') as mock_get:
             mock_get.return_value = completed_transcription
             
-            with patch('transcriber.tasks.ExportManager') as mock_export:
+            with patch('transcriber.tasks._get_export_manager') as mock_get_export:
+                mock_export_class = MagicMock()
                 mock_manager = MagicMock()
-                mock_export.return_value = mock_manager
+                mock_get_export.return_value = mock_export_class
+                mock_export_class.return_value = mock_manager
                 mock_manager.export_musicxml.return_value = "/tmp/test.xml"
                 
                 with patch('transcriber.tasks.TabExport') as mock_tab_export, \
@@ -158,9 +178,14 @@ class TestCeleryTasks:
         from transcriber.tasks import process_transcription
         
         # Mock the task request and update_state method
-        with patch('transcriber.tasks.process_transcription.update_state') as mock_update_state, \
+        with patch('transcriber.tasks.settings') as mock_settings, \
+             patch('transcriber.tasks.process_transcription.update_state') as mock_update_state, \
              patch('transcriber.tasks.Transcription.objects.get') as mock_get, \
-             patch('transcriber.tasks.MLPipeline') as mock_pipeline:
+             patch('transcriber.tasks._get_ai_pipeline') as mock_get_pipeline:
+            
+            # Mock settings
+            mock_settings.OPENAI_API_KEY = 'test_api_key'
+            mock_settings.ENABLE_DRUMS = True
             
             # Create a mock transcription with file
             mock_transcription = MagicMock()
@@ -171,21 +196,33 @@ class TestCeleryTasks:
             
             # Mock the pipeline to succeed
             mock_ml = MagicMock()
-            mock_pipeline.return_value = mock_ml
+            mock_ai_pipeline_class = MagicMock()
+            mock_ml = MagicMock()
+            mock_get_pipeline.return_value = mock_ai_pipeline_class
+            mock_ai_pipeline_class.return_value = mock_ml
             mock_ml.analyze_audio.return_value = {
                 'duration': 30.0, 'sample_rate': 22050, 'channels': 1,
                 'tempo': 120, 'key': 'C', 'complexity': 'simple', 'instruments': ['guitar']
             }
             mock_ml.transcribe.return_value = {'notes': [], 'midi_data': {}}
             
-            with patch('transcriber.tasks.TabGenerator') as mock_tab_gen, \
-                 patch('transcriber.tasks.ExportManager') as mock_export, \
-                 patch('transcriber.tasks.VariantGenerator') as mock_variant, \
-                 patch('os.path.getsize', return_value=1024000):
+            with patch('transcriber.tasks._get_tab_generator') as mock_get_tab_gen, \
+                 patch('transcriber.tasks._get_export_manager') as mock_get_export, \
+                 patch('transcriber.tasks._get_variant_generator') as mock_get_variant, \
+                 patch('os.path.getsize', return_value=1024000), \
+                 patch('os.path.exists', return_value=True):
                 
-                mock_tab_gen.return_value.generate_optimized_tabs.return_value = {}
-                mock_export.return_value.generate_musicxml.return_value = '<xml/>'
-                mock_variant.return_value.generate_all_variants.return_value = []
+                # Mock the classes and instances
+                mock_tab_gen_class = MagicMock()
+                mock_export_class = MagicMock()
+                mock_variant_class = MagicMock()
+                mock_get_tab_gen.return_value = mock_tab_gen_class
+                mock_get_export.return_value = mock_export_class
+                mock_get_variant.return_value = mock_variant_class
+                
+                mock_tab_gen_class.return_value.generate_optimized_tabs.return_value = {}
+                mock_export_class.return_value.generate_musicxml.return_value = '<xml/>'
+                mock_variant_class.return_value.generate_all_variants.return_value = []
                 
                 # Execute the task
                 result = process_transcription("test-id")
@@ -207,13 +244,15 @@ class TestTasksWithWhisper:
     def test_process_transcription_with_whisper(self):
         """Test transcription processing with Whisper enhancement - simplified test"""
         # Test that the task can be called and verify key components are invoked
-        with patch('transcriber.tasks.Transcription.objects.get') as mock_get, \
-             patch('transcriber.tasks.MLPipeline') as mock_ml_pipeline, \
-             patch('transcriber.tasks.TabGenerator') as mock_tab_gen, \
-             patch('transcriber.tasks.ExportManager') as mock_export_mgr, \
-             patch('transcriber.tasks.VariantGenerator') as mock_variant_gen, \
+        with patch('transcriber.tasks.settings') as mock_settings, \
+             patch('transcriber.tasks.Transcription.objects.get') as mock_get, \
+             patch('transcriber.tasks._get_ai_pipeline') as mock_get_ai_pipeline, \
+             patch('transcriber.tasks._get_tab_generator') as mock_get_tab_gen, \
+             patch('transcriber.tasks._get_export_manager') as mock_get_export_mgr, \
+             patch('transcriber.tasks._get_variant_generator') as mock_get_variant_gen, \
              patch('transcriber.tasks.process_transcription.update_state'), \
-             patch('os.path.getsize', return_value=1024000):
+             patch('os.path.getsize', return_value=1024000), \
+             patch('os.path.exists', return_value=True):
             
             # Create a mock transcription
             mock_transcription = MagicMock()
@@ -223,8 +262,15 @@ class TestTasksWithWhisper:
             mock_transcription.original_audio.path = "/path/to/audio.wav"
             mock_get.return_value = mock_transcription
             
-            # Mock ML Pipeline with Whisper analysis
+            # Mock settings
+            mock_settings.OPENAI_API_KEY = 'test_api_key'
+            mock_settings.ENABLE_DRUMS = True
+            
+            # Mock AI Pipeline with Whisper analysis
+            mock_ai_pipeline_class = MagicMock()
             mock_pipeline_instance = MagicMock()
+            mock_get_ai_pipeline.return_value = mock_ai_pipeline_class
+            mock_ai_pipeline_class.return_value = mock_pipeline_instance
             mock_pipeline_instance.whisper_service = MagicMock()  # Whisper available
             mock_pipeline_instance.analyze_audio.return_value = {
                 'duration': 180.0,
@@ -245,12 +291,18 @@ class TestTasksWithWhisper:
                 'notes': [{'pitch': 69, 'start': 0.0, 'end': 1.0, 'velocity': 80}],
                 'midi_data': {'tracks': [{'notes': []}]}
             }
-            mock_ml_pipeline.return_value = mock_pipeline_instance
+            # Mock other components  
+            mock_tab_gen_class = MagicMock()
+            mock_export_mgr_class = MagicMock()
+            mock_variant_gen_class = MagicMock()
             
-            # Mock other components
-            mock_tab_gen.return_value.generate_optimized_tabs.return_value = {'measures': []}
-            mock_export_mgr.return_value.generate_musicxml.return_value = '<musicxml/>'
-            mock_variant_gen.return_value.generate_all_variants.return_value = []
+            mock_get_tab_gen.return_value = mock_tab_gen_class
+            mock_get_export_mgr.return_value = mock_export_mgr_class
+            mock_get_variant_gen.return_value = mock_variant_gen_class
+            
+            mock_tab_gen_class.return_value.generate_optimized_tabs.return_value = {'measures': []}
+            mock_export_mgr_class.return_value.generate_musicxml.return_value = '<musicxml/>'
+            mock_variant_gen_class.return_value.generate_all_variants.return_value = []
             
             # Execute the task
             result = process_transcription("test-id")

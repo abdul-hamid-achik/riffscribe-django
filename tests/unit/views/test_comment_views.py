@@ -11,6 +11,21 @@ from unittest.mock import patch, MagicMock
 
 from transcriber.models import Comment, Transcription
 from model_bakery import baker
+from django.core.files.base import ContentFile
+
+def create_test_file():
+    """Helper to create a test file for transcriptions using real sample audio"""
+    import os
+    from pathlib import Path
+    
+    # Use real sample audio file if available
+    sample_path = Path(__file__).parent.parent.parent / 'samples' / 'simple-riff.wav'
+    if sample_path.exists():
+        with open(sample_path, 'rb') as f:
+            return ContentFile(f.read(), 'simple-riff.wav')
+    else:
+        # Fallback to fake data
+        return ContentFile(b'test audio data', 'test.wav')
 from transcriber.forms import CommentForm, AnonymousCommentForm
 from transcriber.views.comments import (
     comments_list, add_comment, flag_comment, get_comment_form
@@ -39,20 +54,26 @@ class CommentViewsTest(TestCase):
         )
         
         # Create test transcription
-        self.transcription = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                              user=self.user,
-                                              filename='test_song.mp3')
+        self.transcription = baker.make('transcriber.Transcription',
+                                       user=self.user,
+                                       status='completed',
+                                       filename='test_song.mp3',
+                                       original_audio=create_test_file())
         
         # Create test comments
-        self.auth_comment = baker.make_recipe('transcriber.comment_authenticated',
-                                             transcription=self.transcription,
-                                             user=self.user,
-                                             content='Authenticated user comment')
+        self.auth_comment = baker.make('transcriber.Comment',
+                                      transcription=self.transcription,
+                                      user=self.user,
+                                      content='Authenticated user comment',
+                                      is_approved=True)
         
-        self.anon_comment = baker.make_recipe('transcriber.comment_anonymous',
-                                             transcription=self.transcription,
-                                             anonymous_name='Anonymous User',
-                                             content='Anonymous comment')
+        self.anon_comment = baker.make('transcriber.Comment',
+                                      transcription=self.transcription,
+                                      user=None,
+                                      anonymous_name='Anonymous User',
+                                      anonymous_email='anon@example.com',
+                                      content='Anonymous comment',
+                                      is_approved=True)
 
 
 class CommentsListViewTest(CommentViewsTest):
@@ -107,12 +128,12 @@ class CommentsListViewTest(CommentViewsTest):
     def test_comments_list_pagination(self):
         """Test comments list pagination"""
         # Create many comments to test pagination
-        from model_bakery.recipe import seq
-        baker.make_recipe('transcriber.comment_authenticated',
-                         transcription=self.transcription,
-                         user=self.user,
-                         content=seq('Comment '),
-                         _quantity=15)
+        baker.make('transcriber.Comment',
+                  transcription=self.transcription,
+                  user=self.user,
+                  content='Test comment',
+                  is_approved=True,
+                  _quantity=15)
         
         url = reverse('transcriber:comments_list', kwargs={'pk': self.transcription.pk})
         response = self.client.get(url)
@@ -123,11 +144,11 @@ class CommentsListViewTest(CommentViewsTest):
     def test_comments_list_only_approved(self):
         """Test that only approved comments are shown"""
         # Create unapproved comment
-        unapproved_comment = baker.make_recipe('transcriber.comment_authenticated',
-                                              transcription=self.transcription,
-                                              user=self.user,
-                                              content='Unapproved comment',
-                                              is_approved=False)
+        unapproved_comment = baker.make('transcriber.Comment',
+                                       transcription=self.transcription,
+                                       user=self.user,
+                                       content='Unapproved comment',
+                                       is_approved=False)
         
         url = reverse('transcriber:comments_list', kwargs={'pk': self.transcription.pk})
         response = self.client.get(url)

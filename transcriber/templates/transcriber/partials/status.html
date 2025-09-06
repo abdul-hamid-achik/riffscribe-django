@@ -2,8 +2,9 @@
 {% load custom_filters %}
 
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden" id="unified-status-card" {% if
-    transcription.status in 'pending,processing' %} hx-get="{% url 'transcriber:status' pk=transcription.pk %}"
-    hx-trigger="every 1.5s" hx-swap="outerHTML" {% endif %}>
+    transcription.status=='pending' or transcription.status=='processing'
+    %}hx-get="{% url 'transcriber:status' pk=transcription.id %}" hx-trigger="every 1.5s" hx-swap="outerHTML" {% endif
+    %}>
 
     <!-- Status Header -->
     <div class="px-6 py-4 border-b border-gray-100">
@@ -91,135 +92,133 @@
     </div>
 
     <!-- Status Content -->
+    {% if transcription.status == 'pending' or transcription.status == 'processing' %}
     <div class="px-6 py-6">
-        {% if transcription.status in 'pending,processing' %}
         <!-- Processing Steps -->
         <div class="space-y-4 mb-6">
-            {% with steps='Audio Analysis,Instrument Detection,Note Transcription,Tab Generation,MusicXML
-            Creation,Guitar Pro Export,Variant Generation,Multi-track Processing' %}
-            {% for step in steps|split:',' %}
-            <div class="flex items-center gap-3">
-                <div class="flex-shrink-0">
-                    {% if forloop.counter < current_step %} <div
-                        class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center transition-all duration-300">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clip-rule="evenodd" />
-                        </svg>
-                </div>
-                {% elif forloop.counter == current_step %}
-                <div
-                    class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center animate-pulse shadow-lg">
-                    <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                </div>
-                {% else %}
-                <div
-                    class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300">
-                    <span class="text-gray-500 text-sm font-medium">{{ forloop.counter }}</span>
-                </div>
-                {% endif %}
-            </div>
-            <div class="flex-1">
-                <p
-                    class="text-sm font-medium transition-colors duration-200 {% if forloop.counter <= current_step %}text-gray-900{% else %}text-gray-400{% endif %}">
-                    {{ step }}
-                </p>
-                {% if forloop.counter == current_step %}
-                <p class="text-xs text-blue-600 mt-0.5 animate-pulse">{{ task_progress|default:"Processing..." }}</p>
-                {% elif forloop.counter < current_step %} <p class="text-xs text-green-600 mt-0.5">✓ Complete</p>
+            {% for step in "Audio Analysis,Instrument Detection,Note Transcription,Tab Generation,MusicXML Creation,Guitar Pro Export,Variant Generation,Multi-track Processing"|split:',' %}
+                <div class="flex items-center gap-3">
+                    <div class="flex-shrink-0">
+                        {% if forloop.counter < current_step %}
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center transition-all duration-300">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        {% elif forloop.counter == current_step %}
+                            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center animate-pulse shadow-lg">
+                                <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                            </div>
+                        {% else %}
+                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300">
+                                <span class="text-gray-500 text-sm font-medium">{{ forloop.counter }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium transition-colors duration-200 {% if forloop.counter <= current_step %}text-gray-900{% else %}text-gray-400{% endif %}">
+                            {{ step }}
+                        </p>
+                        {% if forloop.counter == current_step %}
+                            <p class="text-xs text-blue-600 mt-0.5 animate-pulse">{{ task_progress|default:"Processing..." }}</p>
+                        {% elif forloop.counter < current_step %}
+                            <p class="text-xs text-green-600 mt-0.5">✓ Complete</p>
+                        {% endif %}
+                    </div>
+                    {% if not forloop.last %}
+                        <div class="hidden sm:block flex-1 h-0.5 transition-colors duration-500 {% if forloop.counter < current_step %}bg-green-500{% elif forloop.counter == current_step %}bg-blue-500{% else %}bg-gray-200{% endif %}"></div>
                     {% endif %}
-            </div>
-            {% if forloop.counter < steps|length %} <div
-                class="hidden sm:block flex-1 h-0.5 transition-colors duration-500 {% if forloop.counter < current_step %}bg-green-500{% elif forloop.counter == current_step %}bg-blue-500{% else %}bg-gray-200{% endif %}">
-        </div>
-        {% endif %}
-    </div>
-    {% endfor %}
-    {% endwith %}
-</div>
-
-<!-- Progress Bar -->
-<div class="mb-4">
-    <div class="flex items-center justify-between mb-2">
-        <span class="text-sm text-gray-600">Overall Progress</span>
-        <span class="text-sm font-medium text-gray-900 transition-all duration-300">{{ progress_percent|floatformat:0
-            }}%</span>
-    </div>
-    <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-        <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
-            style="width: {{ progress_percent|floatformat:0 }}%">
-            <div
-                class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-ping">
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Time Estimate -->
-<div class="text-center">
-    <p class="text-sm text-gray-500">
-        <span class="inline-flex items-center">
-            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Estimated time remaining: <span class="font-medium text-blue-600">{{ time_remaining|default:"1-2 minutes"
-                }}</span>
-        </span>
-    </p>
-</div>
-{% endif %}
-
-<!-- Audio Analysis Info (for all states) -->
-<div
-    class="grid grid-cols-2 md:grid-cols-4 gap-4 {% if transcription.status == 'processing' %}mt-6 pt-6 border-t border-gray-100{% endif %}">
-    {% if transcription.duration %}
-    <div class="text-center">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</dt>
-        <dd class="text-lg font-semibold text-gray-900">{{ transcription.duration|format_duration }}</dd>
-    </div>
-    {% endif %}
-
-    {% if transcription.estimated_tempo %}
-    <div class="text-center">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Tempo</dt>
-        <dd class="text-lg font-semibold text-gray-900">{{ transcription.estimated_tempo }} BPM</dd>
-    </div>
-    {% endif %}
-
-    {% if transcription.estimated_key %}
-    <div class="text-center">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Key</dt>
-        <dd class="text-lg font-semibold text-gray-900">{{ transcription.estimated_key }}</dd>
-    </div>
-    {% endif %}
-
-    {% if transcription.complexity %}
-    <div class="text-center">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Complexity</dt>
-        <dd class="text-lg font-semibold text-gray-900 capitalize">{{ transcription.complexity }}</dd>
-    </div>
-    {% endif %}
-</div>
-
-{% if transcription.detected_instruments %}
-<div class="mt-4 pt-4 border-t border-gray-100">
-    <div class="text-center">
-        <dt class="text-xs font-medium text-gray-500 uppercase tracking-wide">Detected Instruments</dt>
-        <dd class="text-sm text-gray-900 mt-1">
-            {% for instrument in transcription.detected_instruments %}
-            <span
-                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mr-2">
-                {{ instrument|title }}
-            </span>
+                </div>
             {% endfor %}
-        </dd>
+        </div>
+    {% endif %}
+
+        <!-- Progress Bar -->
+    <div class="mb-4">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm text-gray-600">Overall Progress</span>
+            <span class="text-sm font-medium text-gray-900 transition-all duration-300">{{
+                progress_percent|floatformat:0 }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                style="width: {{ progress_percent|floatformat:0 }}%">
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-ping">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Estimate -->
+    <div class="text-center">
+        <p class="text-sm text-gray-500">
+            <span class="inline-flex items-center">
+                <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Estimated time remaining: <span class="font-medium text-blue-600">{{ time_remaining|default:"1-2
+                    minutes" }}</span>
+            </span>
+        </p>
+    </div>
+</div>
+
+{% if transcription.status == 'completed' and user.is_authenticated and user.is_superuser %}
+<div class="px-6 py-6">
+    <!-- Reprocess Option for Superusers -->
+    <div class="text-center">
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-4">
+                Want to re-analyze this music with the latest AI improvements?
+                <br>This will generate a fresh transcription.
+            </p>
+        </div>
+        <button type="button"
+            class="inline-flex items-center px-6 py-3 bg-musical-gold hover:bg-yellow-500 text-black font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            hx-post="{% url 'transcriber:reprocess' transcription.id %}" hx-target="#unified-status-card"
+            hx-swap="outerHTML"
+            hx-confirm="This will replace the current transcription. Are you sure you want to reprocess?">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reprocess with Latest AI
+        </button>
+        <p class="text-xs text-gray-500 mt-2">
+            This will take 2-3 minutes and replace current results
+        </p>
+    </div>
+</div>
+{% elif transcription.status == 'completed' and user.is_authenticated and transcription.user == user %}
+<div class="px-6 py-6">
+    <!-- Reprocess Option for Owner -->
+    <div class="text-center">
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-4">
+                Want to re-analyze your music with the latest AI improvements?
+                <br>This will generate a fresh transcription.
+            </p>
+        </div>
+        <button type="button"
+            class="inline-flex items-center px-6 py-3 bg-musical-gold hover:bg-yellow-500 text-black font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            hx-post="{% url 'transcriber:reprocess' transcription.id %}" hx-target="#unified-status-card"
+            hx-swap="outerHTML"
+            hx-confirm="This will replace your current transcription. Are you sure you want to reprocess?">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reprocess with Latest AI
+        </button>
+        <p class="text-xs text-gray-500 mt-2">
+            This will take 2-3 minutes and replace your current results
+        </p>
     </div>
 </div>
 {% endif %}
-</div>
 </div>

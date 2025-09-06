@@ -14,11 +14,28 @@ except ImportError:
     psutil = None
 
 from .models import Transcription, TabExport
-from .services.ml_pipeline import MLPipeline
-from .services.tab_generator import TabGenerator
-from .services.export_manager import ExportManager
-from .services.variant_generator import VariantGenerator
+# Lazy import for export manager (has heavy dependencies like music21)
+def _get_export_manager():
+    from .services.export_manager import ExportManager
+    return ExportManager
 from .utils.json_utils import ensure_json_serializable
+
+# Lazy imports for AI services (much lighter than ML services)
+def _get_ai_pipeline():
+    from .services.ai_transcription_agent import AIPipeline
+    return AIPipeline
+
+def _get_ai_multitrack_service():
+    from .services.ai_transcription_agent import AIMultiTrackService
+    return AIMultiTrackService
+
+def _get_tab_generator():
+    from .services.tab_generator import TabGenerator
+    return TabGenerator
+
+def _get_variant_generator():
+    from .services.variant_generator import VariantGenerator
+    return VariantGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -40,34 +57,45 @@ def process_transcription(self, transcription_id):
         transcription.save()
         logger.info(f"Status updated to 'processing' for transcription {transcription_id}")
         
-        # Initialize ML pipeline
-        gpu_enabled = getattr(settings, 'USE_GPU', False)
-        demucs_model = getattr(settings, 'DEMUCS_MODEL', 'htdemucs_ft')
-        basic_pitch_model = getattr(settings, 'BASIC_PITCH_MODEL', 'default')
-        multitrack_enabled = getattr(settings, 'ENABLE_MULTITRACK', True)
+        # Initialize AI pipeline (much lighter than ML pipeline!)
+        api_key = getattr(settings, 'OPENAI_API_KEY', '')
+        enable_drums = getattr(settings, 'ENABLE_DRUMS', True)
         
-        logger.info(f"Initializing ML Pipeline - GPU: {gpu_enabled}, Demucs: {demucs_model}, Basic Pitch: {basic_pitch_model}, Multitrack: {multitrack_enabled}")
+        if not api_key:
+            raise ValueError("OpenAI API key is required for AI transcription")
         
-        pipeline = MLPipeline(
-            use_gpu=gpu_enabled,
-            demucs_model=demucs_model,
-            basic_pitch_model=basic_pitch_model,
-            enable_multitrack=multitrack_enabled
+        logger.info(f"Initializing AI Pipeline - Drums enabled: {enable_drums}")
+        
+        AIPipeline = _get_ai_pipeline()
+        pipeline = AIPipeline(
+            api_key=api_key,
+            enable_drums=enable_drums
         )
-        logger.info("ML Pipeline initialized successfully")
+        logger.info("AI Pipeline initialized successfully")
         
-        # Process audio file
-        audio_path = transcription.original_audio.path
+        # Process audio file - check if file exists first
+        # Use .name instead of accessing the field directly to avoid ValueError
+        if not transcription.original_audio.name:
+            raise ValueError(f"Transcription {transcription_id} has no audio file associated with it")
+        
+        try:
+            audio_path = transcription.original_audio.path
+        except ValueError as e:
+            raise ValueError(f"Transcription {transcription_id} audio file is not accessible: {str(e)}")
+        
+        if not os.path.exists(audio_path):
+            raise ValueError(f"Audio file not found on disk: {audio_path}")
+        
         logger.info(f"Processing audio file: {audio_path}")
         logger.info(f"File size: {os.path.getsize(audio_path) / 1024 / 1024:.2f} MB")
         
-        # Step 1: Audio analysis and preprocessing
+        # Step 1: AI-powered audio analysis (much faster!)
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 1, 'status': 'Analyzing audio file...', 'progress': 12})
-        logger.info("[STEP 1] Starting audio analysis...")
+        self.update_state(state='PROGRESS', meta={'step': 1, 'status': 'AI analyzing audio...', 'progress': 12})
+        logger.info("[STEP 1] Starting AI audio analysis...")
         analysis_results = pipeline.analyze_audio(audio_path)
-        logger.info(f"[STEP 1] Audio analysis completed in {time.time() - step_start:.2f}s")
-        logger.info(f"Analysis results: Duration={analysis_results.get('duration')}s, Tempo={analysis_results.get('tempo')}, Key={analysis_results.get('key')}, Instruments={analysis_results.get('instruments')}")
+        logger.info(f"[STEP 1] AI audio analysis completed in {time.time() - step_start:.2f}s")
+        logger.info(f"AI Analysis results: Duration={analysis_results.get('duration')}s, Tempo={analysis_results.get('tempo')}, Key={analysis_results.get('key')}, Instruments={analysis_results.get('instruments')}")
         
         # Log memory usage after analysis
         if psutil:
@@ -84,55 +112,49 @@ def process_transcription(self, transcription_id):
         transcription.complexity = str(analysis_results['complexity']) if analysis_results['complexity'] else None
         transcription.detected_instruments = ensure_json_serializable(analysis_results['instruments'])
         
-        # Store Whisper analysis if available
-        if 'whisper_analysis' in analysis_results:
-            # Clean numpy arrays from whisper analysis before storing
-            cleaned_analysis = ensure_json_serializable(analysis_results['whisper_analysis'])
-            transcription.whisper_analysis = cleaned_analysis
-            self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'Enhanced with Whisper AI detection...', 'progress': 22})
-            logger.info(f"Whisper analysis stored: {len(str(cleaned_analysis))} chars")
+        # Store AI analysis results
+        if 'ai_analysis' in analysis_results:
+            # Store AI analysis (already JSON serializable)
+            transcription.whisper_analysis = analysis_results['ai_analysis']
+            self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI analysis complete...', 'progress': 22})
+            logger.info(f"AI analysis stored: confidence={analysis_results['ai_analysis'].get('confidence', 'N/A')}")
             
         transcription.save()
         logger.info("Transcription metadata updated and saved")
         
-        # Step 2: Source separation (optional)
+        # Step 2: AI source analysis (no heavy separation needed!)
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'Separating guitar track...', 'progress': 25})
-        logger.info("[STEP 2] Starting source separation...")
-        if 'guitar' in analysis_results['instruments'] or 'bass' in analysis_results['instruments']:
-            logger.info(f"Guitar/Bass detected, performing source separation")
-            separated_audio = pipeline.separate_sources(audio_path)
-            processing_audio = separated_audio.get('guitar', audio_path)
-            logger.info(f"[STEP 2] Source separation completed in {time.time() - step_start:.2f}s")
-        else:
-            processing_audio = audio_path
-            logger.info("[STEP 2] No guitar/bass detected, skipping source separation")
+        self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI analyzing audio sources...', 'progress': 25})
+        logger.info("[STEP 2] Starting AI source analysis...")
+        # AI can process mixed audio directly - no 4GB Demucs model needed!
+        pipeline.separate_sources(audio_path)  # Just for logging/analysis
+        processing_audio = audio_path  # AI works with original audio
+        logger.info(f"[STEP 2] AI source analysis completed in {time.time() - step_start:.2f}s")
+        logger.info("[STEP 2] AI processes mixed audio directly - no heavy separation needed")
         
-        # Step 3: Pitch detection and transcription (with Whisper context)
+        # Step 3: AI transcription with humanizer optimization
         step_start = time.time()
-        if pipeline.whisper_service:
-            self.update_state(state='PROGRESS', meta={'step': 3, 'status': 'Transcribing notes with Whisper AI...', 'progress': 38})
-            logger.info("[STEP 3] Starting transcription with Whisper AI...")
-        else:
-            self.update_state(state='PROGRESS', meta={'step': 3, 'status': 'Transcribing notes...', 'progress': 35})
-            logger.info("[STEP 3] Starting standard transcription...")
+        self.update_state(state='PROGRESS', meta={'step': 3, 'status': 'AI transcribing with humanizer optimization...', 'progress': 38})
+        logger.info("[STEP 3] Starting AI transcription with humanizer...")
             
-        # Pass analysis context to transcription for Whisper enhancement
+        # Pass user preferences and analysis context
         context = {
             'tempo': analysis_results.get('tempo'),
             'key': analysis_results.get('key'),
             'time_signature': analysis_results.get('time_signature'),
-            'detected_instruments': analysis_results.get('instruments')
+            'detected_instruments': analysis_results.get('instruments'),
+            'user_profile': transcription.user.profile if transcription.user and hasattr(transcription.user, 'profile') else None
         }
-        logger.info(f"Transcription context: {context}")
+        logger.info(f"AI Transcription context: {context}")
         transcription_results = pipeline.transcribe(processing_audio, context=context)
-        logger.info(f"[STEP 3] Transcription completed in {time.time() - step_start:.2f}s")
-        logger.info(f"Transcribed {len(transcription_results.get('notes', []))} notes")
+        logger.info(f"[STEP 3] AI transcription completed in {time.time() - step_start:.2f}s")
+        logger.info(f"AI transcribed {len(transcription_results.get('notes', []))} notes with humanizer optimization")
         
         # Step 4: Generate guitar tabs with optimized string mapping
         step_start = time.time()
         self.update_state(state='PROGRESS', meta={'step': 4, 'status': 'Generating guitar tablature...', 'progress': 50})
         logger.info("[STEP 4] Starting guitar tab generation...")
+        TabGenerator = _get_tab_generator()
         tab_generator = TabGenerator(
             notes=transcription_results['notes'],
             tempo=analysis_results['tempo'],
@@ -147,60 +169,57 @@ def process_transcription(self, transcription_id):
         transcription.midi_data = ensure_json_serializable(transcription_results['midi_data'])
         transcription.guitar_notes = ensure_json_serializable(tab_data)
         
-        # Step 5: Generate MusicXML
+        # Step 5: Generate MusicXML in background
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 5, 'status': 'Creating MusicXML notation...', 'progress': 62})
-        logger.info("[STEP 5] Starting MusicXML generation...")
-        export_manager = ExportManager(transcription)
-        musicxml_content = export_manager.generate_musicxml(tab_data)
-        transcription.musicxml_content = musicxml_content
-        logger.info(f"[STEP 5] MusicXML generated in {time.time() - step_start:.2f}s")
-        logger.info(f"MusicXML size: {len(musicxml_content) if musicxml_content else 0} chars")
+        self.update_state(state='PROGRESS', meta={'step': 5, 'status': 'Queuing MusicXML generation...', 'progress': 62})
+        logger.info("[STEP 5] Queuing MusicXML generation in background...")
+        generate_export.delay(transcription.id, 'musicxml')
+        logger.info(f"[STEP 5] MusicXML generation queued in {time.time() - step_start:.2f}s")
         
-        # Step 6: Generate GP5 file
+        # Step 6: Generate GP5 file in background  
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 6, 'status': 'Creating Guitar Pro file...', 'progress': 75})
-        logger.info("[STEP 6] Starting GP5 generation...")
-        gp5_path = export_manager.generate_gp5(tab_data)
-        if gp5_path:
-            transcription.gp5_file.name = gp5_path
-            logger.info(f"[STEP 6] GP5 file generated in {time.time() - step_start:.2f}s at {gp5_path}")
-        else:
-            logger.warning("[STEP 6] GP5 generation skipped or failed")
+        self.update_state(state='PROGRESS', meta={'step': 6, 'status': 'Queuing Guitar Pro file generation...', 'progress': 75})
+        logger.info("[STEP 6] Queuing GP5 generation in background...")
+        generate_export.delay(transcription.id, 'gp5')
+        logger.info(f"[STEP 6] GP5 generation queued in {time.time() - step_start:.2f}s")
         
         # Step 7: Generate fingering variants
         step_start = time.time()
         self.update_state(state='PROGRESS', meta={'step': 7, 'status': 'Generating fingering variants...', 'progress': 85})
         logger.info("[STEP 7] Starting fingering variant generation...")
+        VariantGenerator = _get_variant_generator()
         variant_generator = VariantGenerator(transcription)
         variants = variant_generator.generate_all_variants()
         logger.info(f"[STEP 7] Generated {len(variants)} fingering variants in {time.time() - step_start:.2f}s")
         if variants:
             logger.info(f"Variant scores: {[v.playability_score for v in variants[:3]]}...")
         
-        # Step 8: Multi-track processing (if enabled)
-        if getattr(settings, 'ENABLE_MULTITRACK', True) and pipeline.multi_track_service:
+        # Step 8: AI Multi-track processing (lightweight!)
+        if getattr(settings, 'ENABLE_MULTITRACK', True):
             step_start = time.time()
             try:
-                self.update_state(state='PROGRESS', meta={'step': 8, 'status': 'Processing multi-track separation...', 'progress': 92})
-                logger.info("[STEP 8] Starting multi-track processing...")
-                multitrack_result = pipeline.process_multitrack_transcription(transcription)
+                self.update_state(state='PROGRESS', meta={'step': 8, 'status': 'AI processing multi-track...', 'progress': 92})
+                logger.info("[STEP 8] Starting AI multi-track processing...")
                 
-                if not multitrack_result.get('fallback', False):
-                    logger.info(f"[STEP 8] Multi-track processing completed in {time.time() - step_start:.2f}s")
-                    logger.info(f"Created {multitrack_result['track_count']} tracks, processed {multitrack_result['processed_count']} successfully")
+                AIMultiTrackService = _get_ai_multitrack_service()
+                multitrack_service = AIMultiTrackService(api_key=getattr(settings, 'OPENAI_API_KEY', ''))
+                tracks = multitrack_service.process_transcription(transcription)
+                
+                if tracks:
+                    logger.info(f"[STEP 8] AI multi-track processing completed in {time.time() - step_start:.2f}s")
+                    logger.info(f"Created {len(tracks)} AI-detected tracks successfully")
                     self.update_state(state='PROGRESS', meta={
-                        'step': f"Processed {multitrack_result['processed_count']} tracks successfully"
+                        'step': f"Processed {len(tracks)} AI tracks successfully"
                     })
                 else:
-                    logger.info(f"[STEP 8] Multi-track processing fell back to single track")
+                    logger.info(f"[STEP 8] No additional tracks detected by AI")
                     
             except Exception as e:
-                logger.warning(f"[STEP 8] Multi-track processing failed after {time.time() - step_start:.2f}s: {str(e)}")
-                logger.debug(f"Multi-track error traceback: {traceback.format_exc()}")
+                logger.warning(f"[STEP 8] AI multi-track processing failed after {time.time() - step_start:.2f}s: {str(e)}")
+                logger.debug(f"AI multi-track error traceback: {traceback.format_exc()}")
                 # Multi-track is optional, so we continue even if it fails
         else:
-            logger.info("[STEP 8] Multi-track processing skipped (disabled or not available)")
+            logger.info("[STEP 8] AI multi-track processing skipped (disabled)")
         
         # Final completion step
         self.update_state(state='PROGRESS', meta={'step': 8, 'status': 'Finalizing transcription...', 'progress': 98})
@@ -239,7 +258,26 @@ def process_transcription(self, transcription_id):
         except Exception as db_error:
             logger.error(f"Failed to update transcription status in database: {str(db_error)}")
         
-        # Retry with exponential backoff
+        # Don't retry for permanent errors (missing files, invalid data)
+        error_msg = str(e).lower()
+        permanent_error_keywords = [
+            'no audio file associated',
+            'audio file is not accessible',
+            'audio file not found on disk'
+        ]
+        
+        is_permanent_error = any(keyword in error_msg for keyword in permanent_error_keywords)
+        
+        if is_permanent_error:
+            logger.error(f"[TASK FAILED PERMANENTLY] Not retrying transcription {transcription_id} - permanent error: {str(e)}")
+            return {
+                'status': 'failed_permanently', 
+                'transcription_id': str(transcription_id), 
+                'error': str(e),
+                'processing_time': total_time
+            }
+        
+        # Retry with exponential backoff for temporary errors
         retry_countdown = 60 * (2 ** self.request.retries)
         logger.info(f"Retrying task in {retry_countdown} seconds (attempt {self.request.retries + 1}/{self.max_retries})")
         raise self.retry(exc=e, countdown=retry_countdown)
@@ -256,6 +294,7 @@ def generate_export(transcription_id, export_format):
     try:
         transcription = Transcription.objects.get(id=transcription_id)
         logger.info(f"Found transcription: {transcription.filename}")
+        ExportManager = _get_export_manager()
         export_manager = ExportManager(transcription)
         
         logger.info(f"Starting {export_format} export generation...")
@@ -337,6 +376,7 @@ def generate_variants(transcription_id, preset=None):
     try:
         transcription = Transcription.objects.get(id=transcription_id)
         logger.info(f"Found transcription: {transcription.filename}")
+        VariantGenerator = _get_variant_generator()
         variant_generator = VariantGenerator(transcription)
         
         if preset:
@@ -421,30 +461,52 @@ def cleanup_old_transcriptions():
         logger.debug(f"Cleaning up transcription {trans_id}: {transcription.filename}")
         
         # Delete associated files
-        if transcription.original_audio:
-            if os.path.exists(transcription.original_audio.path):
-                file_size = os.path.getsize(transcription.original_audio.path)
-                os.remove(transcription.original_audio.path)
-                files_deleted += 1
-                total_size_freed += file_size
-                logger.debug(f"  Deleted audio file: {transcription.original_audio.path} ({file_size / 1024:.2f} KB)")
+        if transcription.original_audio.name:
+            try:
+                audio_path = transcription.original_audio.path
+                if os.path.exists(audio_path):
+                    file_size = os.path.getsize(audio_path)
+                    os.remove(audio_path)
+                    files_deleted += 1
+                    total_size_freed += file_size
+                    logger.debug(f"  Deleted audio file: {audio_path} ({file_size / 1024:.2f} KB)")
+            except ValueError:
+                # File field has no file associated with it
+                logger.debug(f"  Audio file field empty for transcription {trans_id}")
+        else:
+            logger.debug(f"  Audio file field empty for transcription {trans_id}")
         
-        if transcription.gp5_file:
-            if os.path.exists(transcription.gp5_file.path):
-                file_size = os.path.getsize(transcription.gp5_file.path)
-                os.remove(transcription.gp5_file.path)
-                files_deleted += 1
-                total_size_freed += file_size
-                logger.debug(f"  Deleted GP5 file: {transcription.gp5_file.path} ({file_size / 1024:.2f} KB)")
+        if transcription.gp5_file.name:
+            try:
+                gp5_path = transcription.gp5_file.path
+                if os.path.exists(gp5_path):
+                    file_size = os.path.getsize(gp5_path)
+                    os.remove(gp5_path)
+                    files_deleted += 1
+                    total_size_freed += file_size
+                    logger.debug(f"  Deleted GP5 file: {gp5_path} ({file_size / 1024:.2f} KB)")
+            except ValueError:
+                # File field has no file associated with it
+                logger.debug(f"  GP5 file field empty for transcription {trans_id}")
+        else:
+            logger.debug(f"  GP5 file field empty for transcription {trans_id}")
         
         # Delete export files
         for export in transcription.exports.all():
-            if export.file and os.path.exists(export.file.path):
-                file_size = os.path.getsize(export.file.path)
-                os.remove(export.file.path)
-                files_deleted += 1
-                total_size_freed += file_size
-                logger.debug(f"  Deleted export file: {export.file.path} ({file_size / 1024:.2f} KB)")
+            if export.file.name:
+                try:
+                    export_path = export.file.path
+                    if os.path.exists(export_path):
+                        file_size = os.path.getsize(export_path)
+                        os.remove(export_path)
+                        files_deleted += 1
+                        total_size_freed += file_size
+                        logger.debug(f"  Deleted export file: {export_path} ({file_size / 1024:.2f} KB)")
+                except ValueError:
+                    # File field has no file associated with it
+                    logger.debug(f"  Export file field empty for export {export.id}")
+            else:
+                logger.debug(f"  Export file field empty for export {export.id}")
         
         transcription.delete()
         count += 1

@@ -47,10 +47,16 @@ class TestExportManager:
     @pytest.fixture
     def export_manager(self, sample_tab_data):
         """Create an export manager instance."""
-        transcription = baker.make_recipe('transcriber.transcription_completed',
-                                         filename="test.wav",  # Short filename to avoid path issues
-                                         guitar_notes=sample_tab_data,
-                                         estimated_tempo=120)
+        from tests.test_helpers import create_test_audio_file
+        
+        transcription = baker.make(
+            'transcriber.Transcription',
+            status='completed',
+            filename="test.wav",  # Short filename to avoid path issues
+            original_audio=create_test_audio_file("test.wav"),
+            guitar_notes=sample_tab_data,
+            estimated_tempo=120
+        )
         return ExportManager(transcription)
     
     @pytest.mark.unit
@@ -158,9 +164,15 @@ class TestExportManager:
             'measures': [],  # Empty measures
             'techniques_used': {}
         }
-        transcription = baker.make_recipe('transcriber.transcription_completed',
-                                         filename="empty_test.wav",
-                                         guitar_notes=empty_tab_data)
+        from tests.test_helpers import create_test_audio_file
+        
+        transcription = baker.make(
+            'transcriber.Transcription',
+            status='completed',
+            filename="empty_test.wav",
+            original_audio=create_test_audio_file("empty_test.wav"),
+            guitar_notes=empty_tab_data
+        )
         export_manager = ExportManager(transcription)
         
         with patch('transcriber.services.export_manager.gp') as mock_gp:

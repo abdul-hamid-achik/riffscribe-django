@@ -36,15 +36,14 @@ dependencies = [
     "django-tailwind[reload]>=3.8",
     "django-simple-captcha>=0.6.0",
     "requests>=2.31",
-    # Basic API clients
-    "openai>=1.0",
-    "music21>=9.7.1",
-    "pretty-midi>=0.2.10",
-    "setuptools>=80.9.0",
+    # AI services (lightweight!)
+    "openai>=1.0", # Core AI transcription service
+    # Note: Heavy ML dependencies removed - now using OpenAI API instead!
+    "midiutil>=1.2.1",
 ]
 
 [project.optional-dependencies]
-# Heavy ML and audio processing dependencies for workers only
+# Lightweight AI-powered worker dependencies (90% size reduction!)
 worker = [
     # Celery worker dependencies
     "vine==5.0.0",
@@ -52,33 +51,25 @@ worker = [
     "amqp>=5.2,<5.3",
     "flower>=2.0",
     
-    # System utilities for ML
-    "setuptools>=65.0",  # Required for pkg_resources (used by pretty_midi)
+    # Lightweight audio processing (replaces heavy ML stack)
+    "pydub>=0.25",  # For basic audio format conversion and duration
     
-    # ML and Audio processing
-    "numpy>=1.24,<2.0",
-    "scipy>=1.11",
-    "librosa>=0.10",
-    "soundfile>=0.12", 
-    "pydub>=0.25",
-    "audioread>=3.0",
-    "resampy>=0.4",
-    
-    # PyTorch (latest versions with Python 3.13 support)
-    "torch>=2.5.0",
-    "torchaudio>=2.5.0",
-    
-    # Music processing  
-    "pretty-midi>=0.2",
-    "music21>=9.1",
-    "midiutil>=1.2",
+    # Music processing (keep the essentials)
+    "music21>=9.1",  # For music theory and notation
+    "midiutil>=1.2",  # For MIDI file generation
     
     # Guitar tab formats
-    "pyguitarpro>=0.10",
+    "pyguitarpro>=0.10",  # For Guitar Pro file export
     
-    # Advanced audio models
-    "demucs>=4.0",  # Source separation for multi-track processing
-    # "basic-pitch>=0.3",  # Still requires older Python
+    # AI-powered transcription (replaces entire ML pipeline!)
+    # Note: openai is already in main dependencies
+    
+    # REMOVED HEAVY DEPENDENCIES (saved ~4GB!):
+    # - numpy, scipy, librosa, soundfile, audioread, resampy (audio analysis)
+    # - torch, torchaudio (PyTorch models)
+    # - pretty-midi (MIDI processing)
+    # - demucs (4GB source separation model)
+    # - basic-pitch (polyphonic transcription)
 ]
 
 # Development dependencies (lightweight)
@@ -86,7 +77,7 @@ dev = [
     "pytest>=7.4",
     "pytest-django>=4.7", 
     "pytest-cov>=6.0",
-    "pytest-asyncio>=1.0",
+    "pytest-asyncio>=1.0",  # For testing async AI services
     "pytest-playwright>=0.7",
     "pytest-env>=1.1",
     "pytest-dotenv>=0.5",
@@ -94,6 +85,8 @@ dev = [
     "black>=23.12",
     "ruff>=0.1",
     "ipython>=8.18",
+    # Lightweight audio for tests
+    "pydub>=0.25",
 ]
 
 

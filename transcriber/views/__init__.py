@@ -4,7 +4,14 @@ Organized view modules for better maintainability
 """
 
 from celery.result import AsyncResult  # re-exported for tests patching transcriber.views.AsyncResult
-from ..tasks import process_transcription  # re-export for tests patching transcriber.views.process_transcription
+
+# Lazy import of process_transcription to avoid importing ML dependencies in web container
+def __getattr__(name):
+    if name == 'process_transcription':
+        from ..tasks import process_transcription
+        return process_transcription
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
+
 # Import all views for backwards compatibility with URLs
 from .core import (
     index,

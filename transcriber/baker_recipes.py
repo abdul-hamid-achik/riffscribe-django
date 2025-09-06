@@ -158,6 +158,7 @@ transcription_basic = Recipe(
     estimated_key='E Minor',
     complexity='simple',
     detected_instruments=['guitar'],
+    original_audio=lambda: _fake_audio_file(),
 )
 
 transcription_completed = transcription_basic.extend(

@@ -9,9 +9,14 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 import json
 
-import music21
-from music21 import stream, note, tempo, meter, instrument
-import pretty_midi
+# Lazy import for music21 (heavy dependency)
+def _get_music21():
+    try:
+        import music21
+        from music21 import stream, note, tempo, meter, instrument
+        return music21, stream, note, tempo, meter, instrument
+    except ImportError:
+        return None, None, None, None, None, None
 from midiutil import MIDIFile
 
 try:
@@ -44,7 +49,18 @@ class ExportManager:
         if not tab_data:
             return ""
             
+        # Ensure tab_data is a dictionary
+        if not isinstance(tab_data, dict):
+            logger.warning(f"Invalid tab data type for MusicXML generation: {type(tab_data).__name__}")
+            return ""
+            
         try:
+            # Lazy load music21
+            music21, stream, note, tempo, meter, instrument = _get_music21()
+            if not music21:
+                logger.warning("music21 not available, using basic MusicXML generation")
+                return self._generate_basic_musicxml(tab_data)
+            
             # Create music21 score
             score = stream.Score()
             part = stream.Part()
@@ -137,6 +153,11 @@ class ExportManager:
         """
         Generate basic MusicXML without music21 library.
         """
+        # Ensure tab_data is a dictionary
+        if not isinstance(tab_data, dict):
+            logger.warning(f"Invalid tab data type for basic MusicXML generation: {type(tab_data).__name__}")
+            return ""
+            
         # Create root element
         score = Element('score-partwise', version='3.1')
         
@@ -365,6 +386,16 @@ class ExportManager:
                 'message': 'No tab data available',
                 'transcription_id': str(self.transcription.id),
                 'has_guitar_notes': False,
+                'guitar_notes_type': type(tab_data).__name__
+            }
+            
+        # Check if tab_data is a dictionary 
+        if not isinstance(tab_data, dict):
+            return {
+                'status': 'error',
+                'message': f'Invalid tab data type: {type(tab_data).__name__}',
+                'transcription_id': str(self.transcription.id),
+                'has_guitar_notes': bool(self.transcription.guitar_notes),
                 'guitar_notes_type': type(tab_data).__name__
             }
             
@@ -638,6 +669,12 @@ class ExportManager:
             MusicXML string
         """
         try:
+            # Lazy load music21
+            music21, stream, note, tempo, meter, instrument = _get_music21()
+            if not music21:
+                logger.warning("music21 not available for multitrack export")
+                return ""
+                
             score = stream.Score()
             score.metadata = stream.Metadata()
             score.metadata.title = self.transcription.filename

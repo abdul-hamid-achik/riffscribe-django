@@ -10,6 +10,7 @@ from django.urls import reverse
 from unittest.mock import patch, Mock
 from transcriber.models import Transcription, FingeringVariant, PlayabilityMetrics
 from model_bakery import baker
+from tests.test_helpers import create_test_audio_file
 
 
 class TestVariantViews(TestCase):
@@ -20,32 +21,37 @@ class TestVariantViews(TestCase):
         self.client = Client()
         
         # Create a completed transcription
-        self.transcription = baker.make_recipe('transcriber.transcription_completed',
-                                              filename='test_song.mp3',
-                                              estimated_tempo=120,
-                                              estimated_key='C')
+        self.transcription = baker.make('transcriber.Transcription',
+                                       filename='test_song.mp3',
+                                       estimated_tempo=120,
+                                       estimated_key='C',
+                                       status='completed',
+                                       original_audio=create_test_audio_file())
         
         # Create variants
-        self.easy_variant = baker.make_recipe('transcriber.fingering_variant_easy',
-                                             transcription=self.transcription,
-                                             difficulty_score=30,
-                                             playability_score=70,
-                                             is_selected=True)
+        self.easy_variant = baker.make('transcriber.FingeringVariant',
+                                      transcription=self.transcription,
+                                      variant_name='easy',
+                                      difficulty_score=30,
+                                      playability_score=70,
+                                      is_selected=True,
+                                      tab_data={'measures': []})
         
-        self.technical_variant = baker.make_recipe('transcriber.fingering_variant_technical',
-                                                  transcription=self.transcription,
-                                                  difficulty_score=70,
-                                                  playability_score=30,
-                                                  is_selected=False)
+        self.technical_variant = baker.make('transcriber.FingeringVariant',
+                                           transcription=self.transcription,
+                                           variant_name='technical',
+                                           difficulty_score=70,
+                                           playability_score=30,
+                                           is_selected=False,
+                                           tab_data={'measures': []})
         
         # Create metrics
-        self.metrics = baker.make_recipe('transcriber.playability_metrics',
-                                        transcription=self.transcription,
-                                        playability_score=70,
-                                        recommended_skill_level='intermediate',
-                                        max_fret_span=4,
-                                        position_changes=2,
-                                        open_strings_used=0)
+        self.metrics = baker.make('transcriber.PlayabilityMetrics',
+                                 transcription=self.transcription,
+                                 playability_score=70,
+                                 recommended_skill_level='intermediate',
+                                 max_fret_span=4,
+                                 position_changes=2)
         
     def test_variants_list_view(self):
         """Test listing all variants for a transcription"""

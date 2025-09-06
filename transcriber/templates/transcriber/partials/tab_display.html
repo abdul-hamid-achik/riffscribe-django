@@ -3,108 +3,6 @@
 <!-- Tab Display Partial for completed transcriptions -->
 <div id="tab-display">
     {% if transcription.status == 'completed' %}
-    <!-- Musical Analysis Card -->
-    <div class="sheet-card rounded-lg p-6 mb-6">
-        <h2 class="font-headline text-lg font-medium text-nyt-black flex items-center gap-2 mb-4">
-            <span class="text-accent-gold">♪</span>
-            Musical Analysis
-        </h2>
-
-        <!-- Primary Metrics -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <!-- Key Signature -->
-            {% if transcription.estimated_key %}
-            <div class="text-center py-3 border border-nyt-border rounded">
-                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Key</div>
-                <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_key }}</div>
-            </div>
-            {% endif %}
-
-            <!-- Tempo -->
-            {% if transcription.estimated_tempo %}
-            <div class="text-center py-3 border border-nyt-border rounded">
-                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Tempo</div>
-                <div class="text-xl font-headline text-nyt-black">{{ transcription.estimated_tempo }}<span
-                        class="text-sm font-normal"> BPM</span></div>
-            </div>
-            {% endif %}
-
-            <!-- Complexity -->
-            {% if transcription.complexity %}
-            <div class="text-center py-3 border border-nyt-border rounded">
-                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Complexity</div>
-                <div class="text-lg font-headline text-nyt-black">{{ transcription.get_complexity_display }}</div>
-            </div>
-            {% endif %}
-
-            <!-- Duration -->
-            <div class="text-center py-3 border border-nyt-border rounded">
-                <div class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-1">Duration</div>
-                <div class="text-xl font-headline text-nyt-black">{{ transcription.duration_formatted }}</div>
-            </div>
-        </div>
-
-        <!-- Secondary Information -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-nyt-border">
-            <!-- Detected Instruments -->
-            {% if transcription.detected_instruments %}
-            <div>
-                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Instruments</h4>
-                <div class="space-y-1">
-                    {% for instrument in transcription.detected_instruments %}
-                    <span
-                        class="inline-block text-xs font-medium text-nyt-gray-dark bg-sheet-ivory border border-nyt-border px-2 py-1 rounded mr-1">
-                        {{ instrument|capfirst }}
-                    </span>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Technical Details -->
-            <div>
-                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Audio Properties</h4>
-                <div class="text-sm text-nyt-gray-dark space-y-1">
-                    {% if transcription.sample_rate %}
-                    <div class="flex justify-between">
-                        <span>Sample Rate:</span>
-                        <span class="font-medium">{{ transcription.sample_rate|floatformat:0 }} Hz</span>
-                    </div>
-                    {% endif %}
-                    {% if transcription.channels %}
-                    <div class="flex justify-between">
-                        <span>Channels:</span>
-                        <span class="font-medium">{{ transcription.channels }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
-            <!-- Playability -->
-            {% if transcription.metrics %}
-            <div>
-                <h4 class="text-xs font-medium text-nyt-gray-medium uppercase tracking-wide mb-2">Playability</h4>
-                <div class="space-y-2">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-nyt-gray-dark">Score:</span>
-                        <span class="font-medium text-nyt-black">{{
-                            transcription.metrics.playability_score|default:0|floatformat:0 }}/100</span>
-                    </div>
-                    <div class="w-full bg-nyt-border rounded-full h-1.5">
-                        <div class="bg-accent-gold h-1.5 rounded-full transition-all duration-300"
-                            style="width: {{ transcription.metrics.playability_score|default:0 }}%"></div>
-                    </div>
-                    {% if transcription.metrics.recommended_skill_level %}
-                    <div class="text-xs text-nyt-gray-medium">
-                        Recommended for: <span class="font-medium text-nyt-black">{{
-                            transcription.metrics.get_recommended_skill_level_display }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
 
     <!-- Enhanced Audio Player Section -->
     <div class="mb-6">
@@ -127,46 +25,43 @@
                 </svg>
                 Interactive Guitar Tab
             </h2>
-            <div class="text-sm text-gray-600">
-                <svg class="w-4 h-4 inline mr-1 text-musical-gold" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Synchronized with audio player above
+            <div class="flex items-center gap-4">
+                <!-- Toggle Switch for AlphaTab -->
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="alphaTabToggle" class="sr-only" onchange="toggleAlphaTab(this)">
+                    <div class="relative inline-block w-14 h-8">
+                        <div class="block bg-gray-300 w-14 h-8 rounded-full transition-colors toggle-bg"></div>
+                        <div class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform toggle-dot"></div>
+                    </div>
+                    <span class="ml-3 text-sm font-medium text-gray-700">Load Tab Viewer</span>
+                </label>
+                
+                <style>
+                #alphaTabToggle:checked + div .toggle-bg {
+                    background-color: #fbbf24;
+                }
+                #alphaTabToggle:checked + div .toggle-dot {
+                    transform: translateX(1.5rem);
+                }
+                </style>
+                
+                <div class="text-sm text-gray-600">
+                    <svg class="w-4 h-4 inline mr-1 text-musical-gold" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Synchronized with audio
+                </div>
             </div>
         </div>
 
-        {% if transcription.guitar_notes %}
+        {% if transcription.guitar_notes or transcription.musicxml_content %}
         <!-- AlphaTab Container -->
-        <div id="alphaTab" class="min-h-96 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+        <div id="alphaTab" class="min-h-64 bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
 
             <!-- Initial Preview State -->
             <div id="preview-placeholder" class="h-full flex flex-col">
-                <!-- Header Bar -->
-                <div class="bg-gradient-to-r from-musical-gold to-musical-treble text-white p-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                            </svg>
-                            <div>
-                                <h4 class="font-semibold">{{ transcription.filename|truncatechars:40 }}</h4>
-                                <p class="text-xs opacity-90">
-                                    {{ transcription.estimated_tempo|default:"120" }} BPM •
-                                    {{ transcription.estimated_key|default:"Unknown" }} •
-                                    {{ transcription.complexity|capfirst|default:"Moderate" }}
-                                </p>
-                            </div>
-                        </div>
-                        <div class="text-right text-xs opacity-90">
-                            <div>{{ transcription.duration_formatted }}</div>
-                            <div>{{ transcription.detected_instruments|join:", "|default:"Guitar" }}</div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Preview Content -->
                 <div class="flex-1 flex items-center justify-center p-8">
                     <div class="text-center max-w-md">
@@ -256,8 +151,150 @@ E|----------------------------------------------------------</pre>
                 </div>
             </div>
         </div>
-
+        
+        <!-- AlphaTab will render here -->
+        <div id="alphaTabViewer" style="display:none;"></div>
     </div>
+    
+    <!-- AlphaTab Initialization Script -->
+    <script>
+    let alphaTabApi = null;
+    let alphaTabInitialized = false;
+    
+    function toggleAlphaTab(checkbox) {
+        if (checkbox.checked && !alphaTabInitialized) {
+            initializeAlphaTab();
+        } else if (!checkbox.checked && alphaTabApi) {
+            // Hide AlphaTab
+            document.getElementById('alphaTabViewer').style.display = 'none';
+            document.getElementById('preview-placeholder').style.display = 'flex';
+            if (alphaTabApi && alphaTabApi.player) {
+                alphaTabApi.player.stop();
+            }
+        } else if (checkbox.checked && alphaTabInitialized) {
+            // Show AlphaTab again
+            document.getElementById('alphaTabViewer').style.display = 'block';
+            document.getElementById('preview-placeholder').style.display = 'none';
+        }
+    }
+    
+    function initializeAlphaTab() {
+        // Show loading state
+        document.getElementById('preview-placeholder').style.display = 'none';
+        document.getElementById('preview-loading').classList.remove('hidden');
+        
+        const alphaTabElement = document.getElementById('alphaTabViewer');
+        
+        // AlphaTab settings - use HTML5 renderer with basic configuration
+        const settings = {
+            core: {
+                engine: "html5",
+                logLevel: "info"
+            },
+            display: {
+                layoutMode: "horizontal",
+                staveProfile: "tab",
+                scale: 0.8
+            },
+            notation: {
+                elements: {
+                    scoreTitle: false,
+                    scoreSubTitle: false,
+                    scoreArtist: false,
+                    scoreAlbum: false,
+                    scoreWords: false,
+                    scoreMusic: false,
+                    scoreCopyright: false,
+                    guitarTuning: false,
+                    trackNames: false
+                }
+            },
+            player: {
+                enablePlayer: false
+            }
+        };
+        
+        try {
+            // Fetch MusicXML with credentials for authenticated access
+            fetch("{% url 'transcriber:export_musicxml' transcription.id %}", {
+                credentials: 'same-origin',  // Include cookies for authentication
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.text();
+            })
+            .then(musicxml => {
+                console.log('MusicXML loaded:', musicxml.substring(0, 200));
+                
+                // Initialize AlphaTab with the MusicXML directly
+                alphaTabApi = new alphaTab.AlphaTabApi(alphaTabElement, settings);
+                
+                // Set up event listeners
+                alphaTabApi.renderStarted.on(() => {
+                    console.log('AlphaTab render started');
+                });
+                
+                alphaTabApi.renderFinished.on(() => {
+                    console.log('AlphaTab rendered successfully');
+                    document.getElementById('preview-loading').classList.add('hidden');
+                    document.getElementById('alphaTabViewer').style.display = 'block';
+                    alphaTabInitialized = true;
+                });
+                
+                alphaTabApi.error.on((e) => {
+                    console.error('AlphaTab render error:', e);
+                    document.getElementById('preview-loading').classList.add('hidden');
+                    document.getElementById('preview-error').classList.remove('hidden');
+                });
+                
+                // Set up a timeout in case rendering gets stuck
+                const loadingTimeout = setTimeout(() => {
+                    console.warn('AlphaTab loading timeout - showing error');
+                    document.getElementById('preview-loading').classList.add('hidden');
+                    document.getElementById('preview-error').classList.remove('hidden');
+                }, 10000); // 10 second timeout
+                
+                // Clear timeout if rendering succeeds
+                alphaTabApi.renderFinished.on(() => {
+                    clearTimeout(loadingTimeout);
+                });
+                
+                // Load the MusicXML content directly
+                alphaTabApi.load(musicxml);
+            })
+            .catch(error => {
+                console.error('Failed to load MusicXML:', error);
+                document.getElementById('preview-loading').classList.add('hidden');
+                document.getElementById('preview-error').classList.remove('hidden');
+            });
+            
+        } catch (error) {
+            console.error('Failed to initialize AlphaTab:', error);
+            document.getElementById('preview-loading').classList.add('hidden');
+            document.getElementById('preview-error').classList.remove('hidden');
+        }
+    }
+    
+    function retryPreview() {
+        document.getElementById('preview-error').classList.add('hidden');
+        initializeAlphaTab();
+    }
+    
+    // Auto-initialize on page load if we have data
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if AlphaTab library is loaded
+        if (typeof alphaTab !== 'undefined') {
+            console.log('AlphaTab library loaded and ready');
+        }
+    });
+    </script>
+    
     {% else %}
     <div class="text-center py-8 text-gray-500">
         <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -329,7 +366,7 @@ E|----------------------------------------------------------</pre>
             {% if not variant.is_selected %}
             <button type="button"
                 class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
-                hx-post="{% url 'transcriber:select_variant' variant.id %}" hx-target="#tab-display"
+                hx-post="{% url 'transcriber:select_variant' transcription.id variant.id %}" hx-target="#tab-display"
                 hx-swap="outerHTML">
                 Select Variant
             </button>

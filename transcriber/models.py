@@ -177,6 +177,7 @@ class Transcription(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='transcriptions', null=True, blank=True)
     filename = models.CharField(max_length=255)
     original_audio = models.FileField(upload_to='audio/%Y/%m/%d/', null=True, blank=True)
+    is_public = models.BooleanField(default=False, help_text="Allow public access to this transcription")
     
     # Status tracking
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

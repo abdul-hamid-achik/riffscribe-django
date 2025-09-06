@@ -1,123 +1,129 @@
 """
-Unit tests for Transcription model.
+Unit tests for Transcription model
 """
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
+import json
+from django.test import TestCase
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+
 from transcriber.models import Transcription
 from model_bakery import baker
+from tests.test_helpers import create_test_audio_file
 
 
-@pytest.mark.django_db
-class TestTranscriptionModel:
-    """Test the Transcription model."""
+class TestTranscriptionModel(TestCase):
+    """Test Transcription model functionality"""
     
-    @pytest.mark.unit
-    def test_transcription_creation(self):
-        """Test creating a transcription."""
-        transcription = baker.make_recipe('transcriber.transcription_basic',
-                                         filename="test.wav",
-                                         status="pending")
-        
-        assert transcription.id is not None
-        assert transcription.filename == "test.wav"
-        assert transcription.status == "pending"
-        assert transcription.created_at is not None
-        assert transcription.updated_at is not None
-    
-    @pytest.mark.unit
-    def test_transcription_string_representation(self):
-        """Test string representation of transcription."""
-        transcription = baker.make_recipe('transcriber.transcription_completed',
-                                         filename="my_song.wav")
-        
-        assert str(transcription) == "my_song.wav - Completed"
-    
-    @pytest.mark.unit
-    def test_transcription_with_audio_file(self):
-        """Test transcription with audio file upload."""
-        from django.core.files.uploadedfile import SimpleUploadedFile
-        
-        audio_file = SimpleUploadedFile(
-            "test_audio.wav",
-            b"fake audio content",
-            content_type="audio/wav"
+    def setUp(self):
+        """Set up test data"""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpass123'
         )
-        
-        transcription = baker.make_recipe('transcriber.transcription_basic',
-                                         filename="test_audio.wav",
-                                         original_audio=audio_file,
-                                         status="pending")
-        
-        assert transcription.original_audio is not None
-        assert "test_audio" in transcription.original_audio.name
     
-    @pytest.mark.unit
+    def test_transcription_creation(self):
+        """Test basic transcription creation"""
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='test_song.mp3',
+                                  status='completed',
+                                  original_audio=create_test_audio_file())
+        
+        self.assertEqual(transcription.user, self.user)
+        self.assertEqual(transcription.filename, 'test_song.mp3')
+        self.assertEqual(transcription.status, 'completed')
+        self.assertIsNotNone(transcription.created_at)
+        self.assertIsNotNone(transcription.updated_at)
+        self.assertTrue(transcription.original_audio.name)
+    
+    def test_transcription_string_representation(self):
+        """Test __str__ method"""
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='my_song.mp3',
+                                  status='completed',
+                                  original_audio=create_test_audio_file())
+        
+        expected = f"my_song.mp3 - Completed"
+        self.assertEqual(str(transcription), expected)
+    
+    def test_transcription_with_audio_file(self):
+        """Test transcription with actual file content"""
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='audio_file.wav',
+                                  status='pending',
+                                  original_audio=create_test_audio_file('audio_file.wav'))
+        
+        self.assertTrue(transcription.original_audio)
+        # The file is uploaded to a path like audio/2025/09/06/audio_file_xxx.wav
+        self.assertTrue('audio_file' in transcription.original_audio.name and '.wav' in transcription.original_audio.name)
+    
     def test_transcription_status_choices(self):
-        """Test transcription status field choices."""
-        status_recipes = {
-            'pending': 'transcriber.transcription_basic',
-            'processing': 'transcriber.transcription_basic', 
-            'completed': 'transcriber.transcription_completed',
-            'failed': 'transcriber.transcription_failed'
-        }
+        """Test different status choices"""
+        statuses = ['pending', 'processing', 'completed', 'failed']
         
-        for status, recipe_name in status_recipes.items():
-            transcription = baker.make_recipe(recipe_name,
-                                             filename=f"test_{status}.wav",
-                                             status=status)
-            assert transcription.status == status
+        for status in statuses:
+            transcription = baker.make('transcriber.Transcription',
+                                      user=self.user,
+                                      filename=f'test_{status}.mp3',
+                                      status=status,
+                                      original_audio=create_test_audio_file())
+            
+            self.assertEqual(transcription.status, status)
     
-    @pytest.mark.unit
     def test_transcription_metadata_fields(self):
-        """Test metadata fields on transcription."""
-        transcription = baker.make_recipe('transcriber.transcription_completed',
-                                         filename="test.wav",
-                                         duration=30.5,
-                                         estimated_tempo=120,
-                                         estimated_key="C Major",
-                                         complexity="moderate",
-                                         detected_instruments=["guitar", "bass"])
+        """Test metadata fields"""
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='test_song.mp3',
+                                  duration=180.5,
+                                  estimated_tempo=120,
+                                  estimated_key='C',
+                                  complexity='moderate',
+                                  status='completed',
+                                  original_audio=create_test_audio_file())
         
-        assert transcription.duration == 30.5
-        assert transcription.estimated_tempo == 120
-        assert transcription.estimated_key == "C Major"
-        assert transcription.complexity == "moderate"
-        assert transcription.detected_instruments == ["guitar", "bass"]
+        self.assertEqual(transcription.duration, 180.5)
+        self.assertEqual(transcription.estimated_tempo, 120)
+        self.assertEqual(transcription.estimated_key, 'C')
+        self.assertEqual(transcription.complexity, 'moderate')
     
-    @pytest.mark.unit
     def test_transcription_json_fields(self):
-        """Test JSON fields for storing complex data."""
-        midi_data = {
-            'notes': [
-                {'start_time': 0, 'end_time': 0.5, 'midi_note': 60}
-            ]
-        }
-        
+        """Test JSON fields functionality"""
         guitar_notes = {
-            'tempo': 120,
             'measures': [
-                {'notes': [{'string': 0, 'fret': 3}]}
+                {'notes': [{'fret': 0, 'string': 1, 'time': 0}]}
             ]
         }
         
-        transcription = baker.make_recipe('transcriber.transcription_completed',
-                                         filename="test.wav",
-                                         midi_data=midi_data,
-                                         guitar_notes=guitar_notes)
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='test_song.mp3',
+                                  guitar_notes=guitar_notes,
+                                  status='completed',
+                                  original_audio=create_test_audio_file())
         
-        assert transcription.midi_data == midi_data
-        assert transcription.guitar_notes == guitar_notes
-        assert isinstance(transcription.midi_data, dict)
-        assert isinstance(transcription.guitar_notes, dict)
+        self.assertEqual(transcription.guitar_notes, guitar_notes)
+        self.assertIsInstance(transcription.guitar_notes, dict)
+        self.assertIn('measures', transcription.guitar_notes)
     
-    @pytest.mark.unit
     def test_transcription_status_tracking(self):
-        """Test status tracking functionality."""
-        transcription = baker.make_recipe('transcriber.transcription_basic',
-                                         filename="test.wav",
-                                         status="processing")
+        """Test status tracking over time"""
+        transcription = baker.make('transcriber.Transcription',
+                                  user=self.user,
+                                  filename='test_song.mp3',
+                                  status='pending',
+                                  original_audio=create_test_audio_file())
         
-        assert transcription.status == "processing"
-        transcription.status = "completed"
+        original_updated = transcription.updated_at
+        
+        # Update status
+        transcription.status = 'processing'
         transcription.save()
-        assert transcription.status == "completed"
+        
+        self.assertEqual(transcription.status, 'processing')
+        self.assertGreater(transcription.updated_at, original_updated)

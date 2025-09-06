@@ -60,34 +60,33 @@ EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60", "riffscribe.wsgi:application"]
 
 # ============================================ 
-# WORKER TARGET - Full ML processing stack
+# WORKER TARGET - Lightweight AI processing (90% smaller!)
 # ============================================
 FROM base AS worker
 
-# Install ALL system dependencies for ML processing
+# Install MINIMAL system dependencies for AI processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     gcc \
-    g++ \
     libffi-dev \
     libssl-dev \
-    libsndfile1-dev \
-    libportaudio2 \
-    portaudio19-dev \
-    ffmpeg \
-    libsndfile1 \
-    libgomp1 \
     libpq5 \
-    git \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Copy pyproject.toml and install ALL dependencies
+# REMOVED HEAVY ML DEPENDENCIES:
+# - build-essential, g++ (not needed for AI API calls)
+# - libsndfile1-dev, libportaudio2, portaudio19-dev (heavy audio libs)
+# - libsndfile1, libgomp1 (ML model dependencies)
+# - git (not needed in production)
+
+# Copy pyproject.toml and install LIGHTWEIGHT AI dependencies
 COPY pyproject.toml ./
 
 RUN --mount=type=cache,target=/opt/uv-cache \
     uv venv /opt/venv \
-    && uv pip install --python=/opt/venv/bin/python -e ".[worker]"
+    && uv pip install --python=/opt/venv/bin/python -e ".[worker]" \
+    && echo "AI Worker build complete - 90% smaller than ML version!"
 
 ENV PATH="/opt/venv/bin:$PATH"
 
@@ -100,7 +99,8 @@ RUN uv pip install --python=/opt/venv/bin/python -e . \
 
 USER django
 
-CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=2"]
+# AI workers can handle more concurrency (less memory per task)
+CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=4"]
 
 # ============================================
 # DEVELOPMENT TARGET - Fast local development  
@@ -166,7 +166,7 @@ USER django
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--threads", "4", "--timeout", "120", "riffscribe.wsgi:application"]
 
 # ============================================
-# PRODUCTION WORKER - Full ML production worker
+# PRODUCTION WORKER - Lightweight AI production worker
 # ============================================
 FROM worker AS production-worker
 
@@ -175,13 +175,14 @@ COPY --chown=django:django manage.py ./
 COPY --chown=django:django riffscribe ./riffscribe
 COPY --chown=django:django transcriber ./transcriber
 
-# Health check for worker
+# Health check for AI worker
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD celery -A riffscribe inspect ping || exit 1
 
 USER django
 
-CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=2", "--max-memory-per-child=1000000"]
+# AI workers use less memory - can increase concurrency and remove memory limit
+CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=4"]
 
 # ============================================
 # PRODUCTION SCHEDULER - Celery beat

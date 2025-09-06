@@ -6,7 +6,58 @@
 
 {% block extra_head %}
 <!-- AlphaTab for interactive guitar tabs -->
-<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@1.2.3/dist/alphaTab.min.js"></script>
+<style>
+    /* AlphaTab custom styles */
+    #alphaTabViewer {
+        background: white;
+        border-radius: 8px;
+        padding: 0.5rem;
+        min-height: 300px;
+    }
+    
+    .at-surface {
+        background: white !important;
+        padding: 0 !important;
+    }
+    
+    .at-controls {
+        background: #f8f9fa !important;
+        border-top: 1px solid #e5e7eb !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0 0 8px 8px !important;
+    }
+    
+    .at-controls button {
+        background: #fbbf24 !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.375rem 0.75rem !important;
+        border-radius: 0.375rem !important;
+        font-size: 0.875rem !important;
+        transition: background-color 0.2s !important;
+    }
+    
+    .at-controls button:hover {
+        background: #f59e0b !important;
+    }
+    
+    /* Hide redundant elements */
+    .at-track-name,
+    .at-song-info {
+        display: none !important;
+    }
+    
+    /* Make tabs more compact */
+    .at-track .at-staff {
+        margin: 0.25rem 0 !important;
+    }
+    
+    /* Reduce spacing */
+    .at-measure {
+        margin-right: 0.25rem !important;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -28,6 +79,12 @@
                             {% if transcription.duration %}
                             <span>{{ transcription.duration|format_duration }}</span>
                             {% endif %}
+                            {% if transcription.estimated_tempo %}
+                            <span>{{ transcription.estimated_tempo }} BPM</span>
+                            {% endif %}
+                            {% if transcription.estimated_key %}
+                            <span>{{ transcription.estimated_key }}</span>
+                            {% endif %}
                             {% if transcription.original_audio %}
                             <span>{{ transcription.original_audio.size|file_size }}</span>
                             {% endif %}
@@ -35,24 +92,8 @@
                     </div>
                 </div>
 
-                <!-- Status and Actions -->
+                <!-- Actions -->
                 <div class="flex items-center space-x-3">
-                    {% include 'transcriber/partials/status_badge.html' with status=transcription.status %}
-
-                    {% if transcription.status == 'completed' %}
-                    <button type="button"
-                        class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                        hx-post="{% url 'transcriber:reprocess' transcription.id %}"
-                        hx-confirm="Reprocess this transcription? This will overwrite current results."
-                        hx-target="#main-content" hx-swap="innerHTML">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Reprocess
-                    </button>
-                    {% endif %}
-
                     {% include 'transcriber/partials/favorite_button.html' %}
                 </div>
             </div>

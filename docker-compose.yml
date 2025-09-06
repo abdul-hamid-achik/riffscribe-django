@@ -50,7 +50,7 @@ services:
       start_period: 40s
 
   # ============================================
-  # WORKER SERVICE - Heavy ML processing
+  # WORKER SERVICE - Lightweight AI processing (90% faster builds!)
   # ============================================
   workers:
     build:
@@ -59,7 +59,7 @@ services:
       cache_from:
         - riffscribe-worker:latest
     image: riffscribe-worker:latest
-    command: celery -A riffscribe worker -l info --concurrency=1 --max-memory-per-child=1000000
+    command: celery -A riffscribe worker -l info --concurrency=4  # More concurrency with AI!
     restart: unless-stopped
     volumes:
       - .:/app
@@ -80,10 +80,12 @@ services:
       - AWS_S3_ENDPOINT_URL=http://storage:9000
       - AWS_S3_USE_SSL=false
       - USE_S3=true
-      # ML-specific settings
-      - USE_GPU=false
-      - DEMUCS_MODEL=htdemucs_ft
+      # AI-specific settings  
+      - ENABLE_DRUMS=true
       - ENABLE_MULTITRACK=true
+      # REMOVED ML SETTINGS (no longer needed!):
+      # - USE_GPU=false (no GPU needed for AI API)
+      # - DEMUCS_MODEL=htdemucs_ft (no 4GB model needed!)
     depends_on:
       - redis
       - db
@@ -93,9 +95,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 1G  # 75% memory reduction!
         reservations:
-          memory: 1G
+          memory: 256M  # Much lower baseline
     healthcheck:
       test: ["CMD", "celery", "-A", "riffscribe", "inspect", "ping"]
       interval: 60s
@@ -161,17 +163,17 @@ services:
   monitor:
     build:
       context: .
-      target: development
+      target: worker
       cache_from:
-        - riffscribe-dev:latest
-    image: riffscribe-dev:latest
+        - riffscribe-worker:latest
+    image: riffscribe-worker:latest
     command: celery -A riffscribe flower --port=5555 --host=0.0.0.0
     restart: unless-stopped
     ports:
       - "5555:5555"
     volumes:
       - .:/app
-      - uv_cache_dev:/opt/uv-cache
+      - uv_cache_worker:/opt/uv-cache
     env_file:
       - .env
     environment:

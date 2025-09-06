@@ -31,7 +31,7 @@ def signed_audio_url(request, transcription_id):
             return JsonResponse({'error': 'Permission denied'}, status=403)
         
         # Check if file exists
-        if not transcription.original_audio:
+        if not transcription.original_audio.name:
             return JsonResponse({'error': 'Audio file not found'}, status=404)
         
         # Generate cache key
@@ -84,7 +84,7 @@ def audio_proxy(request, transcription_id):
             raise Http404("File not found")
         
         # Check if file exists
-        if not transcription.original_audio:
+        if not transcription.original_audio.name:
             raise Http404("Audio file not found")
         
         # For local development, serve directly from storage
@@ -154,7 +154,7 @@ def get_secure_audio_url(transcription, request=None):
         str: Secure URL for the audio file
     """
     try:
-        if not transcription.original_audio:
+        if not transcription.original_audio.name:
             return None
             
         # For development with localhost, return direct URL

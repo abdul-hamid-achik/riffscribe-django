@@ -143,12 +143,27 @@ class TranscriptionOwnershipTestCase(TestCase):
         )
         
         # Create transcriptions for each user
-        self.trans1 = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                       user=self.user1,
-                                       filename='user1_audio.mp3')
-        self.trans2 = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                       user=self.user2,
-                                       filename='user2_audio.mp3')
+        from django.core.files.base import ContentFile
+        from pathlib import Path
+        
+        def create_test_file():
+            sample_path = Path(__file__).parent.parent / 'samples' / 'simple-riff.wav'
+            if sample_path.exists():
+                with open(sample_path, 'rb') as f:
+                    return ContentFile(f.read(), 'simple-riff.wav')
+            else:
+                return ContentFile(b'test audio data', 'test.wav')
+        
+        self.trans1 = baker.make('transcriber.Transcription',
+                                user=self.user1,
+                                filename='user1_audio.mp3',
+                                status='completed',
+                                original_audio=create_test_file())
+        self.trans2 = baker.make('transcriber.Transcription',
+                                user=self.user2,
+                                filename='user2_audio.mp3',
+                                status='completed',
+                                original_audio=create_test_file())
         
     def test_user_can_view_own_transcription(self):
         """Test user can view their own transcriptions"""
@@ -260,9 +275,22 @@ class UserProfileUsageTestCase(TestCase):
         self.client.login(username='testuser', password='testpass123')
         
         # Create a transcription
-        trans = baker.make_recipe('transcriber.transcription_completed_with_user',
-                                 user=self.user,
-                                 filename='test.mp3')
+        from django.core.files.base import ContentFile
+        from pathlib import Path
+        
+        def create_test_file():
+            sample_path = Path(__file__).parent.parent / 'samples' / 'simple-riff.wav'
+            if sample_path.exists():
+                with open(sample_path, 'rb') as f:
+                    return ContentFile(f.read(), 'simple-riff.wav')
+            else:
+                return ContentFile(b'test audio data', 'test.wav')
+        
+        trans = baker.make('transcriber.Transcription',
+                          user=self.user,
+                          filename='test.mp3',
+                          status='completed',
+                          original_audio=create_test_file())
         
         profile = self.user.profile
         
