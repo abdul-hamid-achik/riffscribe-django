@@ -36,11 +36,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install UV in a separate layer for better caching and reliability
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+# Install UV system-wide so it's available to all users
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && cp /root/.local/bin/uv /usr/local/bin/uv \
+    && chmod +x /usr/local/bin/uv
 
-# Add UV to PATH and verify installation
-ENV PATH="/root/.local/bin:$PATH"
+# Verify installation works system-wide
 RUN uv --version
 
 # Configure PostgreSQL
@@ -65,6 +66,11 @@ WORKDIR /app
 
 # Create a non-root user for Django
 RUN groupadd -r django && useradd -r -g django -s /bin/bash django
+
+# Verify uv works for django user
+USER django
+RUN uv --version
+USER root
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /app/media /app/static /app/staticfiles /app/tmp /app/audio /app/exports \
