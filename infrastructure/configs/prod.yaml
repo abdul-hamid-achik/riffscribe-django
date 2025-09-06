@@ -1,0 +1,51 @@
+# Production Environment Configuration
+# This file contains environment-specific settings for production
+
+environment: prod
+project_name: riffscribe
+
+# AWS settings
+aws:
+  region: us-east-1
+  vpc_cidr: "10.2.0.0/16"
+  enable_https: true
+  domain: "riffscribe.com"
+
+# Application settings
+app:
+  debug: false
+  allowed_hosts: "riffscribe.com,www.riffscribe.com"
+  
+# Database settings
+database:
+  instance_type: "db.t3.medium"  # AWS
+  allocated_storage: 100
+  backup_retention: 30
+  multi_az: true
+  deletion_protection: true
+
+# Cache settings
+redis:
+  node_type: "cache.t3.medium"  # AWS
+  num_nodes: 2
+
+# Storage settings
+storage:
+  bucket_name: "riffscribe-media-prod"
+  versioning_enabled: true
+  cors_enabled: true
+
+# Compute settings
+compute:
+  cpu: 2048
+  memory: 4096
+  desired_count: 2
+  max_capacity: 10
+  min_capacity: 2
+
+# Feature flags
+features:
+  enable_monitoring: true
+  enable_cdn: true
+  enable_ssl: true
+  enable_backup: true

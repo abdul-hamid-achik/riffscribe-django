@@ -1,0 +1,29 @@
+name: riffscribe-aws
+description: RiffScribe AWS Infrastructure
+runtime: python
+template:
+  config:
+    aws:region:
+      description: The AWS region to deploy to
+      default: us-east-1
+    environment:
+      description: The deployment environment (dev, staging, prod)
+      default: dev
+    domain:
+      description: The domain name for the application (optional)
+      default: ""
+    enable_https:
+      description: Whether to enable HTTPS/SSL
+      default: false
+    vpc_cidr:
+      description: CIDR block for the VPC
+      default: "10.0.0.0/16"
+    database_password:
+      description: Password for the PostgreSQL database
+      secret: true
+    django_secret_key:
+      description: Django secret key
+      secret: true
+    openai_api_key:
+      description: OpenAI API key for ML processing
+      secret: true

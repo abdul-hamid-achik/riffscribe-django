@@ -1,0 +1,51 @@
+# Staging Environment Configuration
+# This file contains environment-specific settings for staging
+
+environment: staging
+project_name: riffscribe
+
+# AWS settings
+aws:
+  region: us-east-1
+  vpc_cidr: "10.1.0.0/16"
+  enable_https: true
+  domain: "staging.riffscribe.com"
+
+# Application settings
+app:
+  debug: false
+  allowed_hosts: "staging.riffscribe.com,*.riffscribe.com"
+  
+# Database settings
+database:
+  instance_type: "db.t3.small"  # AWS
+  allocated_storage: 50
+  backup_retention: 14
+  multi_az: false
+  deletion_protection: true
+
+# Cache settings
+redis:
+  node_type: "cache.t3.small"  # AWS
+  num_nodes: 1
+
+# Storage settings
+storage:
+  bucket_name: "riffscribe-media-staging"
+  versioning_enabled: true
+  cors_enabled: true
+
+# Compute settings
+compute:
+  cpu: 1024
+  memory: 2048
+  desired_count: 1
+  max_capacity: 3
+  min_capacity: 1
+
+# Feature flags
+features:
+  enable_monitoring: true
+  enable_cdn: true
+  enable_ssl: true
+  enable_backup: true

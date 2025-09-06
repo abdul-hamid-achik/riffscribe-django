@@ -94,6 +94,23 @@ dev = [
     "ipython>=8.18",
 ]
 
+infrastructure = [
+    # Pulumi core
+    "pulumi>=3.100.0",
+    
+    # AWS provider SDK
+    "pulumi-aws>=6.20.0",
+    
+    # Additional infrastructure utilities
+    "pulumi-random>=4.14.0",
+    "pulumi-tls>=5.0.0",
+    
+    # Infrastructure management utilities  
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.1.0",
+]
+
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"

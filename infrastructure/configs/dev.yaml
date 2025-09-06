@@ -1,0 +1,51 @@
+# Development Environment Configuration
+# This file contains environment-specific settings for development
+
+environment: dev
+project_name: riffscribe
+
+# AWS settings
+aws:
+  region: us-east-1
+  vpc_cidr: "10.0.0.0/16"
+  enable_https: false
+  domain: ""
+
+# Application settings
+app:
+  debug: true
+  allowed_hosts: "localhost,127.0.0.1,*.ngrok.io"
+  
+# Database settings
+database:
+  instance_type: "db.t3.micro"  # AWS
+  allocated_storage: 20
+  backup_retention: 7
+  multi_az: false
+  deletion_protection: false
+
+# Cache settings
+redis:
+  node_type: "cache.t3.micro"  # AWS
+  num_nodes: 1
+
+# Storage settings
+storage:
+  bucket_name: "riffscribe-media-dev"
+  versioning_enabled: false
+  cors_enabled: true
+
+# Compute settings
+compute:
+  cpu: 512
+  memory: 1024
+  desired_count: 1
+  max_capacity: 2
+  min_capacity: 1
+
+# Feature flags
+features:
+  enable_monitoring: false
+  enable_cdn: false
+  enable_ssl: false
+  enable_backup: true
