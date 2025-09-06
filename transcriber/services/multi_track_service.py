@@ -17,7 +17,6 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 
 try:
-    import demucs.api
     from demucs import pretrained
     from demucs.apply import apply_model
     from demucs.audio import convert_audio

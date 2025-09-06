@@ -42,7 +42,6 @@ def library_search(request):
     if search_query:
         transcriptions = transcriptions.filter(
             Q(filename__icontains=search_query) |
-            Q(title__icontains=search_query) |
             Q(estimated_key__icontains=search_query) |
             Q(detected_instruments__icontains=search_query) |
             Q(complexity__icontains=search_query)

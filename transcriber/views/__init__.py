@@ -40,6 +40,7 @@ from .export import (
     download_ascii_tab,
     download_midi,
     clear_exports,
+    debug_tab_data,
 )
 
 from .comments import (
@@ -109,6 +110,7 @@ __all__ = [
     'download_ascii_tab',
     'download_midi',
     'clear_exports',
+    'debug_tab_data',
     
     # Comment views
     'comments_list',

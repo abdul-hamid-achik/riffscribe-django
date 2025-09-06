@@ -22,7 +22,6 @@ except ImportError:
     basic_pitch = None
     
 try:
-    import demucs.api
     from demucs import pretrained
     from demucs.apply import apply_model
 except ImportError:

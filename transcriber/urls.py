@@ -36,6 +36,7 @@ urlpatterns = [
     path('transcription/<uuid:pk>/download/<int:export_id>/', views.download, name='download'),
     path('transcription/<uuid:pk>/export/musicxml/', views.export_musicxml, name='export_musicxml'),
     path('transcription/<uuid:pk>/export/gp5/', views.download_gp5, name='download_gp5'),
+    path('transcription/<uuid:pk>/debug/tab-data/', views.debug_tab_data, name='debug_tab_data'),
     path('transcription/<uuid:pk>/export/ascii/', views.download_ascii_tab, name='download_ascii_tab'),
     path('transcription/<uuid:pk>/export/midi/', views.download_midi, name='download_midi'),
     path('transcription/<uuid:pk>/export/clear/', views.clear_exports, name='clear_exports'),

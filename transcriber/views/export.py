@@ -242,6 +242,25 @@ def download_gp5(request, pk):
         return JsonResponse({'error': f'Export failed: {str(e)}'}, status=500)
 
 
+def debug_tab_data(request, pk):
+    """
+    Debug endpoint to check tab data structure for GP5 export issues.
+    """
+    transcription = get_object_or_404(Transcription, pk=pk)
+    
+    # Check access permission
+    if transcription.user and transcription.user != request.user:
+        if not request.user.is_superuser:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    try:
+        export_manager = ExportManager(transcription)
+        debug_info = export_manager.debug_tab_data()
+        return JsonResponse(debug_info, indent=2)
+    except Exception as e:
+        return JsonResponse({'error': f'Debug failed: {str(e)}'}, status=500)
+
+
 def download_ascii_tab(request, pk):
     """
     Generate and download ASCII tab export.

@@ -10,13 +10,56 @@
             <!-- Decorative Musical Elements -->
             <div class="absolute inset-0 opacity-20">
                 <svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 400 160">
-                    <!-- Stylized waveform -->
-                    {% for i in "0123456789012345678901234567890123456789" %}
-                    <rect x="{{ forloop.counter0|mul:10 }}"
-                        y="{% cycle '60' '40' '80' '30' '70' '50' '90' '20' '75' '45' %}" width="6"
-                        height="{% cycle '40' '80' '20' '100' '30' '60' '10' '120' '25' '70' %}" fill="currentColor"
+                    <!-- Stylized waveform pattern -->
+                    <rect x="0" y="60" width="6" height="40" fill="currentColor" class="text-musical-gold opacity-30" />
+                    <rect x="12" y="40" width="6" height="80" fill="currentColor"
                         class="text-musical-gold opacity-30" />
-                    {% endfor %}
+                    <rect x="24" y="80" width="6" height="20" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="36" y="30" width="6" height="100" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="48" y="70" width="6" height="30" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="60" y="50" width="6" height="60" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="72" y="90" width="6" height="10" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="84" y="20" width="6" height="120" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="96" y="75" width="6" height="25" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="108" y="45" width="6" height="70" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="120" y="65" width="6" height="35" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="132" y="35" width="6" height="90" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="144" y="85" width="6" height="15" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="156" y="25" width="6" height="110" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="168" y="55" width="6" height="50" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="180" y="70" width="6" height="30" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="192" y="40" width="6" height="80" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="204" y="95" width="6" height="5" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="216" y="30" width="6" height="100" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="228" y="60" width="6" height="40" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="240" y="80" width="6" height="20" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="252" y="45" width="6" height="70" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="264" y="75" width="6" height="25" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="276" y="35" width="6" height="90" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
+                    <rect x="288" y="90" width="6" height="10" fill="currentColor"
+                        class="text-musical-gold opacity-30" />
                 </svg>
             </div>
 
@@ -84,7 +127,7 @@
             <h3
                 class="font-headline text-lg font-semibold text-nyt-black mb-2 group-hover:text-musical-gold transition-colors">
                 <a href="{% url 'transcriber:detail' pk=transcription.pk %}" class="block truncate">
-                    {{ transcription.title|default:transcription.filename }}
+                    {{ transcription.filename }}
                 </a>
             </h3>
 
@@ -159,8 +202,9 @@
                     {% for instrument in transcription.detected_instruments|slice:":3" %}
                     <span
                         class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                        {% if instrument == "guitar" %}🎸{% elif instrument == "bass" %}🎸{% elif instrument == "drums"
-                        %}🥁{% elif instrument == "piano" %}🎹{% elif instrument == "vocals" %}🎤{% else %}🎵{% endif %}
+                        {% if instrument|lower == "guitar" %}🎸{% elif instrument|lower == "bass" %}🎸{% elif
+                        instrument|lower == "drums" %}🥁{% elif instrument|lower == "piano" %}🎹{% elif instrument|lower
+                        == "vocals" %}🎤{% else %}🎵{% endif %}
                         {{ instrument|capfirst }}
                     </span>
                     {% endfor %}

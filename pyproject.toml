@@ -34,6 +34,9 @@ dependencies = [
     # System monitoring
     "psutil>=5.9.0",
     
+    # System utilities
+    "setuptools>=65.0",  # Required for pkg_resources (used by pretty_midi)
+    
     # File handling
     "pillow>=10.0",
     
@@ -71,9 +74,9 @@ dependencies = [
     # Guitar tab formats
     "pyguitarpro>=0.10",
     
-    # Advanced audio models (commented until Python 3.13 support)
-    # "demucs>=4.0",  # Requires older Python
-    # "basic-pitch>=0.3",  # Requires older Python
+    # Advanced audio models
+    "demucs>=4.0",  # Source separation for multi-track processing
+    # "basic-pitch>=0.3",  # Still requires older Python
 ]
 
 [project.optional-dependencies]

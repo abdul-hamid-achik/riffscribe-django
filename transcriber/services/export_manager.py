@@ -76,13 +76,16 @@ class ExportManager:
                     
                     # Add string and fret info as articulations
                     try:
-                        tech_indication = music21.articulations.TechnicalIndication()
-                        tech_indication.name = f"string:{note_data['string']+1},fret:{note_data['fret']}"
+                        # Use a fingering indication instead of TechnicalIndication
+                        tech_indication = music21.articulations.Fingering(f"s{note_data['string']+1}f{note_data['fret']}")
                         n.articulations.append(tech_indication)
                     except Exception as e:
                         logger.warning(f"Could not add technical indication: {e}")
-                        # Fall back to a simple approach
-                        pass
+                        # Fall back to a simple approach - add as lyric instead
+                        try:
+                            n.addLyric(f"s{note_data['string']+1}f{note_data['fret']}")
+                        except Exception:
+                            pass  # If all methods fail, just skip
                     
                     # Add techniques
                     technique = note_data.get('technique', 'normal')
@@ -92,9 +95,19 @@ class ExportManager:
                         elif technique == 'pull_off':
                             n.articulations.append(music21.articulations.PullOff())
                         elif technique == 'slide_up':
-                            n.articulations.append(music21.articulations.GlissandoUp())
+                            # Use general Glissando for slide up
+                            try:
+                                n.articulations.append(music21.articulations.Glissando())
+                            except AttributeError:
+                                # Fallback to generic articulation or skip
+                                n.addLyric("slide↑")
                         elif technique == 'slide_down':
-                            n.articulations.append(music21.articulations.GlissandoDown())
+                            # Use general Glissando for slide down  
+                            try:
+                                n.articulations.append(music21.articulations.Glissando())
+                            except AttributeError:
+                                # Fallback to generic articulation or skip
+                                n.addLyric("slide↓")
                         elif technique == 'bend':
                             n.articulations.append(music21.articulations.Bend())
                     except Exception as e:
@@ -244,7 +257,22 @@ class ExportManager:
             tab_data = self.tab_data
             
         if not tab_data:
+            logger.warning("GP5 export failed: No tab data available")
             return None
+            
+        # Check if measures exist and have notes
+        measures_data = tab_data.get('measures', [])
+        if not measures_data:
+            logger.warning("GP5 export failed: No measures found in tab data")
+            return None
+            
+        # Count total notes across all measures
+        total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
+        if total_notes == 0:
+            logger.warning("GP5 export failed: No notes found in any measures")
+            return None
+            
+        logger.info(f"GP5 export: Processing {len(measures_data)} measures with {total_notes} total notes")
             
         if not gp:
             logger.warning("guitarpro library not available")
@@ -330,7 +358,45 @@ class ExportManager:
             
         except Exception as e:
             logger.error(f"Error generating GP5: {str(e)}")
+            logger.error(f"GP5 export failed - tab_data structure: {json.dumps(tab_data, indent=2)[:500]}...")
             return None
+    
+    def debug_tab_data(self) -> Dict:
+        """
+        Return diagnostic information about the tab data for debugging.
+        """
+        tab_data = self.tab_data
+        if not tab_data:
+            return {
+                'status': 'error',
+                'message': 'No tab data available',
+                'transcription_id': str(self.transcription.id),
+                'has_guitar_notes': False,
+                'guitar_notes_type': type(tab_data).__name__
+            }
+            
+        measures_data = tab_data.get('measures', [])
+        total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
+        
+        return {
+            'status': 'ok',
+            'transcription_id': str(self.transcription.id),
+            'has_guitar_notes': bool(self.transcription.guitar_notes),
+            'measures_count': len(measures_data),
+            'total_notes': total_notes,
+            'tempo': tab_data.get('tempo'),
+            'time_signature': tab_data.get('time_signature'),
+            'tuning': tab_data.get('tuning'),
+            'techniques_used': tab_data.get('techniques_used'),
+            'sample_measures': [
+                {
+                    'measure_num': i + 1,
+                    'notes_count': len(measure.get('notes', [])),
+                    'sample_note': measure.get('notes', [])[0] if measure.get('notes') else None
+                } 
+                for i, measure in enumerate(measures_data[:3])  # Show first 3 measures
+            ]
+        }
     
     def export_musicxml(self) -> str:
         """Export as MusicXML file."""
@@ -353,29 +419,58 @@ class ExportManager:
     
     def export_midi(self) -> str:
         """Export as MIDI file."""
-        midi = MIDIFile(1)
-        track = 0
-        channel = 0
-        time = 0
-        tempo_bpm = self.tab_data.get('tempo', 120)
-        
-        midi.addTempo(track, time, tempo_bpm)
-        
-        # Add notes
-        for measure in self.tab_data.get('measures', []):
-            for note_data in measure['notes']:
-                midi_note = self._tab_to_midi(
-                    note_data['string'],
-                    note_data['fret'],
-                    self.tab_data.get('tuning', [40, 45, 50, 55, 59, 64])
-                )
+        if not self.tab_data or not self.tab_data.get('measures'):
+            logger.warning("No tab data available for MIDI export")
+            # Create a minimal empty MIDI file
+            midi = MIDIFile(1)
+            midi.addTempo(0, 0, 120)
+        else:
+            midi = MIDIFile(1)
+            track = 0
+            channel = 0
+            tempo_bpm = self.tab_data.get('tempo', 120)
+            
+            midi.addTempo(track, 0, tempo_bpm)
+            
+            # Add notes with proper timing calculation
+            for measure in self.tab_data.get('measures', []):
+                measure_start_time = measure.get('start_time', 0.0)
                 
-                midi.addNote(
-                    track, channel, midi_note,
-                    time + note_data['time'],
-                    note_data['duration'],
-                    note_data.get('velocity', 80)
-                )
+                for note_data in measure.get('notes', []):
+                    try:
+                        # Calculate absolute time for the note
+                        note_time = measure_start_time + note_data.get('time', 0.0)
+                        
+                        # Ensure duration is positive and reasonable
+                        duration = max(0.1, note_data.get('duration', 0.25))  # Minimum 0.1 beats
+                        
+                        # Get MIDI note number
+                        midi_note = self._tab_to_midi(
+                            note_data.get('string', 0),
+                            note_data.get('fret', 0),
+                            self.tab_data.get('tuning', [40, 45, 50, 55, 59, 64])
+                        )
+                        
+                        # Validate MIDI note range (0-127)
+                        midi_note = max(0, min(127, midi_note))
+                        
+                        # Get velocity
+                        velocity = max(1, min(127, note_data.get('velocity', 80)))
+                        
+                        # Add the note to MIDI
+                        midi.addNote(
+                            track, channel, midi_note,
+                            note_time,
+                            duration,
+                            velocity
+                        )
+                        
+                        logger.debug(f"Added MIDI note: pitch={midi_note}, time={note_time:.2f}, duration={duration:.2f}")
+                        
+                    except Exception as e:
+                        logger.warning(f"Error processing note in MIDI export: {e}")
+                        # Skip problematic notes but continue processing
+                        continue
         
         # Save to file
         temp_file = tempfile.NamedTemporaryFile(
@@ -383,8 +478,21 @@ class ExportManager:
             prefix=f'{self.transcription.filename}_',
             delete=False
         )
-        midi.writeFile(temp_file)
-        temp_file.close()
+        
+        try:
+            with open(temp_file.name, 'wb') as f:
+                midi.writeFile(f)
+        except Exception as e:
+            logger.error(f"Error writing MIDI file: {e}")
+            # If writeFile fails, try closing the file handle first
+            temp_file.close()
+            try:
+                midi.writeFile(temp_file)
+            except Exception as e2:
+                logger.error(f"Second attempt to write MIDI file also failed: {e2}")
+                raise e2
+        else:
+            temp_file.close()
         
         return temp_file.name
     

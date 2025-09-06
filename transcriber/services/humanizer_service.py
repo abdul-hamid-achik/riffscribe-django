@@ -1,15 +1,87 @@
 """
 Playability-aware humanizer service using dynamic programming
+Accounts for physical guitar ergonomics, finger positioning, and natural chord shapes
 """
 
 import math
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Dict, List, Tuple, Optional, Any, Set
 from dataclasses import dataclass
 import numpy as np
 
 
 # Standard guitar tuning (MIDI notes for open strings E2-A2-D3-G3-B3-E4)
 STANDARD_TUNING = [40, 45, 50, 55, 59, 64]
+
+# Common tunings (string 6 to string 1: low to high)
+TUNINGS = {
+    "standard": [40, 45, 50, 55, 59, 64],      # E-A-D-G-B-E
+    "half_step_down": [39, 44, 49, 54, 58, 63], # Eb-Ab-Db-Gb-Bb-Eb  
+    "whole_step_down": [38, 43, 48, 53, 57, 62], # D-G-C-F-A-D
+    "drop_d": [38, 45, 50, 55, 59, 64],        # D-A-D-G-B-E
+    "drop_c": [36, 43, 48, 53, 57, 62],        # C-G-C-F-A-D
+    "open_g": [38, 43, 50, 55, 59, 62],        # D-G-D-G-B-D
+    "open_d": [38, 45, 50, 54, 57, 62],        # D-A-D-F#-A-D
+}
+
+# Physical fret spacing model (relative distances, fret 1 = 1.0)
+# Based on 12th root of 2 exponential spacing
+FRET_SPACING = {i: 1.0 / (2 ** ((i-1) / 12)) if i > 0 else 0 for i in range(25)}
+
+# Finger stretch capabilities (in fret units, accounting for fret spacing)
+FINGER_STRETCHES = {
+    # (finger1, finger2): max_comfortable_span_in_fret_units
+    (1, 2): 2.5,  # Index to middle
+    (1, 3): 4.0,  # Index to ring  
+    (1, 4): 5.5,  # Index to pinky
+    (2, 3): 2.0,  # Middle to ring
+    (2, 4): 3.5,  # Middle to pinky
+    (3, 4): 2.5,  # Ring to pinky
+}
+
+# CAGED chord shape templates (string, fret_offset_from_root)
+# Each shape is defined relative to its root position
+CAGED_SHAPES = {
+    "C": {
+        # C shape pattern (relative to root fret)
+        "pattern": [
+            (6, 3), (5, 3), (4, 2), (3, 0), (2, 1), (1, 0)  # C major at 3rd fret
+        ],
+        "core_notes": [(4, 2), (3, 0), (2, 1)],  # Essential fingering
+        "fingers": {3: 1, 2: 2, 1: 3}  # fret_offset: finger
+    },
+    "A": {
+        # A shape barre chord (movable)
+        "pattern": [
+            (6, 0), (5, 2), (4, 2), (3, 2), (2, 0), (1, 0)
+        ],
+        "core_notes": [(5, 2), (4, 2), (3, 2)],
+        "fingers": {0: 1, 2: 3}  # Barre + ring finger
+    },
+    "G": {
+        # G shape (complex, movable version)
+        "pattern": [
+            (6, 3), (5, 2), (4, 0), (3, 0), (2, 3), (1, 3)
+        ],
+        "core_notes": [(6, 3), (5, 2), (2, 3), (1, 3)],
+        "fingers": {2: 2, 3: 3}
+    },
+    "E": {
+        # E shape barre chord  
+        "pattern": [
+            (6, 0), (5, 2), (4, 2), (3, 1), (2, 0), (1, 0)
+        ],
+        "core_notes": [(5, 2), (4, 2), (3, 1)],
+        "fingers": {0: 1, 1: 2, 2: 3}
+    },
+    "D": {
+        # D shape (triangular)
+        "pattern": [
+            (4, 0), (3, 2), (2, 3), (1, 2)
+        ],
+        "core_notes": [(4, 0), (3, 2), (2, 3), (1, 2)],
+        "fingers": {0: 0, 2: 1, 3: 3, 2: 2}  # Open, index, ring, middle
+    }
+}
 
 
 @dataclass
@@ -24,62 +96,91 @@ class Note:
 @dataclass(frozen=True)
 class FretChoice:
     """A possible fret/string combination for a note"""
-    string: int  # 1-6 (1=highest pitch string)
+    string: int  # 1-6 (1=highest pitch string, 6=lowest)
     fret: int    # 0-24
     midi_note: int
+    finger: Optional[int] = None  # 1-4 (index, middle, ring, pinky) or None for open
+
+
+@dataclass
+class Position:
+    """Represents a hand position on the guitar neck"""
+    base_fret: int  # Fret where index finger is positioned
+    choices: List[FretChoice]  # All notes in this position
+    
+    def get_span(self) -> float:
+        """Get the physical span of this position in fret units"""
+        if not self.choices or all(c.fret == 0 for c in self.choices):
+            return 0.0
+        
+        non_open = [c for c in self.choices if c.fret > 0]
+        if not non_open:
+            return 0.0
+            
+        frets = [c.fret for c in non_open]
+        min_fret, max_fret = min(frets), max(frets)
+        
+        # Calculate physical span accounting for fret spacing
+        span = 0.0
+        for f in range(min_fret, max_fret):
+            span += FRET_SPACING[f]
+        return span
     
 
 @dataclass 
 class OptimizationWeights:
-    """Weight parameters for the cost function"""
-    # Local costs
-    w_fret: float = 1.0           # Penalty for distance from preferred fret region
-    w_open: float = 1.0           # Bonus for open strings (negative cost)
-    w_high: float = 2.0           # Penalty for high frets (>17)
-    pref_fret_center: int = 9     # Preferred fret region center
+    """Weight parameters for the ergonomic cost function"""
+    # Physical costs
+    w_stretch: float = 10.0       # Penalty for finger stretches beyond comfort
+    w_position: float = 2.0       # Penalty for difficult positions (low frets)
+    w_string_jump: float = 8.0    # Heavy penalty for jumping across strings
+    w_open_bonus: float = 2.0     # Bonus for open strings
     
-    # Transition costs
-    w_jump: float = 4.0           # Penalty for large fret jumps
-    w_string: float = 2.0         # Penalty for string changes
-    w_pos: float = 2.0            # Penalty for position shifts
-    w_span: float = 6.0           # Penalty for chord span
-    w_same: float = 0.5           # Bonus for staying on same string
+    # Transition costs  
+    w_pos_shift: float = 5.0      # Penalty for moving hand position
+    w_finger_conflict: float = 20.0  # Penalty for impossible finger assignments
+    w_same_string: float = 1.0    # Bonus for staying on same string for melody
     
-    # Constraints
-    span_cap: int = 5             # Maximum allowed chord span
-    max_jump: int = 12            # Maximum allowed jump
+    # Musical costs
+    w_voice_leading: float = 3.0  # Penalty for poor voice leading
+    w_chord_shape: float = -3.0   # Bonus for recognizable chord shapes
+    
+    # Hard constraints
+    max_physical_span: float = 6.0    # Max span in fret units
+    max_string_jump: int = 3          # Max strings to jump at once
     
 
-# Preset configurations for humanizing different difficulty levels
+# Preset configurations for different playing styles
 HUMANIZER_PRESETS = {
     "easy": OptimizationWeights(
-        w_jump=6, w_string=3, w_span=8, span_cap=4,
-        w_open=2, w_high=2, pref_fret_center=7,
-        w_pos=3, w_same=1
+        w_stretch=15.0, w_string_jump=12.0, w_pos_shift=8.0,
+        w_open_bonus=3.0, w_finger_conflict=25.0,
+        max_physical_span=4.0, max_string_jump=2
     ),
     "balanced": OptimizationWeights(
-        w_jump=4, w_string=2, w_span=6, span_cap=5,
-        w_open=1, w_high=1, pref_fret_center=9,
-        w_pos=2, w_same=0.5
+        w_stretch=10.0, w_string_jump=8.0, w_pos_shift=5.0,
+        w_open_bonus=2.0, w_finger_conflict=20.0,
+        max_physical_span=6.0, max_string_jump=3
     ),
     "technical": OptimizationWeights(
-        w_jump=2, w_string=1, w_span=3, span_cap=7,
-        w_open=0.5, w_high=0, pref_fret_center=12,
-        w_pos=1, w_same=0.25
+        w_stretch=5.0, w_string_jump=4.0, w_pos_shift=3.0,
+        w_open_bonus=1.0, w_finger_conflict=15.0,
+        max_physical_span=8.0, max_string_jump=4
     ),
-    "original": OptimizationWeights(
-        w_jump=3, w_string=1.5, w_span=5, span_cap=6,
-        w_open=1, w_high=0.5, pref_fret_center=10,
-        w_pos=1.5, w_same=0.3
-    )
+    "original": OptimizationWeights()  # Use default values
 }
 
 
 class HumanizerService:
-    """Dynamic programming service for humanizing guitar fingering positions"""
+    """Ergonomically-aware guitar fingering optimizer using dynamic programming"""
     
-    def __init__(self, tuning: List[int] = None, weights: OptimizationWeights = None):
-        self.tuning = tuning or STANDARD_TUNING
+    def __init__(self, tuning=None, weights: OptimizationWeights = None):
+        # Handle tuning as string name or list of MIDI notes
+        if isinstance(tuning, str):
+            self.tuning = TUNINGS.get(tuning, STANDARD_TUNING)
+        else:
+            self.tuning = tuning or STANDARD_TUNING
+            
         self.weights = weights or HUMANIZER_PRESETS["balanced"]
         self.num_strings = len(self.tuning)
         self.max_fret = 24
@@ -98,83 +199,270 @@ class HumanizerService:
                 ))
                 
         return positions
-    
-    def get_position_window(self, fret: int) -> int:
-        """Get the position window (5-fret regions) for a given fret"""
-        if fret == 0:
-            return 0  # Open position
-        elif fret <= 5:
-            return 1  # First position
-        elif fret <= 9:
-            return 2  # Fifth position
-        elif fret <= 14:
-            return 3  # Seventh/ninth position
-        else:
-            return 4  # Higher positions
+        
+    def assign_fingers_to_position(self, choices: List[FretChoice]) -> List[FretChoice]:
+        """Assign finger numbers to choices in a position, returns new choices with fingers"""
+        if not choices:
+            return []
             
+        # Filter out open strings for finger assignment
+        non_open = [c for c in choices if c.fret > 0]
+        open_strings = [c for c in choices if c.fret == 0]
+        
+        if not non_open:
+            return choices  # All open strings
+            
+        # Sort by fret number for logical finger assignment
+        non_open.sort(key=lambda x: x.fret)
+        
+        # Find base fret (where index finger would be)
+        min_fret = min(c.fret for c in non_open)
+        
+        # Assign fingers based on fret distance from base
+        result = []
+        for choice in non_open:
+            fret_offset = choice.fret - min_fret
+            
+            # Simple finger assignment: 1 fret = 1 finger typically
+            if fret_offset == 0:
+                finger = 1  # Index finger
+            elif fret_offset == 1:
+                finger = 2  # Middle finger  
+            elif fret_offset == 2:
+                finger = 3  # Ring finger
+            elif fret_offset == 3:
+                finger = 4  # Pinky finger
+            else:
+                # For larger spans, use pinky or reject
+                finger = 4 if fret_offset <= 5 else None
+                
+            if finger:
+                result.append(FretChoice(
+                    string=choice.string,
+                    fret=choice.fret,
+                    midi_note=choice.midi_note,
+                    finger=finger
+                ))
+                
+        # Add back open strings (no finger assigned)
+        result.extend(open_strings)
+        return result
+    
+    def validate_finger_stretch(self, choices: List[FretChoice]) -> bool:
+        """Check if finger assignments are physically possible"""
+        if not choices:
+            return True
+            
+        # Get fingered notes only
+        fingered = [c for c in choices if c.finger is not None]
+        if len(fingered) <= 1:
+            return True
+            
+        # Check all finger pair stretches
+        for i, choice1 in enumerate(fingered):
+            for choice2 in fingered[i+1:]:
+                if choice1.finger == choice2.finger:
+                    return False  # Same finger on different frets
+                    
+                # Calculate physical distance
+                fret_span = abs(choice2.fret - choice1.fret)
+                physical_span = sum(FRET_SPACING[min(choice1.fret, choice2.fret) + j] 
+                                  for j in range(fret_span))
+                
+                # Check if stretch is within finger capability
+                finger_pair = tuple(sorted([choice1.finger, choice2.finger]))
+                max_stretch = FINGER_STRETCHES.get(finger_pair, 2.0)  # Conservative default
+                
+                if physical_span > max_stretch:
+                    return False
+                    
+        return True
+        
     def local_cost(self, choice: FretChoice) -> float:
-        """Calculate the local cost of a single fret choice"""
+        """Calculate the ergonomic cost of a single fret choice"""
         cost = 0.0
         
-        # Distance from preferred fret region
-        if choice.fret > 0:  # Not open string
-            cost += self.weights.w_fret * abs(choice.fret - self.weights.pref_fret_center)
-            
         # Open string bonus
         if choice.fret == 0:
-            cost -= self.weights.w_open
+            cost -= self.weights.w_open_bonus
+            return cost
             
-        # High fret penalty
-        if choice.fret > 17:
-            cost += self.weights.w_high * (choice.fret - 17)
+        # Position difficulty (lower frets are harder due to wider spacing)
+        if choice.fret <= 5:
+            cost += self.weights.w_position * (6 - choice.fret) * 0.5
             
         return cost
     
     def transition_cost(self, prev: FretChoice, curr: FretChoice) -> float:
-        """Calculate the cost of transitioning between two positions"""
+        """Calculate the ergonomic cost of transitioning between positions"""
         cost = 0.0
         
-        # Fret jump penalty (quadratic for large jumps)
-        if prev.string == curr.string:
-            jump = abs(curr.fret - prev.fret)
-            if jump > 4:
-                cost += self.weights.w_jump * (jump ** 1.5)
-            else:
-                cost += self.weights.w_jump * jump
+        # String jumping penalty (exponential - jumping strings is very expensive)
+        string_jump = abs(curr.string - prev.string)
+        if string_jump > self.weights.max_string_jump:
+            return float('inf')  # Hard constraint
+            
+        if string_jump > 0:
+            cost += self.weights.w_string_jump * (string_jump ** 1.8)
+        else:
+            # Bonus for staying on same string (good for melody)
+            cost -= self.weights.w_same_string
+            
+        # Position shift cost (moving hand is expensive)
+        if prev.fret > 0 and curr.fret > 0:  # Both are fretted
+            prev_pos = self._get_hand_position(prev.fret)
+            curr_pos = self._get_hand_position(curr.fret)
+            
+            if prev_pos != curr_pos:
+                pos_shift = abs(curr_pos - prev_pos)
+                cost += self.weights.w_pos_shift * pos_shift
                 
-        # String change penalty
-        string_dist = abs(curr.string - prev.string)
-        cost += self.weights.w_string * string_dist
-        
-        # Position shift penalty
-        if self.get_position_window(prev.fret) != self.get_position_window(curr.fret):
-            cost += self.weights.w_pos
-            
-        # Same string bonus
-        if prev.string == curr.string:
-            cost -= self.weights.w_same
-            
+        # Same-string fret movement (sliding is natural)
+        if prev.string == curr.string and prev.fret != curr.fret:
+            fret_dist = abs(curr.fret - prev.fret)
+            # Small slides are easy, large ones are harder
+            if fret_dist <= 2:
+                cost += 0.5  # Easy slide
+            elif fret_dist <= 5:
+                cost += 2.0  # Medium slide
+            else:
+                cost += 5.0  # Hard jump
+                
+        # Voice leading penalty for melodic motion
+        melodic_interval = abs(prev.midi_note - curr.midi_note)
+        if melodic_interval > 0:
+            # Penalize large melodic leaps (smoothness preference)
+            if melodic_interval <= 2:  # Minor/major 2nd
+                cost += 0.0  # Smooth step motion
+            elif melodic_interval <= 4:  # Minor/major 3rd
+                cost += self.weights.w_voice_leading * 0.5
+            elif melodic_interval <= 7:  # 4th, 5th
+                cost += self.weights.w_voice_leading * 1.0
+            elif melodic_interval <= 12:  # Up to octave
+                cost += self.weights.w_voice_leading * 2.0
+            else:  # Large leaps
+                cost += self.weights.w_voice_leading * 3.0
+                
         return cost
+        
+    def _get_hand_position(self, fret: int) -> int:
+        """Get the hand position (base fret for index finger)"""
+        if fret <= 0:
+            return 0
+        elif fret <= 4:
+            return 1  # 1st position
+        elif fret <= 7:
+            return 5  # 5th position
+        elif fret <= 11:
+            return 8  # 8th position
+        else:
+            return fret - 3  # Index finger 3 frets back
+            
+    def recognize_caged_shape(self, choices: List[FretChoice]) -> Tuple[Optional[str], float]:
+        """
+        Check if choices match a CAGED chord shape pattern
+        Returns (shape_name, match_confidence) where confidence is 0.0-1.0
+        """
+        if len(choices) < 3:  # Need at least 3 notes for a chord
+            return None, 0.0
+            
+        best_match = None
+        best_score = 0.0
+        
+        for shape_name, shape_data in CAGED_SHAPES.items():
+            # Try different root positions on the neck
+            for root_fret in range(0, 13):  # Common positions
+                score = self._match_caged_pattern(choices, shape_data, root_fret)
+                if score > best_score:
+                    best_score = score
+                    best_match = shape_name
+                    
+        return best_match, best_score
+        
+    def _match_caged_pattern(self, choices: List[FretChoice], shape_data: dict, root_fret: int) -> float:
+        """Calculate how well choices match a CAGED pattern at a given root position"""
+        pattern = shape_data["pattern"]
+        core_notes = shape_data["core_notes"] 
+        
+        # Convert pattern to absolute fret positions
+        expected_positions = set()
+        for string, fret_offset in pattern:
+            abs_fret = root_fret + fret_offset
+            if 0 <= abs_fret <= 24:  # Valid fret range
+                expected_positions.add((string, abs_fret))
+                
+        # Convert choices to position set
+        actual_positions = {(c.string, c.fret) for c in choices}
+        
+        # Calculate match score
+        total_expected = len(expected_positions)
+        if total_expected == 0:
+            return 0.0
+            
+        # Count matches, with extra weight for core notes
+        matches = 0
+        core_matches = 0
+        
+        for pos in actual_positions:
+            if pos in expected_positions:
+                matches += 1
+                # Check if this is a core note
+                string, fret = pos
+                relative_fret = fret - root_fret
+                if (string, relative_fret) in core_notes:
+                    core_matches += 1
+                    
+        # Score based on percentage match, with bonus for core note matches
+        basic_score = matches / total_expected
+        core_bonus = core_matches / len(core_notes) if core_notes else 0
+        
+        return (basic_score * 0.7 + core_bonus * 0.3)
     
     def chord_cost(self, choices: List[FretChoice]) -> float:
-        """Calculate additional cost for chord shapes"""
+        """Calculate ergonomic cost for chord shapes with physical constraints"""
         if len(choices) <= 1:
             return 0.0
             
         cost = 0.0
         
-        # Calculate chord span (excluding open strings)
-        non_open_frets = [c.fret for c in choices if c.fret > 0]
-        if non_open_frets:
-            span = max(non_open_frets) - min(non_open_frets)
+        # Assign fingers and validate physical possibility
+        fingered_choices = self.assign_fingers_to_position(choices)
+        
+        if not self.validate_finger_stretch(fingered_choices):
+            return float('inf')  # Impossible finger stretch
             
-            # Span penalty
-            cost += self.weights.w_span * span
+        # Calculate physical span
+        position = Position(
+            base_fret=min((c.fret for c in fingered_choices if c.fret > 0), default=0),
+            choices=fingered_choices
+        )
+        
+        physical_span = position.get_span()
+        
+        # Hard constraint: maximum physical span
+        if physical_span > self.weights.max_physical_span:
+            return float('inf')
             
-            # Hard constraint: exceed span cap
-            if span > self.weights.span_cap:
-                return float('inf')
-                
+        # Cost increases exponentially with span (harder stretches)
+        if physical_span > 0:
+            cost += self.weights.w_stretch * (physical_span ** 1.5)
+            
+        # Extra penalty for spans in lower positions (wider frets)
+        if any(c.fret > 0 and c.fret <= 5 for c in fingered_choices):
+            low_fret_factor = 2.0  # Double the penalty in low positions
+            cost *= low_fret_factor
+            
+        # Check for string conflicts (multiple notes on same string)
+        strings_used = [c.string for c in choices]
+        if len(strings_used) != len(set(strings_used)):
+            return float('inf')  # Can't play multiple notes on same string
+            
+        # CAGED shape recognition bonus
+        shape_name, confidence = self.recognize_caged_shape(choices)
+        if shape_name and confidence > 0.5:  # Good match threshold
+            caged_bonus = self.weights.w_chord_shape * confidence
+            cost += caged_bonus  # w_chord_shape is negative for bonus
+            
         return cost
     
     def optimize_sequence(self, notes: List[Note]) -> List[FretChoice]:
@@ -384,3 +672,39 @@ class HumanizerService:
                     used_strings.add(best_pos.string)
                     
             return result
+
+
+# Example usage and testing
+if __name__ == "__main__":
+    # Example: Create a simple melodic passage
+    notes = [
+        Note(midi_note=64, time=0.0, duration=0.5),    # E4
+        Note(midi_note=67, time=0.5, duration=0.5),    # G4  
+        Note(midi_note=69, time=1.0, duration=0.5),    # A4
+        Note(midi_note=72, time=1.5, duration=0.5),    # C5
+    ]
+    
+    # Test with different tunings and difficulty levels
+    print("=== ERGONOMIC GUITAR TABLATURE OPTIMIZER ===\n")
+    
+    for tuning_name in ["standard", "half_step_down", "drop_d"]:
+        print(f"--- {tuning_name.upper().replace('_', ' ')} TUNING ---")
+        
+        for preset in ["easy", "balanced", "technical"]:
+            humanizer = HumanizerService(
+                tuning=tuning_name,
+                weights=HUMANIZER_PRESETS[preset]
+            )
+            
+            result = humanizer.optimize_sequence(notes)
+            
+            print(f"{preset.capitalize()} difficulty:")
+            for i, choice in enumerate(result):
+                if choice:
+                    note = notes[i]
+                    finger_info = f" (finger {choice.finger})" if choice.finger else " (open)"
+                    print(f"  Note {i+1}: String {choice.string}, Fret {choice.fret}{finger_info}")
+                else:
+                    print(f"  Note {i+1}: No valid position found")
+            print()
+        print()
