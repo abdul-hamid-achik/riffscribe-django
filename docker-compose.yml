@@ -1,14 +1,23 @@
 services:
+  # ============================================
+  # WEB SERVICE - Lightweight Django web server
+  # ============================================
   website:
     build:
       context: .
       target: development
-    command: python manage.py runserver 0.0.0.0:8000
+      cache_from:
+        - riffscribe-dev:latest
+    image: riffscribe-dev:latest
     restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
+      # Mount source code for live reload
       - .:/app
+      # Cache UV dependencies for faster rebuilds
+      - uv_cache_dev:/opt/uv-cache
+      # Use shared volumes for data
       - media_volume:/app/media
       - ./tmp:/app/tmp
     env_file:
@@ -24,26 +33,44 @@ services:
       - AWS_S3_ENDPOINT_URL=http://storage:9000
       - AWS_S3_USE_SSL=false
       - USE_S3=true
+      # Development-specific settings
+      - DJANGO_DEBUG=true
+      - DJANGO_DEVELOPMENT=true
     depends_on:
       - redis
       - db
       - storage
     networks:
       - riffscribe_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+  # ============================================
+  # WORKER SERVICE - Heavy ML processing
+  # ============================================
   workers:
     build:
       context: .
-      target: celery
+      target: worker
+      cache_from:
+        - riffscribe-worker:latest
+    image: riffscribe-worker:latest
     command: celery -A riffscribe worker -l info --concurrency=1 --max-memory-per-child=1000000
     restart: unless-stopped
     volumes:
       - .:/app
       - media_volume:/app/media
       - ./tmp:/app/tmp
+      # Separate cache for worker dependencies
+      - uv_cache_worker:/opt/uv-cache
     env_file:
       - .env
     environment:
+      - DATABASE_URL=postgresql://riffscribe:riffscribe_dev@db:5432/riffscribe
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -53,6 +80,10 @@ services:
       - AWS_S3_ENDPOINT_URL=http://storage:9000
       - AWS_S3_USE_SSL=false
       - USE_S3=true
+      # ML-specific settings
+      - USE_GPU=false
+      - DEMUCS_MODEL=htdemucs_ft
+      - ENABLE_MULTITRACK=true
     depends_on:
       - redis
       - db
@@ -65,18 +96,32 @@ services:
           memory: 4G
         reservations:
           memory: 1G
+    healthcheck:
+      test: ["CMD", "celery", "-A", "riffscribe", "inspect", "ping"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
+  # ============================================
+  # SCHEDULER SERVICE - Lightweight task scheduler
+  # ============================================
   scheduler:
     build:
       context: .
-      target: celery-beat
+      target: web
+      cache_from:
+        - riffscribe-web:latest
+    image: riffscribe-web:latest
     command: celery -A riffscribe beat -l info
     restart: unless-stopped
     volumes:
       - .:/app
+      - uv_cache_web:/opt/uv-cache
     env_file:
       - .env
     environment:
+      - DATABASE_URL=postgresql://riffscribe:riffscribe_dev@db:5432/riffscribe
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -110,14 +155,22 @@ services:
     networks:
       - riffscribe_network
 
+  # ============================================
+  # MONITOR SERVICE - Lightweight Flower monitoring
+  # ============================================
   monitor:
     build:
       context: .
-      target: development
-    command: sh -c "uv add flower && celery -A riffscribe flower --port=5555"
+      target: web
+      cache_from:
+        - riffscribe-web:latest
+    image: riffscribe-web:latest
+    command: sh -c "uv pip install flower && celery -A riffscribe flower --port=5555"
     restart: unless-stopped
     ports:
       - "5555:5555"
+    volumes:
+      - uv_cache_web:/opt/uv-cache
     env_file:
       - .env
     environment:
@@ -166,6 +219,10 @@ volumes:
   redis_data:
   postgres_data:
   storage_data:
+  # Separate caches for different container types
+  uv_cache_web:    # Lightweight web dependencies cache
+  uv_cache_worker: # Heavy ML dependencies cache
+  uv_cache_dev:    # Development environment cache
 
 networks:
   riffscribe_network:

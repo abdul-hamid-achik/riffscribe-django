@@ -1,25 +1,61 @@
+# Documentation
+*.md
+README*
+docs/
+*.txt
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
 env/
 venv/
-.venv/
 ENV/
 env.bak/
 venv.bak/
 
-# Django
-*.log
-*.pot
-*.pyc
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
+# Testing
+.tox/
+.nox/
+.coverage
+.pytest_cache/
+cover/
+.hypothesis/
+htmlcov/
+coverage.xml
+*.cover
+*.py,cover
+.cache
+nosetests.xml
+tests/__pycache__/
 
 # IDEs
 .vscode/
@@ -27,91 +63,70 @@ staticfiles/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# Git
-.git/
-.gitignore
-
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
-
-# Documentation
-*.md
-docs/
-LICENSE
-
-# Tests
-tests/
-pytest.ini
-.coverage
-htmlcov/
-
-# ML Models (download separately)
-ml_models/
-*.h5
-*.pkl
-*.pth
-*.onnx
-
-# Audio samples (for testing)
-samples/
-
-# Node modules (if any frontend build)
+# Node.js
 node_modules/
-*.node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
-# Build artifacts
-*.egg-info/
-dist/
-build/
-wheels/
-*.egg
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Cache directories
-.cache/
+# Django
+/media/
+/static/
+/staticfiles/
+/tmp/
+*.log
+
+# Development artifacts
 .pytest_cache/
 .mypy_cache/
-.ruff_cache/
-__pycache__/
+.dmypy.json
+dmypy.json
 
-# Environment files  
-.env.local
-.env.*.local
+# Docker
+Dockerfile*
+docker-compose*
 
-# OS files
-Thumbs.db
-.DS_Store
-Desktop.ini
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.swn
-*.swo
-*.swp
-*~
+# Large media files
+*.wav
+*.mp3
+*.mp4
+*.avi
+*.mov
+*.flv
+*.wmv
+*.flac
+*.aac
+*.m4a
+*.ogg
 
-# Logs
-*.log
-logs/
-*.log.*
+# Exports and uploads
+/audio/
+/exports/
+/tracks/
+/samples/
 
-# Coverage reports
-.coverage.*
-coverage.xml
-*.cover
+# Infrastructure
+infrastructure/
 
-# UV specific
-uv.lock
-.venv/
-
-# Requirements folder (replaced by pyproject.toml)
-requirements/
-
-# Scripts not needed in container
+# Scripts (keep only essential ones)
 scripts/
-*.sh
+
+# Lock files (UV will handle dependencies)
+poetry.lock
+Pipfile.lock
+requirements*.txt

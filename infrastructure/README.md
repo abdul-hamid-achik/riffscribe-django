@@ -20,7 +20,6 @@ RiffScribe's AWS infrastructure includes:
 ```
 infrastructure/
 ├── README.md              # This file
-├── Makefile               # Simplified deployment commands
 ├── shared/                # Shared modules and utilities
 │   ├── config.py          # Environment-specific configurations
 │   └── utils.py           # Utility functions
@@ -117,11 +116,8 @@ You can customize these files to match your requirements.
 # Navigate to infrastructure directory
 cd infrastructure
 
-# Using the deployment script
+# Deploy development environment
 python scripts/deploy.py deploy --environment dev
-
-# Or using make (recommended)
-make dev-deploy
 ```
 
 ### 2. Preview Changes
@@ -129,9 +125,6 @@ make dev-deploy
 ```bash
 # Preview what will be deployed
 python scripts/deploy.py preview --environment dev
-
-# Or using make
-make dev-preview
 ```
 
 ### 3. Deploy to Production
@@ -139,9 +132,6 @@ make dev-preview
 ```bash
 # Deploy production infrastructure
 python scripts/deploy.py deploy --environment prod
-
-# Or using make (includes safety confirmation)
-make prod-deploy
 ```
 
 ## Manual Deployment
@@ -414,7 +404,7 @@ To destroy infrastructure:
 # Using the deploy script
 python scripts/deploy.py destroy --environment dev
 
-# Or manually
+# Or manually with Pulumi
 cd infrastructure/aws
 pulumi destroy
 ```

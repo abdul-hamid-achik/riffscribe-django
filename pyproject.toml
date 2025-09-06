@@ -23,19 +23,12 @@ dependencies = [
     # Database
     "psycopg2-binary>=2.9",
     
-    # Celery and task queue
+    # Celery client (no worker dependencies)
     "celery>=5.3,<5.4",
-    "vine==5.0.0",
-    "kombu>=5.3,<5.4", 
-    "amqp>=5.2,<5.3",
     "redis>=5.0",
-    "flower>=2.0",
     
     # System monitoring
     "psutil>=5.9.0",
-    
-    # System utilities
-    "setuptools>=65.0",  # Required for pkg_resources (used by pretty_midi)
     
     # File handling
     "pillow>=10.0",
@@ -50,6 +43,22 @@ dependencies = [
     "django-simple-captcha>=0.6.0",
     "requests>=2.31",
     
+    # Basic API clients
+    "openai>=1.0",
+]
+
+[project.optional-dependencies]
+# Heavy ML and audio processing dependencies for workers only
+worker = [
+    # Celery worker dependencies
+    "vine==5.0.0",
+    "kombu>=5.3,<5.4", 
+    "amqp>=5.2,<5.3",
+    "flower>=2.0",
+    
+    # System utilities for ML
+    "setuptools>=65.0",  # Required for pkg_resources (used by pretty_midi)
+    
     # ML and Audio processing
     "numpy>=1.24,<2.0",
     "scipy>=1.11",
@@ -62,9 +71,6 @@ dependencies = [
     # PyTorch (latest versions with Python 3.13 support)
     "torch>=2.5.0",
     "torchaudio>=2.5.0",
-    
-    # AI/ML APIs
-    "openai>=1.0",
     
     # Music processing  
     "pretty-midi>=0.2",
@@ -79,7 +85,7 @@ dependencies = [
     # "basic-pitch>=0.3",  # Still requires older Python
 ]
 
-[project.optional-dependencies]
+# Development dependencies (lightweight)
 dev = [
     "pytest>=7.4",
     "pytest-django>=4.7", 
@@ -93,6 +99,7 @@ dev = [
     "ruff>=0.1",
     "ipython>=8.18",
 ]
+
 
 infrastructure = [
     # Pulumi core
