@@ -26,9 +26,9 @@ def auth_modal_signin(request):
         
         if user is not None:
             login(request, user)
-            # Return success response that triggers page refresh
+            # Return success response that triggers modal close and page reload
             response = HttpResponse()
-            response['HX-Redirect'] = request.GET.get('next', '/dashboard/')
+            response['HX-Trigger'] = 'authSuccess'
             return response
         else:
             # Return form with error
@@ -78,9 +78,9 @@ def auth_modal_signup(request):
                 )
                 # Log the user in
                 login(request, user)
-                # Return success response
+                # Return success response that triggers modal close and page reload
                 response = HttpResponse()
-                response['HX-Redirect'] = '/dashboard/'
+                response['HX-Trigger'] = 'authSuccess'
                 return response
             except Exception as e:
                 errors.append(f'Error creating account: {str(e)}')

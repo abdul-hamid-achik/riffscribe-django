@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 from .views import auth_modal
 
@@ -76,4 +76,7 @@ urlpatterns = [
     # Karma endpoints
     path('karma/<str:username>/', views.user_karma_display, name='user_karma_display'),
     path('karma/', views.user_karma_display, name='my_karma_display'),
+    
+    # Secure media access
+    path('media/', include('transcriber.urls_media')),
 ]

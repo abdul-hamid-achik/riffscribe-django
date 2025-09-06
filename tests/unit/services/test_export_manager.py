@@ -148,6 +148,53 @@ class TestExportManager:
             assert result is None
     
     @pytest.mark.unit
+    def test_generate_gp5_with_empty_measures(self):
+        """Test GP5 generation with empty tab data (no measures)."""
+        # Create a transcription with empty guitar_notes
+        empty_tab_data = {
+            'tempo': 120,
+            'time_signature': '4/4',
+            'tuning': [64, 59, 55, 50, 45, 40],
+            'measures': [],  # Empty measures
+            'techniques_used': {}
+        }
+        transcription = baker.make_recipe('transcriber.transcription_completed',
+                                         filename="empty_test.wav",
+                                         guitar_notes=empty_tab_data)
+        export_manager = ExportManager(transcription)
+        
+        with patch('transcriber.services.export_manager.gp') as mock_gp:
+            mock_song = MagicMock()
+            mock_track = MagicMock()
+            mock_measure = MagicMock()
+            mock_voice = MagicMock()  
+            mock_beat = MagicMock()
+            mock_duration = MagicMock()
+            
+            mock_gp.Song.return_value = mock_song
+            mock_gp.Track.return_value = mock_track
+            mock_gp.Measure.return_value = mock_measure
+            mock_gp.Voice.return_value = mock_voice
+            mock_gp.Beat.return_value = mock_beat
+            mock_gp.Duration.return_value = mock_duration
+            mock_gp.write = MagicMock()
+            
+            # Configure the track to have no measures initially
+            mock_track.measures = []
+            
+            # Call generate_gp5 with empty measures
+            result = export_manager.generate_gp5()
+            
+            # Should create a song and track despite empty measures
+            mock_gp.Song.assert_called_once()
+            mock_gp.Track.assert_called_once()
+            
+            # Should create at least one measure for empty transcription
+            assert mock_gp.Measure.called
+            assert mock_gp.Voice.called
+            assert mock_gp.Beat.called
+
+    @pytest.mark.unit
     def test_export_midi_with_notes(self, export_manager):
         """Test MIDI export with notes."""
         # Test that the method runs without error and creates MIDI data

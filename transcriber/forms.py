@@ -15,9 +15,10 @@ class CommentForm(forms.ModelForm):
         widgets = {
             'content': forms.Textarea(attrs={
                 'rows': 4,
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors resize-none',
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors resize-none bg-white text-gray-900',
                 'placeholder': 'Share your thoughts about this transcription...',
-                'maxlength': '2000'
+                'maxlength': '2000',
+                'style': 'background-color: white !important; color: #111827 !important;'
             })
         }
         labels = {
@@ -32,8 +33,9 @@ class AnonymousCommentForm(forms.ModelForm):
         label='Verification',
         help_text='Please complete the captcha to verify you are human',
         widget=forms.TextInput(attrs={
-            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors',
-            'placeholder': 'Enter the characters above'
+            'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors bg-white text-gray-900',
+            'placeholder': 'Enter the characters above',
+            'style': 'background-color: white !important; color: #111827 !important;'
         })
     )
     
@@ -42,15 +44,17 @@ class AnonymousCommentForm(forms.ModelForm):
         fields = ['anonymous_name', 'content']
         widgets = {
             'anonymous_name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors',
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors bg-white text-gray-900',
                 'placeholder': 'Your name (optional)',
-                'maxlength': '100'
+                'maxlength': '100',
+                'style': 'background-color: white !important; color: #111827 !important;'
             }),
             'content': forms.Textarea(attrs={
                 'rows': 4,
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors resize-none',
+                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-musical-gold transition-colors resize-none bg-white text-gray-900',
                 'placeholder': 'Share your thoughts about this transcription...',
-                'maxlength': '2000'
+                'maxlength': '2000',
+                'style': 'background-color: white !important; color: #111827 !important;'
             })
         }
         labels = {

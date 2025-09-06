@@ -260,26 +260,22 @@ class ExportManager:
             logger.warning("GP5 export failed: No tab data available")
             return None
             
-        # Check if measures exist and have notes
-        measures_data = tab_data.get('measures', [])
-        if not measures_data:
-            logger.warning("GP5 export failed: No measures found in tab data")
-            return None
-            
-        # Count total notes across all measures
-        total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
-        if total_notes == 0:
-            logger.warning("GP5 export failed: No notes found in any measures")
-            return None
-            
-        logger.info(f"GP5 export: Processing {len(measures_data)} measures with {total_notes} total notes")
-            
         if not gp:
             logger.warning("guitarpro library not available")
             return None
         
+        # Get measures or create a default empty one
+        measures_data = tab_data.get('measures', [])
+        if not measures_data:
+            logger.info("GP5 export: No measures found, creating empty measure")
+            measures_data = [{'notes': [], 'start_time': 0.0, 'number': 1}]
+        
+        # Count total notes across all measures
+        total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
+        logger.info(f"GP5 export: Processing {len(measures_data)} measures with {total_notes} total notes")
+        
         try:
-            # Try simple approach first - create basic GP5 structure
+            # Create basic GP5 structure
             song = gp.Song()
             song.title = self.transcription.filename or "Untitled"
             song.artist = "RiffScribe"
@@ -301,16 +297,9 @@ class ExportManager:
             # Add track to song
             song.tracks.append(track)
             
-            # Get measures or create a default one
-            measures_data = tab_data.get('measures', [])
-            if not measures_data:
-                # Create minimal structure with one empty measure
-                measures_data = [{'notes': []}]
-            
-            # For simplicity, create a minimal structure
-            # PyGuitarPro often auto-creates basic structure when track is created
+            # Create measures structure
             if hasattr(track, 'measures') and not track.measures:
-                # Create at least one measure with basic structure
+                # Create measures based on available data
                 for i in range(max(1, len(measures_data))):
                     measure = gp.Measure()
                     
@@ -329,7 +318,7 @@ class ExportManager:
                         beat.duration = gp.Duration()
                     
                     # If we have note data for this measure, add it
-                    if i < len(measures_data):
+                    if i < len(measures_data) and measures_data[i].get('notes'):
                         measure_notes = measures_data[i].get('notes', [])
                         for note_data in measure_notes[:8]:  # Limit to 8 notes per measure for safety
                             try:
@@ -341,6 +330,10 @@ class ExportManager:
                             except Exception as note_error:
                                 logger.warning(f"Failed to add note: {note_error}")
                                 continue
+                    else:
+                        # If no notes in this measure, add a rest (empty beat)
+                        # The beat is already created, so we just don't add any notes
+                        logger.debug(f"Measure {i+1} has no notes, creating rest")
                     
                     voice.beats.append(beat)
                     measure.voices.append(voice)

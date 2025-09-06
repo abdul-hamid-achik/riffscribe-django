@@ -15,24 +15,18 @@ dependencies = [
     "whitenoise>=6.6",
     "gunicorn>=21.2",
     "python-decouple>=3.8",
-    
     # Storage
     "django-storages[boto3]>=1.14",
     "boto3>=1.26",
-    
     # Database
     "psycopg2-binary>=2.9",
-    
     # Celery client (no worker dependencies)
     "celery>=5.3,<5.4",
     "redis>=5.0",
-    
     # System monitoring
     "psutil>=5.9.0",
-    
     # File handling
     "pillow>=10.0",
-    
     # Authentication and forms
     "django-allauth>=0.57.0",
     "PyJWT>=2.8.0",
@@ -42,9 +36,11 @@ dependencies = [
     "django-tailwind[reload]>=3.8",
     "django-simple-captcha>=0.6.0",
     "requests>=2.31",
-    
     # Basic API clients
     "openai>=1.0",
+    "music21>=9.7.1",
+    "pretty-midi>=0.2.10",
+    "setuptools>=80.9.0",
 ]
 
 [project.optional-dependencies]

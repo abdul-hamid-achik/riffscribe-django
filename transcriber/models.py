@@ -209,6 +209,16 @@ class Transcription(models.Model):
     class Meta:
         ordering = ['-created_at']
     
+    def get_secure_audio_url(self):
+        """Get secure URL for audio file access"""
+        from transcriber.views.media import get_secure_audio_url
+        return get_secure_audio_url(self)
+    
+    @property
+    def audio_url(self):
+        """Property for easy template access to secure audio URL"""
+        return self.get_secure_audio_url()
+    
     def save(self, *args, **kwargs):
         """Override save to ensure JSON fields don't contain numpy arrays"""
         from .utils.json_utils import ensure_json_serializable

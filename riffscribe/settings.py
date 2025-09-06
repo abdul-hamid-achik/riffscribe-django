@@ -213,9 +213,17 @@ if USE_S3:
     AWS_LOCATION = 'media'
     AWS_QUERYSTRING_AUTH = False
     
-    # Tell Django to use S3 for media files
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    MEDIA_URL = f'{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/' if AWS_S3_ENDPOINT_URL else f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
+    # Tell Django to use S3 for media files with signed URL support
+    DEFAULT_FILE_STORAGE = 'transcriber.storage.SecureMediaStorage'
+    
+    # For MEDIA_URL, use a public-facing URL that browser can access
+    # In development, replace Docker service name 'storage' with 'localhost'
+    MEDIA_URL_ENDPOINT = config('MEDIA_URL_ENDPOINT', default=AWS_S3_ENDPOINT_URL)
+    if MEDIA_URL_ENDPOINT and DEBUG and 'storage:' in MEDIA_URL_ENDPOINT:
+        # Replace Docker service name with localhost for browser access
+        MEDIA_URL_ENDPOINT = MEDIA_URL_ENDPOINT.replace('storage:', 'localhost:')
+    
+    MEDIA_URL = f'{MEDIA_URL_ENDPOINT}/{AWS_STORAGE_BUCKET_NAME}/' if MEDIA_URL_ENDPOINT else f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
 else:
     # Local file storage
     MEDIA_URL = '/media/'
