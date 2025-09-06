@@ -245,11 +245,14 @@ class Command(BaseCommand):
                 transcriptions.append(transcription)
                 
         # Create some additional random transcriptions (pending processing)
-        additional_transcriptions = baker.make_recipe(
-            'transcriber.transcription_with_user',
-            _quantity=6,
-            user=baker.iterator(random.sample(users, 6))
-        )
+        selected_users = random.sample(users, 6)
+        additional_transcriptions = []
+        for user in selected_users:
+            transcription = baker.make_recipe(
+                'transcriber.transcription_with_user',
+                user=user
+            )
+            additional_transcriptions.append(transcription)
         transcriptions.extend(additional_transcriptions)
         
         self.stdout.write(f'  ✓ Created {len(transcriptions)} transcriptions')
