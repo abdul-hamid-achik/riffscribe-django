@@ -291,7 +291,7 @@ class CommentWorkflowIntegrationTest(TestCase):
         self.client.post(add_comment_url, {'content': 'Authenticated comment'})
         
         # Add anonymous comment (simulated)
-        baker.make('transcriber.Comment', anonymous',
+        baker.make('transcriber.Comment',
                          transcription=self.transcription,
                          anonymous_name='Anonymous Fan',
                          content='Anonymous comment')

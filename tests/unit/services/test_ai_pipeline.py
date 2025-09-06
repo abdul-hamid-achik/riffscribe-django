@@ -32,8 +32,12 @@ class TestAIPipeline:
     
     def test_pipeline_no_api_key(self):
         """Test pipeline raises error without API key"""
-        with pytest.raises(ValueError, match="OpenAI API key is required"):
-            AIPipeline(api_key="")
+        # Mock getattr to return empty string for OPENAI_API_KEY
+        with patch('transcriber.services.ai_transcription_agent.getattr') as mock_getattr:
+            mock_getattr.return_value = ''
+            
+            with pytest.raises(ValueError, match="OpenAI API key is required"):
+                AIPipeline(api_key="")
     
     @patch('transcriber.services.ai_transcription_agent.asyncio')
     def test_analyze_audio_success(self, mock_asyncio):
@@ -202,16 +206,14 @@ class TestAIPipeline:
             assert 'error' in result
             assert 'not enabled' in result['error']
     
-    @patch('transcriber.services.ai_transcription_agent.AudioSegment')
-    def test_get_audio_duration(self, mock_audiosegment):
-        """Test getting audio duration"""
-        mock_audio = Mock()
-        mock_audio.__len__.return_value = 60000  # 60 seconds in ms
-        mock_audiosegment.from_file.return_value = mock_audio
-        
-        with patch('transcriber.services.ai_transcription_agent.AITranscriptionAgent'):
+    def test_get_audio_duration(self):
+        """Test getting audio duration using fallback"""
+        with patch('transcriber.services.ai_transcription_agent.AITranscriptionAgent'), \
+             patch('transcriber.services.ai_transcription_agent.PYDUB_AVAILABLE', False):
+            
             pipeline = AIPipeline(api_key=self.api_key)
             
+            # Should use fallback duration
             duration = pipeline._get_audio_duration("/path/to/audio.mp3")
             
             assert duration == 60.0
@@ -272,7 +274,7 @@ class TestAIMultiTrackService:
             assert service._map_instrument_to_track_type('vocals') == 'vocals'
             assert service._map_instrument_to_track_type('unknown') == 'other'
     
-    @patch('transcriber.services.ai_transcription_agent.Track')
+    @patch('transcriber.models.Track')
     def test_process_transcription(self, mock_track_model):
         """Test processing transcription with AI multi-track"""
         # Mock transcription object

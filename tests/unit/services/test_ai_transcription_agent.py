@@ -25,10 +25,15 @@ class TestAITranscriptionAgent:
         
     def test_agent_initialization_without_api_key(self):
         """Test agent raises error without API key"""
-        with pytest.raises(ValueError, match="OpenAI API key is required"):
-            AITranscriptionAgent(api_key="")
+        # Mock getattr to return empty string for OPENAI_API_KEY
+        with patch('transcriber.services.ai_transcription_agent.getattr') as mock_getattr:
+            mock_getattr.return_value = ''
+            
+            with pytest.raises(ValueError, match="OpenAI API key is required"):
+                AITranscriptionAgent(api_key="")
     
     @patch('transcriber.services.ai_transcription_agent.os.path.getsize')
+    @pytest.mark.asyncio
     async def test_prepare_audio_small_file(self, mock_getsize):
         """Test audio preparation for small files"""
         mock_getsize.return_value = 1024 * 1024  # 1MB
@@ -40,6 +45,7 @@ class TestAITranscriptionAgent:
         assert result == audio_path  # Should return unchanged
         
     @patch('transcriber.services.ai_transcription_agent.os.path.getsize')
+    @pytest.mark.asyncio
     async def test_prepare_audio_large_file(self, mock_getsize):
         """Test audio preparation for large files"""
         mock_getsize.return_value = 30 * 1024 * 1024  # 30MB
@@ -56,6 +62,7 @@ class TestAITranscriptionAgent:
     
     @patch('builtins.open', create=True)
     @patch('transcriber.services.ai_transcription_agent.OpenAI')
+    @pytest.mark.asyncio
     async def test_whisper_transcribe(self, mock_openai, mock_open):
         """Test Whisper transcription"""
         # Mock OpenAI response
@@ -162,8 +169,12 @@ class TestAIDrumAgent:
         
     def test_drum_agent_no_api_key(self):
         """Test drum agent raises error without API key"""
-        with pytest.raises(ValueError, match="OpenAI API key is required"):
-            AIDrumAgent(api_key="")
+        # Mock getattr to return empty string for OPENAI_API_KEY
+        with patch('transcriber.services.ai_transcription_agent.getattr') as mock_getattr:
+            mock_getattr.return_value = ''
+            
+            with pytest.raises(ValueError, match="OpenAI API key is required"):
+                AIDrumAgent(api_key="")
     
     def test_generate_drum_tab(self):
         """Test drum tab generation"""
