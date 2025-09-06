@@ -1,0 +1,499 @@
+<!-- Mobile-Optimized Audio Controls for Touch Devices -->
+<div class="block md:hidden" x-data="mobileAudioControls()" x-init="initializeMobileControls()"
+    @touchstart="handleTouchStart($event)" @touchmove="handleTouchMove($event)" @touchend="handleTouchEnd($event)">
+
+    <!-- Mobile Player Header -->
+    <div class="bg-gradient-to-r from-musical-gold to-musical-treble text-white p-3 rounded-t-xl">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path
+                            d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-sm">{{ transcription.filename|truncatechars:25 }}</h4>
+                    <div class="text-xs opacity-90">
+                        <span>{{ transcription.duration_formatted }}</span>
+                        <span class="mx-1">•</span>
+                        <span>{{ transcription.estimated_key|default:"Unknown" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Toggle -->
+            <button @click="showMobileMenu = !showMobileMenu"
+                class="p-2 hover:bg-white/20 rounded-lg transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile Waveform (Tall for touch interaction) -->
+    <div class="relative bg-gray-50 p-2">
+        <div id="mobile-waveform-{{ transcription.pk }}" class="w-full h-32"></div>
+
+        <!-- Touch Overlay for Gestures -->
+        <div class="absolute inset-0 bg-transparent" @touchstart="startGesture($event)"
+            @touchmove="handleGesture($event)" @touchend="endGesture($event)">
+        </div>
+
+        <!-- Gesture Feedback -->
+        <div x-show="gestureActive" class="absolute inset-0 bg-black/20 flex items-center justify-center">
+            <div class="bg-white/90 backdrop-blur rounded-lg p-3 text-center">
+                <div x-show="gestureType === 'seek'" class="space-y-1">
+                    <svg class="w-6 h-6 mx-auto text-musical-gold" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-xs font-medium" x-text="formatTime(gestureValue)">0:00</p>
+                </div>
+                <div x-show="gestureType === 'speed'" class="space-y-1">
+                    <svg class="w-6 h-6 mx-auto text-musical-gold" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <p class="text-xs font-medium"><span x-text="gestureValue">1.0</span>x</p>
+                </div>
+                <div x-show="gestureType === 'volume'" class="space-y-1">
+                    <svg class="w-6 h-6 mx-auto text-musical-gold" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                            d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217z" />
+                        <path
+                            d="M12.293 7.293a1 1 0 011.414 0L15 8.586l1.293-1.293a1 1 0 111.414 1.414L16.414 10l1.293 1.293a1 1 0 01-1.414 1.414L15 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L13.586 10l-1.293-1.293a1 1 0 010-1.414z" />
+                    </svg>
+                    <p class="text-xs font-medium"><span x-text="gestureValue">80</span>%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Large Touch Controls -->
+    <div class="bg-white p-4 border-t border-gray-100">
+
+        <!-- Time Display -->
+        <div class="text-center mb-4">
+            <div class="text-xl font-mono font-bold text-nyt-black">
+                <span x-text="formatTime(currentTime)">0:00</span>
+                <span class="text-gray-400 mx-1">/</span>
+                <span x-text="formatTime(duration)" class="text-gray-600">{{
+                    transcription.duration_formatted|default:"3:04" }}</span>
+            </div>
+        </div>
+
+        <!-- Main Control Row -->
+        <div class="flex justify-center items-center space-x-6 mb-6">
+
+            <!-- Previous/Skip Back -->
+            <button @click="skipBack()"
+                class="w-14 h-14 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full flex items-center justify-center transition-colors shadow-md">
+                <svg class="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+                </svg>
+            </button>
+
+            <!-- Main Play/Pause (Extra Large) -->
+            <button @click="togglePlay()" :disabled="!playerReady"
+                class="w-20 h-20 bg-musical-gold hover:bg-musical-treble active:bg-musical-treble disabled:opacity-50 rounded-full flex items-center justify-center transition-all shadow-lg">
+                <svg x-show="!isPlaying" class="w-10 h-10 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
+                </svg>
+                <svg x-show="isPlaying" class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M5.5 3.5A1.5 1.5 0 017 2h6a1.5 1.5 0 011.5 1.5v13A1.5 1.5 0 0113 18H7a1.5 1.5 0 01-1.5-1.5v-13z" />
+                </svg>
+            </button>
+
+            <!-- Next/Skip Forward -->
+            <button @click="skipForward()"
+                class="w-14 h-14 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-full flex items-center justify-center transition-colors shadow-md">
+                <svg class="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                        d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798l-5.445-3.63z" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Secondary Controls Row -->
+        <div class="flex justify-center space-x-4 mb-4">
+
+            <!-- Loop Toggle -->
+            <button @click="toggleLoop()" :class="isLooping ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700'"
+                class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Loop
+            </button>
+
+            <!-- Speed Control -->
+            <button @click="showSpeedControl = !showSpeedControl"
+                :class="playbackRate !== 1 ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700'"
+                class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                <span x-text="playbackRate">1</span>x Speed
+            </button>
+
+            <!-- Practice Mode -->
+            <button @click="togglePracticeMode()"
+                :class="practiceMode ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700'"
+                class="px-4 py-2 rounded-full text-sm font-medium transition-colors">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Practice
+            </button>
+        </div>
+
+        <!-- Gesture Help -->
+        <div class="text-center">
+            <button @click="showGestureHelp = !showGestureHelp" class="text-xs text-gray-500 hover:text-gray-700">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Touch Gestures
+            </button>
+        </div>
+    </div>
+
+    <!-- Speed Control Panel -->
+    <div x-show="showSpeedControl" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-2" class="bg-white border-t border-gray-100 p-4">
+
+        <h4 class="font-medium text-gray-900 mb-3 text-center">Practice Speed</h4>
+
+        <!-- Speed Buttons -->
+        <div class="grid grid-cols-4 gap-2 mb-3">
+            <button @click="setSpeed(0.5)"
+                :class="playbackRate === 0.5 ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700'"
+                class="py-3 px-2 rounded-lg text-sm font-medium transition-colors">
+                0.5x
+            </button>
+            <button @click="setSpeed(0.75)"
+                :class="playbackRate === 0.75 ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700'"
+                class="py-3 px-2 rounded-lg text-sm font-medium transition-colors">
+                0.75x
+            </button>
+            <button @click="setSpeed(1)"
+                :class="playbackRate === 1 ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700'"
+                class="py-3 px-2 rounded-lg text-sm font-medium transition-colors">
+                1x
+            </button>
+            <button @click="setSpeed(1.25)"
+                :class="playbackRate === 1.25 ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700'"
+                class="py-3 px-2 rounded-lg text-sm font-medium transition-colors">
+                1.25x
+            </button>
+        </div>
+
+        <!-- Fine Control -->
+        <div class="flex justify-center space-x-2">
+            <button @click="changeSpeed(-0.1)"
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                -0.1
+            </button>
+            <button @click="changeSpeed(0.1)"
+                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200 transition-colors">
+                +0.1
+            </button>
+        </div>
+    </div>
+
+    <!-- Gesture Help Panel -->
+    <div x-show="showGestureHelp" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 transform translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-2" class="bg-blue-50 border-t border-blue-200 p-4">
+
+        <h4 class="font-medium text-blue-900 mb-3 text-center">Touch Gestures</h4>
+
+        <div class="space-y-3 text-sm">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-medium text-blue-900">Tap to Seek</p>
+                    <p class="text-blue-700">Tap anywhere on waveform to jump to that position</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-medium text-blue-900">Swipe Up/Down</p>
+                    <p class="text-blue-700">Change playback speed (practice mode)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 12h14M5 12l7-7m-7 7l7 7" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="font-medium text-blue-900">Long Press</p>
+                    <p class="text-blue-700">Set loop points for practice sections</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function mobileAudioControls() {
+        return {
+            // UI state
+            showMobileMenu: false,
+            showSpeedControl: false,
+            showGestureHelp: false,
+
+            // Gesture handling
+            gestureActive: false,
+            gestureType: null,
+            gestureValue: null,
+            touchStartX: 0,
+            touchStartY: 0,
+            longPressTimer: null,
+
+            // Player state (inherited from parent player)
+            playerReady: false,
+            isPlaying: false,
+            currentTime: 0,
+            duration: 0,
+            playbackRate: 1,
+            isLooping: false,
+            practiceMode: false,
+
+            initializeMobileControls() {
+                // Mobile-specific initialization
+                this.setupTouchGestures();
+            },
+
+            setupTouchGestures() {
+                // Enable touch gesture recognition
+                document.addEventListener('touchmove', (e) => {
+                    // Prevent default scrolling when interacting with player
+                    if (e.target.closest('.mobile-audio-controls')) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+            },
+
+            // Touch gesture handling
+            startGesture(event) {
+                const touch = event.touches[0];
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+
+                // Long press detection
+                this.longPressTimer = setTimeout(() => {
+                    this.handleLongPress();
+                }, 500);
+            },
+
+            handleGesture(event) {
+                if (!event.touches[0]) return;
+
+                const touch = event.touches[0];
+                const deltaX = touch.clientX - this.touchStartX;
+                const deltaY = touch.clientY - this.touchStartY;
+
+                // Clear long press if finger moves too much
+                if (Math.abs(deltaX) > 20 || Math.abs(deltaY) > 20) {
+                    if (this.longPressTimer) {
+                        clearTimeout(this.longPressTimer);
+                        this.longPressTimer = null;
+                    }
+                }
+
+                // Vertical swipe for speed control (practice mode only)
+                if (this.practiceMode && Math.abs(deltaY) > 30 && Math.abs(deltaX) < 50) {
+                    this.gestureActive = true;
+                    this.gestureType = 'speed';
+
+                    // Map Y movement to speed change
+                    const speedDelta = -deltaY / 100; // Negative because Y is inverted
+                    const newSpeed = Math.max(0.25, Math.min(2, 1 + speedDelta));
+                    this.gestureValue = Math.round(newSpeed * 10) / 10;
+                }
+
+                // Horizontal swipe for seeking
+                else if (Math.abs(deltaX) > 20 && Math.abs(deltaY) < 50) {
+                    this.gestureActive = true;
+                    this.gestureType = 'seek';
+
+                    // Map X movement to time change
+                    const timeDelta = (deltaX / window.innerWidth) * this.duration;
+                    const newTime = Math.max(0, Math.min(this.duration, this.currentTime + timeDelta));
+                    this.gestureValue = newTime;
+                }
+            },
+
+            endGesture(event) {
+                // Clear long press timer
+                if (this.longPressTimer) {
+                    clearTimeout(this.longPressTimer);
+                    this.longPressTimer = null;
+                }
+
+                // Apply gesture changes
+                if (this.gestureActive) {
+                    if (this.gestureType === 'seek' && this.gestureValue !== null) {
+                        this.seekTo(this.gestureValue);
+                    } else if (this.gestureType === 'speed' && this.gestureValue !== null) {
+                        this.setSpeed(this.gestureValue);
+                    }
+                }
+
+                // Reset gesture state
+                setTimeout(() => {
+                    this.gestureActive = false;
+                    this.gestureType = null;
+                    this.gestureValue = null;
+                }, 200);
+            },
+
+            handleLongPress() {
+                // Set loop point on long press
+                if (this.practiceMode) {
+                    // Toggle between setting A and B points
+                    if (this.loopStart === null) {
+                        this.setLoopStart();
+                    } else if (this.loopEnd === null) {
+                        this.setLoopEnd();
+                    } else {
+                        this.clearLoop();
+                    }
+
+                    // Haptic feedback if available
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }
+            },
+
+            // Player controls (delegate to main player)
+            togglePlay() {
+                // Find and call parent player method
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.togglePlay();
+                }
+            },
+
+            skipBack() {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.skipBack();
+                }
+            },
+
+            skipForward() {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.skipForward();
+                }
+            },
+
+            setSpeed(speed) {
+                this.playbackRate = speed;
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.playbackRate = speed;
+                    parentPlayer.__x.$data.setPlaybackRate();
+                }
+            },
+
+            changeSpeed(delta) {
+                const newSpeed = Math.max(0.25, Math.min(2, this.playbackRate + delta));
+                this.setSpeed(Math.round(newSpeed * 10) / 10);
+            },
+
+            seekTo(time) {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x && parentPlayer.__x.$data.wavesurfer) {
+                    parentPlayer.__x.$data.wavesurfer.seekTo(time / parentPlayer.__x.$data.duration);
+                }
+            },
+
+            toggleLoop() {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.toggleLoop();
+                    this.isLooping = parentPlayer.__x.$data.isLooping;
+                }
+            },
+
+            togglePracticeMode() {
+                this.practiceMode = !this.practiceMode;
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x) {
+                    parentPlayer.__x.$data.practiceMode = this.practiceMode;
+                    parentPlayer.__x.$data.togglePracticeMode();
+                }
+            },
+
+            formatTime(seconds) {
+                if (!seconds || seconds === Infinity || isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+    }
+</script>
+
+<!-- Mobile-specific styles -->
+<style>
+    /* Touch targets should be at least 44px */
+    .mobile-audio-controls button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    /* Prevent text selection during gestures */
+    .mobile-audio-controls {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+
+    /* Smooth active states for touch */
+    .mobile-audio-controls button:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+
+    /* Hide scrollbars during gesture interaction */
+    .mobile-audio-controls:active {
+        overflow: hidden;
+    }
+</style>

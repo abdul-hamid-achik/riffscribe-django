@@ -1,0 +1,493 @@
+<!-- Practice Mode Panel for Enhanced Music Learning -->
+<div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mt-6"
+    x-data="practiceModePanel()" x-init="initializePracticeMode()" x-show="practiceMode">
+
+    <!-- Practice Mode Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="font-headline text-xl font-bold text-blue-900">Practice Mode</h3>
+                <p class="text-sm text-blue-700">Enhanced tools for focused practice sessions</p>
+            </div>
+        </div>
+
+        <!-- Practice Session Timer -->
+        <div class="text-center">
+            <div class="text-lg font-mono font-bold text-blue-900" x-text="formatPracticeTime(practiceTime)">
+                00:00
+            </div>
+            <div class="text-xs text-blue-600">Session Time</div>
+        </div>
+    </div>
+
+    <!-- Practice Tools Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Loop Section Control -->
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+            <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Loop Section
+            </h4>
+
+            <!-- Loop Points Display -->
+            <div class="space-y-2 mb-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Start Point (A):</span>
+                    <span x-text="loopStart !== null ? formatTime(loopStart) : 'Not Set'"
+                        :class="loopStart !== null ? 'text-green-600 font-medium' : 'text-gray-400'"></span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">End Point (B):</span>
+                    <span x-text="loopEnd !== null ? formatTime(loopEnd) : 'Not Set'"
+                        :class="loopEnd !== null ? 'text-red-600 font-medium' : 'text-gray-400'"></span>
+                </div>
+                <div x-show="loopStart !== null && loopEnd !== null" class="flex justify-between text-sm">
+                    <span class="text-gray-600">Loop Duration:</span>
+                    <span class="text-blue-600 font-medium" x-text="formatTime(loopEnd - loopStart)"></span>
+                </div>
+            </div>
+
+            <!-- Loop Control Buttons -->
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <button @click="setLoopStart()"
+                    :class="loopStart !== null ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2 rounded text-sm font-medium transition-colors">
+                    Set A Point
+                </button>
+                <button @click="setLoopEnd()"
+                    :class="loopEnd !== null ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    class="px-3 py-2 rounded text-sm font-medium transition-colors">
+                    Set B Point
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button @click="toggleLoop()"
+                    :class="isLooping ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                    :disabled="loopStart === null || loopEnd === null"
+                    class="px-3 py-2 rounded text-sm font-medium transition-colors disabled:opacity-50">
+                    <span x-text="isLooping ? 'Stop Loop' : 'Start Loop'"></span>
+                </button>
+                <button @click="clearLoop()"
+                    class="px-3 py-2 bg-gray-50 text-gray-600 rounded text-sm hover:bg-gray-100 transition-colors">
+                    Clear Loop
+                </button>
+            </div>
+        </div>
+
+        <!-- Speed & Metronome Control -->
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+            <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                <svg class="w-5 h-5 text-musical-gold mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Speed & Timing
+            </h4>
+
+            <!-- Current Speed Display -->
+            <div class="text-center mb-3">
+                <div class="text-2xl font-mono font-bold text-musical-gold">
+                    <span x-text="playbackRate">1.0</span>x
+                </div>
+                <div class="text-xs text-gray-600">Current Speed</div>
+            </div>
+
+            <!-- Speed Preset Buttons -->
+            <div class="grid grid-cols-4 gap-1 mb-3">
+                <template x-for="speed in [0.5, 0.75, 1.0, 1.25]" :key="speed">
+                    <button @click="setPlaybackRate(speed)"
+                        :class="playbackRate === speed ? 'bg-musical-gold text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                        class="py-2 px-1 rounded text-xs font-medium transition-colors" x-text="speed + 'x'"></button>
+                </template>
+            </div>
+
+            <!-- Speed Adjustment -->
+            <div class="flex justify-center space-x-2 mb-3">
+                <button @click="adjustSpeed(-0.1)"
+                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors">
+                    -0.1
+                </button>
+                <button @click="resetSpeed()"
+                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors">
+                    Reset
+                </button>
+                <button @click="adjustSpeed(0.1)"
+                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200 transition-colors">
+                    +0.1
+                </button>
+            </div>
+
+            <!-- Metronome Toggle -->
+            <button @click="toggleMetronome()"
+                :class="metronomeActive ? 'bg-musical-treble text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                class="w-full px-3 py-2 rounded font-medium transition-colors flex items-center justify-center">
+                <svg class="w-4 h-4 mr-2" :class="metronomeActive ? 'animate-bounce' : ''" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span x-text="metronomeActive ? 'Stop Metronome' : 'Start Metronome'"></span>
+            </button>
+        </div>
+
+        <!-- Practice Analytics -->
+        <div class="bg-white rounded-lg p-4 shadow-sm">
+            <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+                <svg class="w-5 h-5 text-purple-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Session Stats
+            </h4>
+
+            <div class="space-y-3">
+                <!-- Practice Time -->
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Total Time:</span>
+                    <span class="font-medium text-gray-900" x-text="formatPracticeTime(practiceTime)">00:00</span>
+                </div>
+
+                <!-- Loop Count -->
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Loop Plays:</span>
+                    <span class="font-medium text-gray-900" x-text="loopCount">0</span>
+                </div>
+
+                <!-- Average Speed -->
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">Avg Speed:</span>
+                    <span class="font-medium text-gray-900" x-text="averageSpeed.toFixed(2) + 'x'">1.00x</span>
+                </div>
+
+                <!-- Progress Indicator -->
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Practice Goal</span>
+                        <span x-text="Math.round((practiceTime / practiceGoal) * 100) + '%'">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                            :style="`width: ${Math.min(100, (practiceTime / practiceGoal) * 100)}%`"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1 text-center">
+                        <span x-text="Math.max(0, Math.ceil((practiceGoal - practiceTime) / 60))"></span> minutes to
+                        goal
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice Notes Section -->
+    <div class="mt-6 bg-white rounded-lg p-4 shadow-sm">
+        <h4 class="font-semibold text-gray-900 mb-3 flex items-center">
+            <svg class="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Practice Notes
+        </h4>
+
+        <div class="space-y-3">
+            <!-- Quick Note Input -->
+            <div class="flex space-x-2">
+                <input type="text" x-model="newNote" @keyup.enter="addPracticeNote()"
+                    placeholder="Add a practice note..."
+                    class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button @click="addPracticeNote()" :disabled="!newNote.trim()"
+                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    Add
+                </button>
+            </div>
+
+            <!-- Notes List -->
+            <div x-show="practiceNotes.length > 0" class="space-y-2 max-h-32 overflow-y-auto">
+                <template x-for="(note, index) in practiceNotes" :key="index">
+                    <div class="flex items-start justify-between p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <div class="flex-1">
+                            <p class="text-sm text-gray-800" x-text="note.text"></p>
+                            <p class="text-xs text-gray-500" x-text="'at ' + formatTime(note.timestamp)"></p>
+                        </div>
+                        <button @click="removePracticeNote(index)"
+                            class="ml-2 text-gray-400 hover:text-red-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="practiceNotes.length === 0" class="text-center text-gray-500 text-sm py-4">
+                No practice notes yet. Add notes to track your progress!
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice Session Controls -->
+    <div class="mt-6 flex justify-center space-x-4">
+        <button @click="savePracticeSession()"
+            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Save Session
+        </button>
+
+        <button @click="resetPracticeSession()"
+            class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Reset Session
+        </button>
+    </div>
+</div>
+
+<script>
+    function practiceModePanel() {
+        return {
+            // Practice session state
+            practiceTime: 0,
+            practiceGoal: 1800, // 30 minutes in seconds
+            sessionStartTime: null,
+            practiceTimer: null,
+
+            // Practice metrics
+            loopCount: 0,
+            speedChanges: [],
+            averageSpeed: 1.0,
+
+            // Practice notes
+            practiceNotes: [],
+            newNote: '',
+
+            // Player state (synced with parent)
+            practiceMode: false,
+            isPlaying: false,
+            currentTime: 0,
+            playbackRate: 1.0,
+            loopStart: null,
+            loopEnd: null,
+            isLooping: false,
+            metronomeActive: false,
+
+            initializePracticeMode() {
+                // Load saved practice session if exists
+                this.loadPracticeSession();
+
+                // Start practice timer
+                this.sessionStartTime = Date.now();
+                this.practiceTimer = setInterval(() => {
+                    if (this.practiceMode && this.isPlaying) {
+                        this.practiceTime++;
+                    }
+                }, 1000);
+
+                // Track speed changes for average calculation
+                this.$watch('playbackRate', (newSpeed) => {
+                    this.speedChanges.push({
+                        speed: newSpeed,
+                        timestamp: Date.now()
+                    });
+                    this.calculateAverageSpeed();
+                });
+            },
+
+            // Loop controls
+            setLoopStart() {
+                this.callParentMethod('setLoopStart');
+                // Update local state from parent
+                this.syncWithParent();
+            },
+
+            setLoopEnd() {
+                this.callParentMethod('setLoopEnd');
+                this.syncWithParent();
+            },
+
+            toggleLoop() {
+                this.callParentMethod('toggleLoop');
+                this.syncWithParent();
+
+                if (this.isLooping) {
+                    this.loopCount++;
+                }
+            },
+
+            clearLoop() {
+                this.callParentMethod('clearLoop');
+                this.syncWithParent();
+            },
+
+            // Speed controls
+            setPlaybackRate(speed) {
+                this.playbackRate = speed;
+                this.callParentMethod('setPlaybackRate', speed);
+            },
+
+            adjustSpeed(delta) {
+                const newSpeed = Math.max(0.25, Math.min(2, this.playbackRate + delta));
+                this.setPlaybackRate(Math.round(newSpeed * 10) / 10);
+            },
+
+            resetSpeed() {
+                this.setPlaybackRate(1.0);
+            },
+
+            // Metronome
+            toggleMetronome() {
+                this.metronomeActive = !this.metronomeActive;
+                this.callParentMethod('toggleMetronome');
+                // TODO: Implement actual metronome functionality
+            },
+
+            // Practice notes
+            addPracticeNote() {
+                if (!this.newNote.trim()) return;
+
+                const note = {
+                    text: this.newNote.trim(),
+                    timestamp: this.currentTime,
+                    sessionTime: this.practiceTime,
+                    created: Date.now()
+                };
+
+                this.practiceNotes.push(note);
+                this.newNote = '';
+                this.savePracticeSession();
+            },
+
+            removePracticeNote(index) {
+                this.practiceNotes.splice(index, 1);
+                this.savePracticeSession();
+            },
+
+            // Session management
+            savePracticeSession() {
+                const sessionData = {
+                    practiceTime: this.practiceTime,
+                    loopCount: this.loopCount,
+                    averageSpeed: this.averageSpeed,
+                    practiceNotes: this.practiceNotes,
+                    lastSaved: Date.now()
+                };
+
+                localStorage.setItem('practiceSession_{{ transcription.pk }}', JSON.stringify(sessionData));
+
+                // Show save confirmation
+                this.showNotification('Practice session saved!', 'success');
+            },
+
+            loadPracticeSession() {
+                const saved = localStorage.getItem('practiceSession_{{ transcription.pk }}');
+                if (saved) {
+                    try {
+                        const data = JSON.parse(saved);
+                        this.practiceTime = data.practiceTime || 0;
+                        this.loopCount = data.loopCount || 0;
+                        this.averageSpeed = data.averageSpeed || 1.0;
+                        this.practiceNotes = data.practiceNotes || [];
+                    } catch (e) {
+                        console.warn('Failed to load practice session:', e);
+                    }
+                }
+            },
+
+            resetPracticeSession() {
+                if (confirm('Reset your current practice session? This cannot be undone.')) {
+                    this.practiceTime = 0;
+                    this.loopCount = 0;
+                    this.speedChanges = [];
+                    this.averageSpeed = 1.0;
+                    this.practiceNotes = [];
+
+                    localStorage.removeItem('practiceSession_{{ transcription.pk }}');
+                    this.showNotification('Practice session reset!', 'info');
+                }
+            },
+
+            // Utility functions
+            calculateAverageSpeed() {
+                if (this.speedChanges.length === 0) {
+                    this.averageSpeed = 1.0;
+                    return;
+                }
+
+                const total = this.speedChanges.reduce((sum, change) => sum + change.speed, 0);
+                this.averageSpeed = total / this.speedChanges.length;
+            },
+
+            syncWithParent() {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x && parentPlayer.__x.$data) {
+                    const parent = parentPlayer.__x.$data;
+                    this.loopStart = parent.loopStart;
+                    this.loopEnd = parent.loopEnd;
+                    this.isLooping = parent.isLooping;
+                    this.currentTime = parent.currentTime;
+                    this.isPlaying = parent.isPlaying;
+                    this.playbackRate = parent.playbackRate;
+                }
+            },
+
+            callParentMethod(methodName, ...args) {
+                const parentPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+                if (parentPlayer && parentPlayer.__x && parentPlayer.__x.$data[methodName]) {
+                    return parentPlayer.__x.$data[methodName](...args);
+                }
+            },
+
+            showNotification(message, type = 'info') {
+                // Simple notification system
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white text-sm transition-all duration-300 ${type === 'success' ? 'bg-green-500' :
+                        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+                    }`;
+                notification.textContent = message;
+
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            },
+
+            formatTime(seconds) {
+                if (!seconds || seconds === Infinity || isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            },
+
+            formatPracticeTime(totalSeconds) {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+    }
+</script>

@@ -1,0 +1,180 @@
+<!-- Enhanced Library Search Bar with Music-Specific Features -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6" x-data="librarySearch()"
+    x-init="initializeSearch()">
+
+    <!-- Main Search Input -->
+    <div class="relative mb-4">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </div>
+        <input type="text" id="library-search-input" x-model="searchQuery" @input.debounce.300ms="performSearch()"
+            placeholder="Search by song name, key, artist, or tempo..."
+            class="block w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-musical-gold focus:border-transparent bg-white text-gray-900 placeholder-gray-500 font-body">
+
+        <!-- Clear Search Button -->
+        <button x-show="searchQuery.length > 0" @click="clearSearch()"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center">
+            <svg class="w-5 h-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Quick Filter Chips -->
+    <div class="flex flex-wrap gap-2 mb-4">
+        <button @click="addQuickFilter('favorites')"
+            :class="quickFilters.includes('favorites') ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                    d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            Favorites
+        </button>
+
+        <button @click="addQuickFilter('recent')"
+            :class="quickFilters.includes('recent') ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Recent
+        </button>
+
+        <button @click="addQuickFilter('completed')"
+            :class="quickFilters.includes('completed') ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+            class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Completed
+        </button>
+    </div>
+
+    <!-- Advanced Search Toggle -->
+    <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-600">
+            <span x-text="resultsCount"></span> transcriptions found
+        </div>
+
+        <button @click="showAdvanced = !showAdvanced"
+            class="inline-flex items-center text-sm font-medium text-musical-gold hover:text-musical-treble transition-colors">
+            <span x-text="showAdvanced ? 'Hide Filters' : 'More Filters'"></span>
+            <svg class="w-4 h-4 ml-1 transform transition-transform" :class="showAdvanced ? 'rotate-180' : ''"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Advanced Filters Panel -->
+    <div x-show="showAdvanced" x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95" class="mt-4 pt-4 border-t border-gray-200">
+
+        {% include 'transcriber/partials/library_advanced_filters.html' %}
+    </div>
+</div>
+
+<!-- Hidden form for HTMX submission -->
+<form id="search-form" style="display: none;">
+    <input type="hidden" name="search" x-model="searchQuery">
+    <input type="hidden" name="quick_filters" x-model="quickFilters.join(',')">
+    <input type="hidden" name="key_filter" x-model="filters.key">
+    <input type="hidden" name="tempo_min" x-model="filters.tempo.min">
+    <input type="hidden" name="tempo_max" x-model="filters.tempo.max">
+    <input type="hidden" name="difficulty" x-model="filters.difficulty">
+    <input type="hidden" name="instruments" x-model="filters.instruments.join(',')">
+    <input type="hidden" name="sort" x-model="sortBy">
+</form>
+
+<script>
+    function librarySearch() {
+        return {
+            searchQuery: '',
+            quickFilters: [],
+            showAdvanced: false,
+            resultsCount: '{{ total_count|default:0 }}',
+            sortBy: '-created_at',
+            filters: {
+                key: '',
+                tempo: { min: '', max: '' },
+                difficulty: '',
+                instruments: []
+            },
+
+            initializeSearch() {
+                // Initialize with any existing URL params
+                const urlParams = new URLSearchParams(window.location.search);
+                this.searchQuery = urlParams.get('search') || '';
+                const quickFiltersParam = urlParams.get('quick_filters');
+                if (quickFiltersParam) {
+                    this.quickFilters = quickFiltersParam.split(',').filter(f => f);
+                }
+            },
+
+            performSearch() {
+                this.submitSearch();
+            },
+
+            addQuickFilter(filter) {
+                if (this.quickFilters.includes(filter)) {
+                    this.quickFilters = this.quickFilters.filter(f => f !== filter);
+                } else {
+                    this.quickFilters.push(filter);
+                }
+                this.submitSearch();
+            },
+
+            clearSearch() {
+                this.searchQuery = '';
+                this.quickFilters = [];
+                this.filters = {
+                    key: '',
+                    tempo: { min: '', max: '' },
+                    difficulty: '',
+                    instruments: []
+                };
+                this.submitSearch();
+            },
+
+            toggleInstrument(instrument) {
+                if (this.filters.instruments.includes(instrument)) {
+                    this.filters.instruments = this.filters.instruments.filter(i => i !== instrument);
+                } else {
+                    this.filters.instruments.push(instrument);
+                }
+                this.submitSearch();
+            },
+
+            submitSearch() {
+                // Use HTMX to submit the search
+                htmx.ajax('GET', '{% url "transcriber:library_search" %}', {
+                    target: '#transcriptions-grid',
+                    swap: 'innerHTML',
+                    values: {
+                        search: this.searchQuery,
+                        quick_filters: this.quickFilters.join(','),
+                        key_filter: this.filters.key,
+                        tempo_min: this.filters.tempo.min,
+                        tempo_max: this.filters.tempo.max,
+                        difficulty: this.filters.difficulty,
+                        instruments: this.filters.instruments.join(','),
+                        sort: this.sortBy
+                    }
+                }).then(() => {
+                    // Update results count
+                    const resultElements = document.querySelectorAll('#transcriptions-grid .bg-white');
+                    this.resultsCount = resultElements.length;
+                });
+            }
+        }
+    }
+</script>

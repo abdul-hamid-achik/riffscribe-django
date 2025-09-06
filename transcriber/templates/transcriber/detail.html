@@ -136,194 +136,53 @@
                 htmx.trigger('#main-content', 'refresh');
             }, 3000);
         }
-    });
 
-    // AlphaTab integration
-    let alphaTab = null;
-    let isPlaying = false;
+        // Initialize enhanced audio player components
+        console.log('RiffScribe Detail Page - Enhanced Audio Player Active');
 
-    function showTabPreview() {
-        const container = document.getElementById('alphaTab');
-        const playerControls = document.getElementById('player-controls');
-        const previewBtn = document.getElementById('preview-btn');
-        const placeholderEl = document.getElementById('preview-placeholder');
-        const loadingEl = document.getElementById('preview-loading');
-        const errorEl = document.getElementById('preview-error');
-
-        // Show button loading state
-        previewBtn.innerHTML = `
-        <svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Loading...
-    `;
-        previewBtn.disabled = true;
-
-        // Hide placeholder and show loading
-        if (placeholderEl) placeholderEl.classList.add('hidden');
-        if (loadingEl) loadingEl.classList.remove('hidden');
-        if (errorEl) errorEl.classList.add('hidden');
-
-        // Use HTMX to load the actual tab preview
-        htmx.ajax('GET', '{% url "transcriber:tab_preview_api" transcription.pk %}', {
-            target: '#alphaTab',
-            swap: 'innerHTML',
-            headers: { 'HX-Request': 'true' }
-        }).then(() => {
-            // Success - hide loading, show player controls
-            if (loadingEl) loadingEl.classList.add('hidden');
-            if (playerControls) playerControls.classList.remove('hidden');
-
-            // Reset button
-            previewBtn.innerHTML = `
-            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-            Refresh Preview
-        `;
-            previewBtn.disabled = false;
-
-        }).catch((error) => {
-            // Error - show error state
-            console.error('Failed to load tab preview:', error);
-            if (loadingEl) loadingEl.classList.add('hidden');
-            if (errorEl) errorEl.classList.remove('hidden');
-
-            // Reset button
-            previewBtn.innerHTML = `
-            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-            </svg>
-            Retry Preview
-        `;
-            previewBtn.disabled = false;
+        // Listen for practice mode changes and update UI accordingly
+        document.addEventListener('practice-mode-changed', function (event) {
+            const practicePanel = document.querySelector('[x-data*="practiceModePanel"]');
+            if (practicePanel && practicePanel.__x) {
+                practicePanel.__x.$data.practiceMode = event.detail.active;
+            }
         });
-    }
-
-    function retryPreview() {
-        showTabPreview();
-    }
-    tex: true,
-        tracks: [0],
-            player: {
-        enablePlayer: true,
-            soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2'
-    }
-        });
-
-    // Load the tab data
-    alphaTab.tex(tabData);
-
-    // Setup player event listeners
-    alphaTab.playerReady.on(() => {
-        playerControls.classList.remove('hidden');
-        previewBtn.innerHTML = `
-                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                Tab Loaded
-            `;
-        previewBtn.disabled = true;
-        previewBtn.classList.add('bg-green-600', 'hover:bg-green-700');
     });
 
-    alphaTab.playerStateChanged.on((e) => {
-        isPlaying = e.state === 1; // 1 = playing
-        updatePlayButton();
-    });
+    // Global helper function for synchronizing player components
+    window.syncAudioPlayers = function () {
+        const mainPlayer = document.querySelector('[x-data*="enhancedAudioPlayer"]');
+        const mobileControls = document.querySelector('[x-data*="mobileAudioControls"]');
+        const practicePanel = document.querySelector('[x-data*="practiceModePanel"]');
 
-    alphaTab.playerPositionChanged.on((e) => {
-        updateProgress(e.currentTime, e.endTime);
-    });
-        
-    } catch (error) {
-        console.error('Error loading tab:', error);
-        container.innerHTML = `
-            <div class="text-center text-red-500">
-                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <p class="text-lg font-medium mb-2">Unable to load tab preview</p>
-                <p class="text-sm">Try downloading the tab in your preferred format below</p>
-            </div>
-        `;
-        previewBtn.innerHTML = 'Preview Failed';
-        previewBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-    }
-}
+        if (!mainPlayer || !mainPlayer.__x) return;
 
-    function togglePlayback() {
-        if (!alphaTab) return;
+        const playerData = mainPlayer.__x.$data;
 
-        if (isPlaying) {
-            alphaTab.pause();
-        } else {
-            alphaTab.play();
-        }
-    }
-
-    function updatePlayButton() {
-        const button = document.getElementById('play-pause-btn');
-        if (isPlaying) {
-            button.innerHTML = `
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M5.5 3.5A1.5 1.5 0 017 2h6a1.5 1.5 0 011.5 1.5v13A1.5 1.5 0 0113 18H7a1.5 1.5 0 01-1.5-1.5v-13z"/>
-            </svg>
-        `;
-        } else {
-            button.innerHTML = `
-            <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
-            </svg>
-        `;
-        }
-    }
-
-    function updateProgress(current, total) {
-        const progress = document.getElementById('progress');
-        const currentTime = document.getElementById('current-time');
-        const percentage = (current / total) * 100;
-
-        progress.style.width = percentage + '%';
-        currentTime.textContent = formatTime(current);
-    }
-
-    function formatTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = Math.floor(seconds % 60);
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
-
-
-    // Setup event listeners
-    document.addEventListener('DOMContentLoaded', function () {
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        if (playPauseBtn) {
-            playPauseBtn.addEventListener('click', togglePlayback);
+        // Sync mobile controls
+        if (mobileControls && mobileControls.__x) {
+            const mobileData = mobileControls.__x.$data;
+            mobileData.isPlaying = playerData.isPlaying;
+            mobileData.currentTime = playerData.currentTime;
+            mobileData.duration = playerData.duration;
+            mobileData.playbackRate = playerData.playbackRate;
+            mobileData.practiceMode = playerData.practiceMode;
         }
 
-        const volumeSlider = document.getElementById('volume-slider');
-        if (volumeSlider) {
-            volumeSlider.addEventListener('input', function () {
-                if (alphaTab && alphaTab.masterVolume) {
-                    alphaTab.masterVolume = this.value / 100;
-                }
-            });
+        // Sync practice panel  
+        if (practicePanel && practicePanel.__x) {
+            const practiceData = practicePanel.__x.$data;
+            practiceData.isPlaying = playerData.isPlaying;
+            practiceData.currentTime = playerData.currentTime;
+            practiceData.playbackRate = playerData.playbackRate;
+            practiceData.loopStart = playerData.loopStart;
+            practiceData.loopEnd = playerData.loopEnd;
+            practiceData.isLooping = playerData.isLooping;
+            practiceData.practiceMode = playerData.practiceMode;
         }
+    };
 
-        const progressBar = document.getElementById('progress-bar');
-        if (progressBar) {
-            progressBar.addEventListener('click', function (e) {
-                if (!alphaTab) return;
-
-                const rect = this.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const percentage = x / rect.width;
-                // alphaTab.seekTo would be used here if available in your version
-            });
-        }
-    });
+    // Sync players every second
+    setInterval(window.syncAudioPlayers, 1000);
 </script>
 {% endblock %}

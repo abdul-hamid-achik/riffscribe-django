@@ -48,6 +48,13 @@ urlpatterns = [
     path('task/<str:task_id>/status/', views.get_task_status, name='task_status'),
     path('library/', views.library, name='library'),
     
+    # Enhanced Library Management URLs
+    path('library/search/', views.library_search, name='library_search'),
+    path('library/stats/', views.library_stats, name='library_stats'),
+    path('library/bulk/', views.bulk_operations, name='library_bulk'),
+    path('library/suggestions/', views.library_suggestions, name='library_suggestions'),
+    path('library/analytics/', views.library_analytics, name='library_analytics'),
+    
     # Authentication modal endpoints
     path('accounts/modal/signin/', auth_modal.auth_modal_signin, name='auth_modal_signin'),
     path('accounts/modal/signup/', auth_modal.auth_modal_signup, name='auth_modal_signup'),

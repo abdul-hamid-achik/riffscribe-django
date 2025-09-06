@@ -9,9 +9,18 @@ from ..tasks import process_transcription  # re-export for tests patching transc
 from .core import (
     index,
     upload,
-    library,
+    library as library_view,
     dashboard,
     profile,
+)
+
+# Enhanced library management views
+from .library import (
+    library_search,
+    library_stats,
+    bulk_operations,
+    library_suggestions,
+    library_analytics,
 )
 
 from .transcription import (
@@ -73,9 +82,16 @@ __all__ = [
     # Core views
     'index',
     'upload', 
-    'library',
+    'library_view',
     'dashboard',
     'profile',
+    
+    # Library management views
+    'library_search',
+    'library_stats',
+    'bulk_operations',
+    'library_suggestions',
+    'library_analytics',
     
     # Transcription views
     'detail',
@@ -128,3 +144,6 @@ __all__ = [
     'AsyncResult',
     'process_transcription',
 ]
+
+# Backward compatibility alias for URLs
+library = library_view
