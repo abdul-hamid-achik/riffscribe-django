@@ -135,4 +135,5 @@ dev = [
     "pytest-dotenv>=0.5",
     "model-bakery>=1.19",
     "playwright>=1.55.0",
+    "flower>=2.0",
 ]

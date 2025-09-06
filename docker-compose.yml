@@ -104,20 +104,20 @@ services:
       start_period: 60s
 
   # ============================================
-  # SCHEDULER SERVICE - Lightweight task scheduler
+  # SCHEDULER SERVICE - Uses worker target for full dependencies
   # ============================================
   scheduler:
     build:
       context: .
-      target: web
+      target: worker
       cache_from:
-        - riffscribe-web:latest
-    image: riffscribe-web:latest
+        - riffscribe-worker:latest
+    image: riffscribe-worker:latest
     command: celery -A riffscribe beat -l info
     restart: unless-stopped
     volumes:
       - .:/app
-      - uv_cache_web:/opt/uv-cache
+      - uv_cache_worker:/opt/uv-cache
     env_file:
       - .env
     environment:
@@ -156,21 +156,22 @@ services:
       - riffscribe_network
 
   # ============================================
-  # MONITOR SERVICE - Lightweight Flower monitoring
+  # MONITOR SERVICE - Flower monitoring with proper dependencies
   # ============================================
   monitor:
     build:
       context: .
-      target: web
+      target: development
       cache_from:
-        - riffscribe-web:latest
-    image: riffscribe-web:latest
-    command: sh -c "uv pip install flower && celery -A riffscribe flower --port=5555"
+        - riffscribe-dev:latest
+    image: riffscribe-dev:latest
+    command: celery -A riffscribe flower --port=5555 --host=0.0.0.0
     restart: unless-stopped
     ports:
       - "5555:5555"
     volumes:
-      - uv_cache_web:/opt/uv-cache
+      - .:/app
+      - uv_cache_dev:/opt/uv-cache
     env_file:
       - .env
     environment:
