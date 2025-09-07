@@ -5,6 +5,7 @@
 @tailwind utilities;
 
 @layer base {
+
     /* CSS Variables for legacy support */
     :root {
         /* Music sheet colors */
@@ -35,9 +36,12 @@
 }
 
 @layer components {
+
     /* NYT-style navigation */
     .nyt-nav {
-        @apply bg-white border-b-4 border-nyt-black shadow-sm;
+        background: var(--nyt-black) !important;
+        border-bottom: 3px solid var(--accent-gold) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
     }
 
     .nyt-nav-link {
@@ -85,7 +89,15 @@
 
     /* Button styles */
     .btn-primary {
-        @apply bg-musical-gold hover:bg-musical-treble text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200;
+        @apply text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300;
+        background: linear-gradient(135deg, var(--accent-gold) 0%, #b8935e 100%);
+        box-shadow: 0 2px 4px rgba(201, 169, 110, 0.4);
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #b8935e 0%, var(--accent-gold) 100%);
+        box-shadow: 0 4px 12px rgba(201, 169, 110, 0.5);
+        transform: translateY(-1px);
     }
 
     .btn-secondary {
@@ -162,6 +174,7 @@
 }
 
 @layer utilities {
+
     /* Additional utility classes */
     .text-shadow {
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);

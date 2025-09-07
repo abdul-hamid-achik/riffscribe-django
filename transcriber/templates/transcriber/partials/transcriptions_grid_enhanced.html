@@ -288,7 +288,6 @@
                     Clear Search
                 </button>
                 {% endif %}
-                {% if user.is_authenticated %}
                 <a href="{% url 'transcriber:upload' %}"
                     class="inline-flex items-center px-4 py-2 bg-musical-gold text-white font-medium rounded-lg hover:bg-musical-treble transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +296,6 @@
                     </svg>
                     Upload Audio
                 </a>
-                {% endif %}
             </div>
         </div>
     </div>

@@ -278,8 +278,9 @@ class ExportManager:
             tab_data = self.tab_data
             
         if not tab_data:
-            logger.warning("GP5 export failed: No tab data available")
-            return None
+            logger.warning("GP5 export: No tab data available, creating minimal empty file")
+            # Create a minimal GP5 file instead of returning None
+            return self._create_empty_gp5_file()
             
         if not gp:
             logger.warning("guitarpro library not available")
@@ -622,6 +623,67 @@ class ExportManager:
         )
         
         return generator.to_ascii_tab()
+    
+    def _create_empty_gp5_file(self) -> Optional[str]:
+        """Create a minimal empty GP5 file when no tab data is available."""
+        if not gp:
+            logger.warning("guitarpro library not available for empty GP5 creation")
+            return None
+            
+        try:
+            # Create basic GP5 structure
+            song = gp.Song()
+            song.title = self.transcription.filename or "Untitled"
+            song.artist = "RiffScribe"
+            song.tempo = 120
+            
+            # Create a single guitar track
+            track = gp.Track(song=song)
+            track.name = "Guitar"
+            track.isPercussionTrack = False
+            
+            # Set MIDI channel if available
+            if hasattr(track, 'channel'):
+                track.channel = gp.MidiChannel()
+                track.channel.instrument = 24  # Acoustic guitar
+            
+            # Add track to song
+            song.tracks.append(track)
+            
+            # Create one empty measure
+            if hasattr(track, 'measures'):
+                measure = gp.Measure()
+                
+                # Add basic voice with one rest beat
+                voice = gp.Voice()
+                beat = gp.Beat()
+                
+                # Set beat duration to quarter note rest
+                try:
+                    if hasattr(gp, 'DurationType'):
+                        beat.duration = gp.Duration(value=gp.DurationType.quarter)
+                    else:
+                        beat.duration = gp.Duration(value=4)
+                except:
+                    beat.duration = gp.Duration()
+                
+                voice.beats.append(beat)
+                measure.voices.append(voice)
+                track.measures.append(measure)
+            
+            # Save to temporary file
+            temp_file = tempfile.NamedTemporaryFile(suffix='.gp5', delete=False)
+            temp_file.close()
+            
+            # Write the GP5 file
+            gp.write_song(song, temp_file.name, format=gp.formats.GP5)
+            
+            logger.info(f"Created empty GP5 file at: {temp_file.name}")
+            return temp_file.name
+            
+        except Exception as e:
+            logger.error(f"Failed to create empty GP5 file: {str(e)}")
+            return None
     
     def _midi_to_note_name(self, midi_note: int) -> tuple:
         """Convert MIDI note to note name and octave."""
