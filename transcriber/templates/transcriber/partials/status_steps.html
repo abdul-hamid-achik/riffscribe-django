@@ -1,0 +1,46 @@
+<!-- Processing Steps -->
+<div class="space-y-4 mb-6">
+    {% for step in "Audio Analysis,Instrument Detection,Note Transcription,Tab Generation,MusicXML Creation,Guitar Pro
+    Export,Variant Generation,Multi-track Processing"|split:',' %}
+    <div class="flex items-center gap-3">
+        <div class="flex-shrink-0">
+            {% if forloop.counter < current_step %} <div
+                class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center transition-all duration-300">
+                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clip-rule="evenodd" />
+                </svg>
+        </div>
+        {% elif forloop.counter == current_step %}
+        <div
+            class="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center animate-pulse shadow-lg">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+        </div>
+        {% else %}
+        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center transition-all duration-300">
+            <span class="text-gray-500 text-sm font-medium">{{ forloop.counter }}</span>
+        </div>
+        {% endif %}
+    </div>
+    <div class="flex-1">
+        <p
+            class="text-sm font-medium transition-colors duration-200 {% if forloop.counter <= current_step %}text-gray-900{% else %}text-gray-400{% endif %}">
+            {{ step }}
+        </p>
+        {% if forloop.counter == current_step %}
+        <p class="text-xs text-blue-600 mt-0.5 animate-pulse">{{ task_progress|default:"Processing..." }}</p>
+        {% elif forloop.counter < current_step %} <p class="text-xs text-green-600 mt-0.5">✓ Complete</p>
+            {% endif %}
+    </div>
+    {% if not forloop.last %}
+    <div
+        class="hidden sm:block flex-1 h-0.5 transition-colors duration-500 {% if forloop.counter < current_step %}bg-green-500{% elif forloop.counter == current_step %}bg-blue-500{% else %}bg-gray-200{% endif %}">
+    </div>
+    {% endif %}
+</div>
+{% endfor %}
+</div>

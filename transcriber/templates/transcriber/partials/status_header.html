@@ -1,0 +1,83 @@
+<!-- Status Header -->
+<div class="px-6 py-4 border-b border-gray-100">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <!-- Status Icon -->
+            <div class="flex-shrink-0">
+                {% if transcription.status == 'completed' %}
+                <div
+                    class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+                {% elif transcription.status == 'processing' %}
+                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                    <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                </div>
+                {% elif transcription.status == 'failed' %}
+                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                </div>
+                {% else %}
+                <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Status Title and Description -->
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">
+                    {% if transcription.status == 'completed' %}
+                    Transcription Complete
+                    {% elif transcription.status == 'processing' %}
+                    Processing Your Music
+                    {% elif transcription.status == 'failed' %}
+                    Transcription Failed
+                    {% else %}
+                    Processing Queued
+                    {% endif %}
+                </h2>
+                <p class="text-sm text-gray-600">
+                    {% if transcription.status == 'completed' %}
+                    Your guitar tablature is ready
+                    {% elif transcription.status == 'processing' %}
+                    Our AI is analyzing your audio file...
+                    {% elif transcription.status == 'failed' %}
+                    {{ transcription.error_message|default:"An error occurred during processing" }}
+                    {% else %}
+                    Waiting to start processing
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Action Button -->
+        <div>
+            {% if transcription.status == 'failed' %}
+            <button type="button"
+                class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                hx-post="{% url 'transcriber:reprocess' transcription.id %}" hx-target="#main-content"
+                hx-swap="innerHTML">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Try Again
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>

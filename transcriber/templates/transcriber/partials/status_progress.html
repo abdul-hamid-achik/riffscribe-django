@@ -1,0 +1,30 @@
+<!-- Progress Bar -->
+<div class="mb-4">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-sm text-gray-600">Overall Progress</span>
+        <span class="text-sm font-medium text-gray-900 transition-all duration-300">{{
+            progress_percent|floatformat:0|default:'0' }}%</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+            style="width: {{ progress_percent|floatformat:0|default:'0' }}%">
+            <div
+                class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-ping">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Time Estimate -->
+<div class="text-center">
+    <p class="text-sm text-gray-500">
+        <span class="inline-flex items-center">
+            <svg class="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Estimated time remaining: <span class="font-medium text-blue-600">{{ time_remaining|default:"1-2 minutes"
+                }}</span>
+        </span>
+    </p>
+</div>
