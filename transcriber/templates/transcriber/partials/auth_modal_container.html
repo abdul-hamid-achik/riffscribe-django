@@ -15,7 +15,7 @@ function closeAuthModal(event) {
     }
 }
 
-function showAuthModal(type) {
+function showAuthModal(type, customMessage) {
     // First check if modal already exists
     let modal = document.getElementById('auth-modal');
     
@@ -42,6 +42,14 @@ function showAuthModal(type) {
                         </button>
                     </div>
                     
+                    <!-- Custom Message (if provided) -->
+                    <div id="custom-message" class="px-6 py-3 bg-gradient-to-r from-musical-gold/10 to-musical-treble/10 border-b border-musical-gold/20" style="display: none;">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">⭐</span>
+                            <p id="custom-message-text" class="text-sm text-gray-700 font-medium"></p>
+                        </div>
+                    </div>
+                    
                     <!-- Modal Body -->
                     <div id="modal-body" class="px-6 py-6">
                         <!-- Loading spinner -->
@@ -60,6 +68,16 @@ function showAuthModal(type) {
     
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
+    const customMessageDiv = document.getElementById('custom-message');
+    const customMessageText = document.getElementById('custom-message-text');
+    
+    // Show custom message if provided
+    if (customMessage) {
+        customMessageText.textContent = customMessage;
+        customMessageDiv.style.display = 'block';
+    } else {
+        customMessageDiv.style.display = 'none';
+    }
     
     let title, url;
     switch(type) {

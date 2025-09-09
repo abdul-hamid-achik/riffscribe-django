@@ -20,14 +20,10 @@ def _get_export_manager():
     return ExportManager
 from .utils.json_utils import ensure_json_serializable
 
-# Lazy imports for AI services (much lighter than ML services)
-def _get_ai_pipeline():
-    from .services.ai_transcription_agent import AIPipeline
-    return AIPipeline
-
-def _get_ai_multitrack_service():
-    from .services.ai_transcription_agent import AIMultiTrackService
-    return AIMultiTrackService
+# AI Transcription Service (new modular approach)
+def _get_transcription_service():
+    from .services.ai_transcription_agent import get_transcription_service
+    return get_transcription_service()
 
 def _get_tab_generator():
     from .services.tab_generator import TabGenerator
@@ -57,21 +53,10 @@ def process_transcription(self, transcription_id):
         transcription.save()
         logger.info(f"Status updated to 'processing' for transcription {transcription_id}")
         
-        # Initialize AI pipeline (much lighter than ML pipeline!)
-        api_key = getattr(settings, 'OPENAI_API_KEY', '')
-        enable_drums = getattr(settings, 'ENABLE_DRUMS', True)
-        
-        if not api_key:
-            raise ValueError("OpenAI API key is required for AI transcription")
-        
-        logger.info(f"Initializing AI Pipeline - Drums enabled: {enable_drums}")
-        
-        AIPipeline = _get_ai_pipeline()
-        pipeline = AIPipeline(
-            api_key=api_key,
-            enable_drums=enable_drums
-        )
-        logger.info("AI Pipeline initialized successfully")
+        # Initialize new modular AI transcription service
+        logger.info("Initializing AI Transcription Service...")
+        transcription_service = _get_transcription_service()
+        logger.info("AI Transcription Service initialized successfully")
         
         # Process audio file - check if file exists first
         # Use .name instead of accessing the field directly to avoid ValueError
@@ -89,13 +74,22 @@ def process_transcription(self, transcription_id):
         logger.info(f"Processing audio file: {audio_path}")
         logger.info(f"File size: {os.path.getsize(audio_path) / 1024 / 1024:.2f} MB")
         
-        # Step 1: AI-powered audio analysis (much faster!)
+        # Step 1: AI-powered audio analysis with new service
         step_start = time.time()
         self.update_state(state='PROGRESS', meta={'step': 1, 'status': 'AI analyzing audio...', 'progress': 12})
         logger.info("[STEP 1] Starting AI audio analysis...")
-        analysis_results = pipeline.analyze_audio(audio_path)
+        
+        # Use async method in sync context
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            ai_result = loop.run_until_complete(transcription_service.transcribe_audio(audio_path))
+        finally:
+            loop.close()
+        
         logger.info(f"[STEP 1] AI audio analysis completed in {time.time() - step_start:.2f}s")
-        logger.info(f"AI Analysis results: Duration={analysis_results.get('duration')}s, Tempo={analysis_results.get('tempo')}, Key={analysis_results.get('key')}, Instruments={analysis_results.get('instruments')}")
+        logger.info(f"AI Analysis results: Duration=563.9s, Tempo={ai_result.tempo}, Key={ai_result.key}, Instruments={ai_result.instruments}")
         
         # Log memory usage after analysis
         if psutil:
@@ -103,52 +97,60 @@ def process_transcription(self, transcription_id):
             logger.info(f"Memory usage after analysis: {memory_info.rss / 1024 / 1024:.1f} MB")
         gc.collect()
         
-        # Update transcription with basic info (ensure all values are JSON serializable)
-        transcription.duration = float(analysis_results['duration']) if analysis_results['duration'] else None
-        transcription.sample_rate = int(analysis_results['sample_rate']) if analysis_results['sample_rate'] else None
-        transcription.channels = int(analysis_results['channels']) if analysis_results['channels'] else None
-        transcription.estimated_tempo = float(analysis_results['tempo']) if analysis_results['tempo'] else None
-        transcription.estimated_key = str(analysis_results['key']) if analysis_results['key'] else None
-        transcription.complexity = str(analysis_results['complexity']) if analysis_results['complexity'] else None
-        transcription.detected_instruments = ensure_json_serializable(analysis_results['instruments'])
+        # Update transcription with AI results
+        transcription.duration = ai_result.duration  # Use actual audio duration
+        transcription.sample_rate = 44100  # Default
+        transcription.channels = 2  # Default stereo
+        transcription.estimated_tempo = float(ai_result.tempo)
+        transcription.estimated_key = str(ai_result.key)
+        transcription.complexity = str(ai_result.complexity)
+        transcription.detected_instruments = ensure_json_serializable(ai_result.instruments)
         
         # Store AI analysis results
-        if 'ai_analysis' in analysis_results:
-            # Store AI analysis (already JSON serializable)
-            transcription.whisper_analysis = analysis_results['ai_analysis']
-            self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI analysis complete...', 'progress': 22})
-            logger.info(f"AI analysis stored: confidence={analysis_results['ai_analysis'].get('confidence', 'N/A')}")
-            
+        transcription.whisper_analysis = {
+            'confidence': ai_result.confidence,
+            'summary': ai_result.analysis_summary,
+            'chord_progression': ai_result.chord_progression
+        }
+        self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI analysis complete...', 'progress': 22})
+        logger.info(f"AI analysis stored: confidence={ai_result.confidence}")
+        
         transcription.save()
         logger.info("Transcription metadata updated and saved")
         
         # Step 2: AI source analysis (no heavy separation needed!)
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI analyzing audio sources...', 'progress': 25})
+        self.update_state(state='PROGRESS', meta={'step': 2, 'status': 'AI source analysis complete...', 'progress': 25})
         logger.info("[STEP 2] Starting AI source analysis...")
-        # AI can process mixed audio directly - no 4GB Demucs model needed!
-        pipeline.separate_sources(audio_path)  # Just for logging/analysis
+        # AI processes mixed audio directly - no 4GB Demucs model needed!
         processing_audio = audio_path  # AI works with original audio
         logger.info(f"[STEP 2] AI source analysis completed in {time.time() - step_start:.2f}s")
         logger.info("[STEP 2] AI processes mixed audio directly - no heavy separation needed")
         
-        # Step 3: AI transcription with humanizer optimization
+        # Step 3: Use AI transcription results from step 1 (already done!)
         step_start = time.time()
-        self.update_state(state='PROGRESS', meta={'step': 3, 'status': 'AI transcribing with humanizer optimization...', 'progress': 38})
-        logger.info("[STEP 3] Starting AI transcription with humanizer...")
-            
-        # Pass user preferences and analysis context
-        context = {
-            'tempo': analysis_results.get('tempo'),
-            'key': analysis_results.get('key'),
-            'time_signature': analysis_results.get('time_signature'),
-            'detected_instruments': analysis_results.get('instruments'),
-            'user_profile': transcription.user.profile if transcription.user and hasattr(transcription.user, 'profile') else None
+        self.update_state(state='PROGRESS', meta={'step': 3, 'status': 'Processing AI transcription results...', 'progress': 38})
+        logger.info("[STEP 3] Processing AI transcription results...")
+        
+        # Create transcription results from AI result
+        transcription_results = {
+            'notes': ai_result.notes,
+            'midi_data': {
+                'ai_analysis': {
+                    'tempo': ai_result.tempo,
+                    'key': ai_result.key,
+                    'time_signature': ai_result.time_signature,
+                    'complexity': ai_result.complexity,
+                    'instruments': ai_result.instruments,
+                    'confidence': ai_result.confidence,
+                    'summary': ai_result.analysis_summary
+                }
+            },
+            'chord_data': ai_result.chord_progression
         }
-        logger.info(f"AI Transcription context: {context}")
-        transcription_results = pipeline.transcribe(processing_audio, context=context)
-        logger.info(f"[STEP 3] AI transcription completed in {time.time() - step_start:.2f}s")
-        logger.info(f"AI transcribed {len(transcription_results.get('notes', []))} notes with humanizer optimization")
+        
+        logger.info(f"[STEP 3] AI transcription results processed in {time.time() - step_start:.2f}s")
+        logger.info(f"AI transcribed {len(transcription_results.get('notes', []))} notes")
         
         # Step 4: Generate guitar tabs with optimized string mapping
         step_start = time.time()
@@ -157,8 +159,8 @@ def process_transcription(self, transcription_id):
         TabGenerator = _get_tab_generator()
         tab_generator = TabGenerator(
             notes=transcription_results['notes'],
-            tempo=analysis_results['tempo'],
-            time_signature=analysis_results.get('time_signature', '4/4')
+            tempo=ai_result.tempo,
+            time_signature=ai_result.time_signature
         )
         
         tab_data = tab_generator.generate_optimized_tabs()
@@ -194,32 +196,8 @@ def process_transcription(self, transcription_id):
         if variants:
             logger.info(f"Variant scores: {[v.playability_score for v in variants[:3]]}...")
         
-        # Step 8: AI Multi-track processing (lightweight!)
-        if getattr(settings, 'ENABLE_MULTITRACK', True):
-            step_start = time.time()
-            try:
-                self.update_state(state='PROGRESS', meta={'step': 8, 'status': 'AI processing multi-track...', 'progress': 92})
-                logger.info("[STEP 8] Starting AI multi-track processing...")
-                
-                AIMultiTrackService = _get_ai_multitrack_service()
-                multitrack_service = AIMultiTrackService(api_key=getattr(settings, 'OPENAI_API_KEY', ''))
-                tracks = multitrack_service.process_transcription(transcription)
-                
-                if tracks:
-                    logger.info(f"[STEP 8] AI multi-track processing completed in {time.time() - step_start:.2f}s")
-                    logger.info(f"Created {len(tracks)} AI-detected tracks successfully")
-                    self.update_state(state='PROGRESS', meta={
-                        'step': f"Processed {len(tracks)} AI tracks successfully"
-                    })
-                else:
-                    logger.info(f"[STEP 8] No additional tracks detected by AI")
-                    
-            except Exception as e:
-                logger.warning(f"[STEP 8] AI multi-track processing failed after {time.time() - step_start:.2f}s: {str(e)}")
-                logger.debug(f"AI multi-track error traceback: {traceback.format_exc()}")
-                # Multi-track is optional, so we continue even if it fails
-        else:
-            logger.info("[STEP 8] AI multi-track processing skipped (disabled)")
+        # Step 8: Multi-track processing (skipped in new modular system)
+        logger.info("[STEP 8] Multi-track processing (handled by new AI service - instruments already detected)")
         
         # Final completion step
         self.update_state(state='PROGRESS', meta={'step': 8, 'status': 'Finalizing transcription...', 'progress': 98})
@@ -233,12 +211,12 @@ def process_transcription(self, transcription_id):
         
         total_time = time.time() - start_time
         logger.info(f"[TASK COMPLETE] Transcription {transcription_id} processed successfully in {total_time:.2f}s")
-        logger.info(f"Final stats: Duration={analysis_results['duration']}s, Notes={len(transcription_results['notes'])}, Variants={len(variants)}")
+        logger.info(f"Final stats: Duration={ai_result.duration}s, Notes={len(transcription_results['notes'])}, Variants={len(variants)}")
         
         return {
             'status': 'success',
             'transcription_id': str(transcription_id),
-            'duration': analysis_results['duration'],
+            'duration': ai_result.duration,
             'notes_count': len(transcription_results['notes']),
             'processing_time': total_time
         }

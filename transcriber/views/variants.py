@@ -85,16 +85,14 @@ def select_variant(request, pk, variant_id):
         
     metrics.save()
     
-    if request.headers.get('HX-Request'):
-        return render(request, 'transcriber/partials/variant_selected.html', {
-            'variant': variant,
-            'transcription': transcription
-        })
-    
+    # Always return JSON for consistent JavaScript handling
     return JsonResponse({
         'status': 'success',
-        'selected_variant': variant.variant_name,
-        'playability_score': variant.playability_score
+        'selected_variant': variant.get_variant_name_display(),
+        'variant_id': str(variant.id),
+        'playability_score': variant.playability_score,
+        'difficulty_score': variant.difficulty_score,
+        'stretch_score': getattr(variant, 'stretch_score', 0)
     })
 
 

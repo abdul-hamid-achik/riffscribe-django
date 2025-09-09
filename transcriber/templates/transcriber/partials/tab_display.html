@@ -16,16 +16,97 @@
     <!-- Mobile Audio Controls (Mobile Only) -->
     {% include 'transcriber/partials/mobile_audio_controls.html' %}
 
-    <!-- Interactive Guitar Tab Section -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="font-headline text-xl font-bold text-gray-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z" />
-                </svg>
-                Interactive Guitar Tab
+    <!-- Fingering Variants -->
+    {% if transcription.variants.exists %}
+    <div id="variants-section" class="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+        <div class="text-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">
+                Fingering Options
             </h2>
+            <p class="text-sm text-gray-600">
+                Multiple fingering patterns available - select your preferred option
+            </p>
+        </div>
+
+        <div id="variants-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for variant in transcription.variants.all %}
+            <div id="variant-{{ variant.id }}"
+                class="border rounded-lg p-4 transition-all {% if variant.is_selected %}border-musical-gold bg-musical-gold/5 ring-2 ring-musical-gold ring-opacity-20{% else %}border-gray-200 hover:border-gray-300{% endif %}">
+                <div class="flex justify-between items-start mb-3">
+                    <h4 class="font-medium text-gray-900">{{ variant.variant_name|title }}</h4>
+                    {% if variant.is_selected %}
+                    <span class="px-2 py-1 bg-musical-gold text-white text-xs font-medium rounded-full animate-pulse">
+                        ✓ Active
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2 text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Difficulty:</span>
+                        <div class="flex items-center gap-2 flex-1 justify-end">
+                            <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-red-500 h-2 rounded-full transition-all duration-300"
+                                    style="width: {{ variant.difficulty_score }}%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.difficulty_score|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Playability:</span>
+                        <div class="flex items-center gap-2 flex-1 justify-end">
+                            <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-green-500 h-2 rounded-full transition-all duration-300"
+                                    style="width: {{ variant.playability_score }}%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.playability_score|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Stretch:</span>
+                        <div class="flex items-center gap-2 flex-1 justify-end">
+                            <div class="w-20 bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                    style="width: {{ variant.stretch_score }}%"></div>
+                            </div>
+                            <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.stretch_score|floatformat:1 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not variant.is_selected %}
+                <button type="button"
+                    class="w-full px-4 py-2 bg-musical-gold hover:bg-musical-treble text-white font-medium rounded-lg transition-all duration-200 transform hover:scale-105"
+                    onclick="selectVariant('{{ variant.id }}', '{{ transcription.id }}')">
+                    <span class="select-text">Switch to This Variant</span>
+                    <span class="loading-text hidden">Switching...</span>
+                </button>
+                {% else %}
+                <div class="w-full px-4 py-2 bg-green-100 text-green-800 font-medium rounded-lg text-center">
+                    Currently Active
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Satirical Interactive Guitar Tab Section -->
+    <div class="satirical-tab-viewer bg-nyt-white border-4 border-nyt-black p-8 mb-8">
+        <div class="text-center mb-8">
+            <h2 class="satirical-headline text-3xl font-bold text-nyt-black mb-4 animate-dramatic-zoom">
+                🎼 CLASSIFIED TABLATURE VIEWER
+            </h2>
+            <div class="nyt-subheadline text-lg text-nyt-charcoal mb-2">
+                Interactive Musical Intelligence Display System
+            </div>
+            <div class="font-mono text-xs text-nyt-gray tracking-widest">
+                ADVANCED VISUALIZATION • AUTHORIZED ACCESS REQUIRED
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-center mb-6">
             <div class="flex items-center gap-4">
                 <!-- Toggle Switch for AlphaTab -->
                 <label class="flex items-center cursor-pointer">
@@ -330,82 +411,155 @@ E|----------------------------------------------------------</pre>
     {% endif %}
 </div>
 
-<!-- Fingering Variants -->
-{% if transcription.variants.exists %}
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-    <h2 class="font-headline text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-        </svg>
-        Fingering Variants
-    </h2>
+<!-- Variant Selection Script -->
+<script>
+function selectVariant(variantId, transcriptionId) {
+    const button = document.querySelector(`#variant-${variantId} button`);
+    const selectText = button.querySelector('.select-text');
+    const loadingText = button.querySelector('.loading-text');
+    
+    // Show loading state
+    button.disabled = true;
+    selectText.classList.add('hidden');
+    loadingText.classList.remove('hidden');
+    
+    // Make the request
+    fetch(`/transcription/${transcriptionId}/variants/select/${variantId}/`, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Variant selection successful:', data);
+        
+        // Update UI immediately for better UX
+        updateVariantSelection(variantId);
+        
+        // Refresh AlphaTab if it's loaded
+        refreshAlphaTab();
+        
+        // Show success message
+        showVariantMessage(`Switched to ${data.selected_variant} variant`, 'success');
+    })
+    .catch(error => {
+        console.error('Failed to select variant:', error);
+        
+        // Reset button state
+        button.disabled = false;
+        selectText.classList.remove('hidden');
+        loadingText.classList.add('hidden');
+        
+        // Show error message
+        showVariantMessage('Failed to switch variant. Please try again.', 'error');
+    });
+}
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for variant in transcription.variants.all %}
-        <div
-            class="border rounded-lg p-4 transition-all {% if variant.is_selected %}border-musical-gold bg-musical-gold/5{% else %}border-gray-200 hover:border-gray-300{% endif %}">
-            <div class="flex justify-between items-start mb-3">
-                <h4 class="font-medium text-gray-900">{{ variant.variant_name|title }}</h4>
-                {% if variant.is_selected %}
-                <span class="px-2 py-1 bg-musical-gold text-white text-xs font-medium rounded-full">
-                    Selected
+function updateVariantSelection(selectedVariantId) {
+    // Remove selected state from all variants
+    document.querySelectorAll('[id^="variant-"]').forEach(variantEl => {
+        variantEl.classList.remove('border-musical-gold', 'bg-musical-gold/5', 'ring-2', 'ring-musical-gold', 'ring-opacity-20');
+        variantEl.classList.add('border-gray-200');
+        
+        // Update button
+        const button = variantEl.querySelector('button');
+        const activeDiv = variantEl.querySelector('.bg-green-100');
+        const selectedSpan = variantEl.querySelector('.animate-pulse');
+        
+        if (button) {
+            button.style.display = 'block';
+            button.disabled = false;
+            button.querySelector('.select-text').classList.remove('hidden');
+            button.querySelector('.loading-text').classList.add('hidden');
+        }
+        if (activeDiv) activeDiv.remove();
+        if (selectedSpan) selectedSpan.remove();
+    });
+    
+    // Add selected state to the new variant
+    const selectedVariant = document.getElementById(`variant-${selectedVariantId}`);
+    if (selectedVariant) {
+        selectedVariant.classList.add('border-musical-gold', 'bg-musical-gold/5', 'ring-2', 'ring-musical-gold', 'ring-opacity-20');
+        selectedVariant.classList.remove('border-gray-200');
+        
+        // Replace button with active state
+        const button = selectedVariant.querySelector('button');
+        if (button) {
+            button.outerHTML = `
+                <div class="w-full px-4 py-2 bg-green-100 text-green-800 font-medium rounded-lg text-center">
+                    Currently Active
+                </div>
+            `;
+        }
+        
+        // Add selected badge
+        const title = selectedVariant.querySelector('h4');
+        if (title && !title.nextElementSibling.classList.contains('animate-pulse')) {
+            title.insertAdjacentHTML('afterend', `
+                <span class="px-2 py-1 bg-musical-gold text-white text-xs font-medium rounded-full animate-pulse">
+                    ✓ Active
                 </span>
-                {% endif %}
-            </div>
+            `);
+        }
+    }
+}
 
-            <div class="space-y-2 text-sm mb-4">
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Difficulty:</span>
-                    <div class="flex items-center gap-2 flex-1 justify-end">
-                        <div class="w-20 bg-gray-200 rounded-full h-2">
-                            <div class="bg-red-500 h-2 rounded-full transition-all duration-300"
-                                style="width: {{ variant.difficulty_score }}%"></div>
-                        </div>
-                        <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.difficulty_score|floatformat:1 }}</span>
-                    </div>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Playability:</span>
-                    <div class="flex items-center gap-2 flex-1 justify-end">
-                        <div class="w-20 bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-500 h-2 rounded-full transition-all duration-300"
-                                style="width: {{ variant.playability_score }}%"></div>
-                        </div>
-                        <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.playability_score|floatformat:1 }}</span>
-                    </div>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-600">Stretch:</span>
-                    <div class="flex items-center gap-2 flex-1 justify-end">
-                        <div class="w-20 bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                                style="width: {{ variant.stretch_score }}%"></div>
-                        </div>
-                        <span class="text-gray-900 font-medium min-w-[2rem]">{{ variant.stretch_score|floatformat:1 }}</span>
-                    </div>
-                </div>
-            </div>
+function refreshAlphaTab() {
+    if (alphaTabApi && alphaTabInitialized) {
+        console.log('Refreshing AlphaTab with new variant data...');
+        
+        // Re-fetch and reload MusicXML
+        const csrfToken = getCookie('csrftoken');
+        fetch(`/transcription/{{ transcription.id }}/export/musicxml/`, {
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => response.text())
+        .then(musicxml => {
+            alphaTabApi.load(musicxml);
+            console.log('AlphaTab refreshed with new variant');
+        })
+        .catch(error => {
+            console.error('Failed to refresh AlphaTab:', error);
+        });
+    }
+}
 
-            {% if not variant.is_selected %}
-            <button type="button"
-                class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
-                hx-post="{% url 'transcriber:select_variant' transcription.id variant.id %}" hx-target="#tab-display"
-                hx-swap="outerHTML">
-                Select Variant
-            </button>
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
+function showVariantMessage(message, type) {
+    const messageEl = document.createElement('div');
+    messageEl.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    messageEl.textContent = message;
+    
+    document.body.appendChild(messageEl);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        messageEl.remove();
+    }, 3000);
+}
+</script>
 
 {% else %}
 <!-- Still processing, keep polling -->
 <div hx-get="{% url 'transcriber:transcription_status' transcription.id %}" hx-trigger="every 2s"
     hx-target="#tab-display" hx-swap="outerHTML">
-    {% include 'transcriber/partials/processing_status.html' %}
+    <div class="text-center py-8">
+        <div class="text-blue-600 mb-2">Processing...</div>
+        <div class="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+    </div>
 </div>
 {% endif %}
 </div>

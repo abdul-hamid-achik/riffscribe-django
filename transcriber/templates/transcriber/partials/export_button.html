@@ -22,35 +22,58 @@
     </a>
     
     {% else %}
-    <!-- Export button - triggers generation -->
+    <!-- Export button - triggers generation or auth modal for premium formats -->
+    {% if format == 'gp5' or format == 'midi' %}
+        {% if not user.is_authenticated %}
+        <!-- Premium format - require auth -->
+        <button type="button"
+                onclick="showAuthModal('signin', 'To export {{ format_display }} files, please sign in or create a free account.')"
+                class="w-full text-left p-4 rounded-lg border-2 border-yellow-500 bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-200 hover:to-orange-200 transition-all group relative">
+            <!-- Premium badge -->
+            <div class="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                ⭐ Premium
+            </div>
+        {% else %}
+        <!-- Authenticated user - allow export -->
+        <button type="button"
+                hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
+                hx-vals='{"format": "{{ format }}"}'
+                hx-target="#export-{{ format }}-container"
+                hx-swap="outerHTML"
+                hx-indicator="#export-{{ format }}-spinner"
+                class="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-yellow-500 hover:bg-yellow-50 transition-all group">
+        {% endif %}
+    {% else %}
+    <!-- Free format - always allow -->
     <button type="button"
             hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
             hx-vals='{"format": "{{ format }}"}'
             hx-target="#export-{{ format }}-container"
             hx-swap="outerHTML"
             hx-indicator="#export-{{ format }}-spinner"
-            class="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-musical-gold hover:bg-musical-gold/5 transition-all group">
+            class="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-yellow-500 hover:bg-yellow-50 transition-all group">
+    {% endif %}
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-musical-gold/10 rounded-lg flex items-center justify-center group-hover:bg-musical-gold/20">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center group-hover:bg-yellow-200">
                     {% if format == 'musicxml' %}
-                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                     {% elif format == 'gp5' %}
-                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
                     </svg>
                     {% elif format == 'midi' %}
-                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
                     </svg>
                     {% elif format == 'ascii' %}
-                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
                     </svg>
                     {% else %}
-                    <svg class="w-6 h-6 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                     </svg>
                     {% endif %}
@@ -63,12 +86,12 @@
             <div class="flex items-center gap-2">
                 <!-- Loading spinner (hidden by default) -->
                 <svg id="export-{{ format }}-spinner" 
-                     class="htmx-indicator animate-spin h-4 w-4 text-musical-gold" 
+                     class="htmx-indicator animate-spin h-4 w-4 text-yellow-600" 
                      fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                 </svg>
-                <svg class="w-4 h-4 text-gray-400 group-hover:text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-gray-400 group-hover:text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
             </div>

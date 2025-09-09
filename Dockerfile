@@ -74,13 +74,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# REMOVED HEAVY ML DEPENDENCIES:
-# - build-essential, g++ (not needed for AI API calls)
-# - libsndfile1-dev, libportaudio2, portaudio19-dev (heavy audio libs)
-# - libsndfile1, libgomp1 (ML model dependencies)
-# - git (not needed in production)
 
-# Copy pyproject.toml and install LIGHTWEIGHT AI dependencies
 COPY pyproject.toml ./
 
 RUN --mount=type=cache,target=/opt/uv-cache \
@@ -90,7 +84,6 @@ RUN --mount=type=cache,target=/opt/uv-cache \
 
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy minimal app structure for editable install
 COPY --chown=django:django riffscribe/__init__.py ./riffscribe/__init__.py  
 COPY --chown=django:django transcriber/__init__.py ./transcriber/__init__.py
 

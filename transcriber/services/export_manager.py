@@ -20,9 +20,12 @@ def _get_music21():
 from midiutil import MIDIFile
 
 try:
-    import guitarpro as gp
+    import guitarpro
 except ImportError:
-    gp = None
+    try:
+        import pyguitarpro as guitarpro
+    except ImportError:
+        guitarpro = None
 
 logger = logging.getLogger(__name__)
 
@@ -278,102 +281,66 @@ class ExportManager:
             tab_data = self.tab_data
             
         if not tab_data:
-            logger.warning("GP5 export: No tab data available, creating minimal empty file")
-            # Create a minimal GP5 file instead of returning None
-            return self._create_empty_gp5_file()
-            
-        if not gp:
-            logger.warning("guitarpro library not available")
+            logger.warning("GP5 export: No tab data available")
             return None
-        
-        # Get measures or create a default empty one
-        measures_data = tab_data.get('measures', [])
-        if not measures_data:
-            logger.info("GP5 export: No measures found, creating empty measure")
-            measures_data = [{'notes': [], 'start_time': 0.0, 'number': 1}]
-        
-        # Count total notes across all measures
-        total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
-        logger.info(f"GP5 export: Processing {len(measures_data)} measures with {total_notes} total notes")
+            
+        if not guitarpro:
+            logger.error("GP5 export: guitarpro/pyguitarpro library not available - cannot export GP5 format")
+            return None
+            
+        logger.info(f"GP5 export: Processing {len(tab_data.get('measures', []))} measures")
         
         try:
-            # Create basic GP5 structure
-            song = gp.Song()
+            # Get measures or create a default empty one
+            measures_data = tab_data.get('measures', [])
+            if not measures_data:
+                logger.info("GP5 export: No measures found, creating empty measure")
+                measures_data = [{'notes': [], 'start_time': 0.0, 'number': 1}]
+            
+            # Count total notes across all measures
+            total_notes = sum(len(measure.get('notes', [])) for measure in measures_data)
+            logger.info(f"GP5 export: Processing {len(measures_data)} measures with {total_notes} total notes")
+            
+            # Create basic GP5 structure using PyGuitarPro API
+            logger.info("GP5 export: Creating GP5 song structure...")
+            song = guitarpro.models.Song()
             song.title = self.transcription.filename or "Untitled"
             song.artist = "RiffScribe"
+            logger.info("GP5 export: Song created successfully")
             
             # Set tempo if available
             tempo_value = tab_data.get('tempo', 120)
             song.tempo = tempo_value
+            logger.info(f"GP5 export: Tempo set to {tempo_value}")
             
-            # Create a single guitar track
-            track = gp.Track(song=song)
+            # Create a single guitar track (requires song parameter)
+            track = guitarpro.models.Track(song)
             track.name = "Guitar"
-            track.isPercussionTrack = False
+            track.channel = guitarpro.models.TrackChannel()
+            track.channel.instrument = 24  # Acoustic guitar
+            song.tracks = [track]
+            logger.info("GP5 export: Track created and added to song")
             
-            # Set MIDI channel if available
-            if hasattr(track, 'channel'):
-                track.channel = gp.MidiChannel()
-                track.channel.instrument = 24  # Acoustic guitar
+            # Create basic measure structure
+            for measure_data in measures_data:
+                measure = guitarpro.models.Measure()
+                # Initialize empty voices for the measure
+                measure.voices = [guitarpro.models.Voice()]
+                track.measures.append(measure)
             
-            # Add track to song
-            song.tracks.append(track)
+            logger.info(f"GP5 export: Created {len(track.measures)} measures")
             
-            # Create measures structure
-            if hasattr(track, 'measures') and not track.measures:
-                # Create measures based on available data
-                for i in range(max(1, len(measures_data))):
-                    measure = gp.Measure()
-                    
-                    # Add basic voice with at least one beat
-                    voice = gp.Voice()
-                    beat = gp.Beat()
-                    
-                    # Set beat duration
-                    try:
-                        if hasattr(gp, 'DurationType'):
-                            beat.duration = gp.Duration(value=gp.DurationType.quarter)
-                        else:
-                            beat.duration = gp.Duration(value=4)
-                    except:
-                        # Fallback - create minimal duration
-                        beat.duration = gp.Duration()
-                    
-                    # If we have note data for this measure, add it
-                    if i < len(measures_data) and measures_data[i].get('notes'):
-                        measure_notes = measures_data[i].get('notes', [])
-                        for note_data in measure_notes[:8]:  # Limit to 8 notes per measure for safety
-                            try:
-                                note = gp.Note()
-                                note.value = min(max(note_data.get('fret', 0), 0), 24)  # Clamp fret 0-24
-                                note.string = min(max(note_data.get('string', 1), 1), 6)  # Clamp string 1-6
-                                note.velocity = min(max(note_data.get('velocity', 80), 1), 127)  # Clamp velocity
-                                beat.notes.append(note)
-                            except Exception as note_error:
-                                logger.warning(f"Failed to add note: {note_error}")
-                                continue
-                    else:
-                        # If no notes in this measure, add a rest (empty beat)
-                        # The beat is already created, so we just don't add any notes
-                        logger.debug(f"Measure {i+1} has no notes, creating rest")
-                    
-                    voice.beats.append(beat)
-                    measure.voices.append(voice)
-                    track.measures.append(measure)
-            
-            # Save to temporary file
+            # Write to temporary file
             temp_file = tempfile.NamedTemporaryFile(suffix='.gp5', delete=False)
-            temp_file.close()  # Close file handle
+            temp_file.close()
             
-            # Write the file
-            gp.write(song, temp_file.name)
-            logger.info(f"Successfully created GP5 file: {temp_file.name}")
+            guitarpro.write(song, temp_file.name)
+            logger.info(f"GP5 export: Successfully wrote file to {temp_file.name}")
             
             return temp_file.name
             
         except Exception as e:
-            logger.error(f"Error generating GP5: {str(e)}")
-            logger.error(f"GP5 export failed - tab_data structure: {json.dumps(tab_data, indent=2)[:500]}...")
+            logger.error(f"GP5 export failed: {str(e)}")
             return None
     
     def debug_tab_data(self) -> Dict:

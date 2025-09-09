@@ -1,13 +1,18 @@
-<!-- Comprehensive Export Section with HTMX -->
+<!-- Satirical Export Section with HTMX -->
 {% load static %}
 
-<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-    <h2 class="font-headline text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-        <svg class="w-5 h-5 text-musical-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-        </svg>
-        Export Formats
-    </h2>
+<div class="satirical-export-section bg-nyt-white border-4 border-nyt-black p-8">
+    <div class="text-center mb-8">
+        <h2 class="satirical-headline text-3xl font-bold text-nyt-black mb-4 animate-dramatic-zoom">
+            📋 OFFICIAL DOCUMENTATION CENTER
+        </h2>
+        <div class="nyt-subheadline text-lg text-nyt-charcoal mb-2">
+            Download Certificates of Musical Competency
+        </div>
+        <div class="font-mono text-xs text-nyt-gray tracking-widest">
+            MULTIPLE FORMAT DISTRIBUTION • INSTANT DOWNLOAD • PROFESSIONAL GRADE
+        </div>
+    </div>
     
     <div class="space-y-3" id="export-formats-list">
         <!-- MusicXML Export -->
@@ -31,22 +36,19 @@
         </div>
     </div>
     
-    <!-- Batch Export Actions -->
-    <div class="mt-6 pt-6 border-t border-gray-100">
-        <div class="flex items-center justify-between">
+    <!-- Satirical Batch Export Actions -->
+    <div class="mt-8 pt-6 border-t-4 border-dashed border-nyt-black">
+        <div class="text-center">
             <button id="export-all-btn"
                     hx-post="{% url 'transcriber:export' pk=transcription.pk %}"
                     hx-vals='{"format": "all"}'
                     hx-target="#export-status-message"
                     hx-swap="innerHTML"
-                    class="text-sm text-musical-gold hover:text-musical-treble font-medium flex items-center gap-1">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
-                </svg>
-                Generate All Formats
+                    class="btn-dramatic animate-flash font-bold px-8 py-3">
+                📦 GENERATE ALL DOCUMENTATION FORMATS
             </button>
             
-            <div id="export-status-message" class="text-sm text-gray-500"></div>
+            <div id="export-status-message" class="mt-4 font-mono text-sm text-nyt-gray"></div>
         </div>
     </div>
 </div>
@@ -106,7 +108,7 @@
         <button hx-post="{% url 'transcriber:clear_exports' pk=transcription.pk %}"
                 hx-confirm="Delete all export files?"
                 hx-target="#downloads-list"
-                class="text-xs text-red-500 hover:text-red-700">
+                class="text-xs text-red-600 hover:text-red-800">
             Clear All
         </button>
     </div>

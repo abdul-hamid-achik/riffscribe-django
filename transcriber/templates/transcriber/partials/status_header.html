@@ -1,37 +1,32 @@
 <!-- Status Header -->
-<div class="px-6 py-4 border-b border-gray-100">
+<div class="bg-white border border-gray-200 rounded-lg p-6">
     <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-4">
             <!-- Status Icon -->
             <div class="flex-shrink-0">
                 {% if transcription.status == 'completed' %}
-                <div
-                    class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clip-rule="evenodd" />
+                <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
                 </div>
                 {% elif transcription.status == 'processing' %}
-                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                    <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                 </div>
                 {% elif transcription.status == 'failed' %}
-                <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
                     </svg>
                 </div>
                 {% else %}
-                <div class="w-10 h-10 bg-gray-400 rounded-full flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
                     </svg>
                 </div>
                 {% endif %}
@@ -39,26 +34,26 @@
 
             <!-- Status Title and Description -->
             <div>
-                <h2 class="text-xl font-bold text-gray-900">
+                <h2 class="text-lg font-semibold text-gray-900 mb-1">
                     {% if transcription.status == 'completed' %}
-                    Transcription Complete
+                    Completed
                     {% elif transcription.status == 'processing' %}
-                    Processing Your Music
+                    Processing
                     {% elif transcription.status == 'failed' %}
-                    Transcription Failed
+                    Failed
                     {% else %}
-                    Processing Queued
+                    Pending
                     {% endif %}
                 </h2>
                 <p class="text-sm text-gray-600">
                     {% if transcription.status == 'completed' %}
-                    Your guitar tablature is ready
+                    Transcription completed successfully
                     {% elif transcription.status == 'processing' %}
-                    Our AI is analyzing your audio file...
+                    AI is analyzing your audio file...
                     {% elif transcription.status == 'failed' %}
-                    {{ transcription.error_message|default:"An error occurred during processing" }}
+                    Error: {{ transcription.error_message|default:"Processing failed" }}
                     {% else %}
-                    Waiting to start processing
+                    Audio file queued for processing
                     {% endif %}
                 </p>
             </div>
@@ -68,14 +63,10 @@
         <div>
             {% if transcription.status == 'failed' %}
             <button type="button"
-                class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors"
                 hx-post="{% url 'transcriber:reprocess' transcription.id %}" hx-target="#main-content"
                 hx-swap="innerHTML">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Try Again
+                Retry
             </button>
             {% endif %}
         </div>

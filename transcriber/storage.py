@@ -119,3 +119,14 @@ class PublicMediaStorage(S3Boto3Storage):
     location = 'public'
     default_acl = 'public-read'
     file_overwrite = False
+
+
+class ExportStorage(S3Boto3Storage):
+    """
+    Storage for export files - public access, no location prefix issues
+    """
+    bucket_name = getattr(settings, 'AWS_STORAGE_BUCKET_NAME', 'riffscribe-media')
+    location = ''  # No location prefix to avoid path issues
+    default_acl = 'public-read'
+    file_overwrite = False
+    custom_domain = False

@@ -271,7 +271,10 @@ class TabExport(models.Model):
     
     transcription = models.ForeignKey(Transcription, on_delete=models.CASCADE, related_name='exports')
     format = models.CharField(max_length=20, choices=FORMAT_CHOICES)
-    file = models.FileField(upload_to='exports/%Y/%m/%d/')
+    file = models.FileField(
+        upload_to='exports/%Y/%m/%d/', 
+        storage=lambda: __import__('transcriber.storage', fromlist=['ExportStorage']).ExportStorage()
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:

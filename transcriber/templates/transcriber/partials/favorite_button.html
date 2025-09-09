@@ -3,21 +3,21 @@
 <button id="favorite-btn"
         hx-post="{% url 'transcriber:toggle_favorite' pk=transcription.pk %}"
         hx-swap="outerHTML"
-        class="p-2 rounded-lg border border-gray-200 hover:border-musical-gold transition-all group relative"
+        class="p-2 rounded-lg border border-gray-200 hover:border-yellow-500 transition-all group relative"
         title="{% if is_favorite %}Remove from favorites{% else %}Add to favorites{% endif %}">
 {% else %}
 <button id="favorite-btn"
         onclick="showAuthModal('signin')"
-        class="p-2 rounded-lg border border-gray-200 hover:border-musical-gold transition-all group relative"
+        class="p-2 rounded-lg border border-gray-200 hover:border-yellow-500 transition-all group relative"
         title="Sign in to add to favorites">
 {% endif %}
     
     <!-- Star Icon -->
     <svg class="w-5 h-5 transition-all
                 {% if is_favorite %}
-                text-musical-gold fill-current animate-star-burst
+                text-yellow-500 fill-current animate-star-burst
                 {% else %}
-                text-gray-400 group-hover:text-musical-gold
+                text-gray-400 group-hover:text-yellow-500
                 {% endif %}" 
          viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" 

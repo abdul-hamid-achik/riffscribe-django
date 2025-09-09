@@ -32,8 +32,6 @@ dependencies = [
     "PyJWT>=2.8.0",
     "cryptography>=41.0.0",
     "django-crispy-forms>=2.1",
-    "crispy-tailwind>=1.0.3",
-    "django-tailwind[reload]>=3.8",
     "django-simple-captcha>=0.6.0",
     "requests>=2.31",
     # AI services (lightweight!)
@@ -41,6 +39,8 @@ dependencies = [
     # Note: Heavy ML dependencies removed - now using OpenAI API instead!
     "midiutil>=1.2.1",
     "pytest-asyncio>=1.1.0",
+    "numpy>=1.26.4",
+    "pyguitarpro>=0.10",
 ]
 
 [project.optional-dependencies]
@@ -52,8 +52,9 @@ worker = [
     "amqp>=5.2,<5.3",
     "flower>=2.0",
     
-    # Lightweight audio processing (replaces heavy ML stack)
+    # Audio processing for duration calculation and chunking
     "pydub>=0.25",  # For basic audio format conversion and duration
+    "librosa>=0.10.0",  # For accurate audio duration and analysis
     
     # Music processing (keep the essentials)
     "music21>=9.1",  # For music theory and notation

@@ -62,104 +62,114 @@
 {% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-white">
     <!-- Header Section -->
     <div class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="{% url 'transcriber:library' %}" class="text-gray-500 hover:text-gray-700">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="mb-6">
+                <div class="mb-4">
+                    <a href="{% url 'transcriber:library' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        ← Back to Library
                     </a>
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">{{ transcription.filename }}</h1>
-                        <div class="flex items-center space-x-4 mt-1 text-sm text-gray-500">
-                            <span>{{ transcription.created_at|timesince }} ago</span>
-                            {% if transcription.duration %}
-                            <span>{{ transcription.duration|format_duration }}</span>
-                            {% endif %}
-                            {% if transcription.estimated_tempo %}
-                            <span>{{ transcription.estimated_tempo }} BPM</span>
-                            {% endif %}
-                            {% if transcription.estimated_key %}
-                            <span>{{ transcription.estimated_key }}</span>
-                            {% endif %}
-                            {% if transcription.original_audio %}
-                            <span>{{ transcription.original_audio.size|file_size }}</span>
-                            {% endif %}
-                        </div>
+                </div>
+                
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    {{ transcription.filename|truncatechars:50 }}
+                </h1>
+                
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <div class="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        <span class="font-medium">Processed: {{ transcription.created_at|timesince }} ago</span>
+                        {% if transcription.duration %}
+                        <span>Duration: {{ transcription.duration|format_duration }}</span>
+                        {% endif %}
+                        {% if transcription.estimated_tempo %}
+                        <span>Tempo: {{ transcription.estimated_tempo }} BPM</span>
+                        {% endif %}
+                        {% if transcription.estimated_key %}
+                        <span>Key: {{ transcription.estimated_key }}</span>
+                        {% endif %}
+                        {% if transcription.original_audio %}
+                        <span>Size: {{ transcription.original_audio.size|file_size }}</span>
+                        {% endif %}
                     </div>
                 </div>
-
-                <!-- Actions -->
-                <div class="flex items-center space-x-3">
+                
+                <div class="mb-6">
                     {% include 'transcriber/partials/favorite_button.html' %}
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="main-content" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Unified Status Display -->
-        <div class="mb-8">
-            {% include 'transcriber/partials/status.html' %}
-        </div>
+    <!-- Main Content -->
+    <div id="main-content" class="bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Status Display -->
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Status</h2>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    {% include 'transcriber/partials/status.html' %}
+                </div>
+            </div>
 
-        {% if transcription.status == 'completed' %}
-        <!-- Content for completed transcriptions -->
-        <div class="space-y-8">
-            <!-- Tab Display Section -->
-            {% include 'transcriber/partials/tab_display.html' %}
+            {% if transcription.status == 'completed' %}
+            <!-- Content for completed transcriptions -->
+            <div class="space-y-8">
+                <!-- Tab Display Section -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Guitar Tab</h2>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        {% include 'transcriber/partials/tab_display.html' %}
+                    </div>
+                </div>
 
-            <!-- Export Section -->
-            {% include 'transcriber/partials/export_section.html' %}
+                <!-- Export Section -->
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 mb-4">Export Options</h2>
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        {% include 'transcriber/partials/export_section.html' %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 
     <!-- Comments Section -->
     {% if transcription.status == 'completed' %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-lg font-medium text-gray-900 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-musical-gold" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                        </svg>
-                        Comments
-                    </h3>
-                    <div class="text-sm text-gray-500">
-                        Share your thoughts about this transcription
-                    </div>
+    <div class="bg-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="bg-white border border-gray-200 rounded-lg">
+                <!-- Comments Header -->
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Comments</h3>
+                    <p class="text-sm text-gray-600 mt-1">Share your thoughts about this transcription</p>
                 </div>
-            </div>
 
-            <div class="p-6">
-                <!-- Comment Form Container -->
-                <div class="mb-8" id="comment-form-container">
-                    <div hx-get="{% url 'transcriber:get_comment_form' transcription.pk %}" hx-trigger="load"
-                        hx-target="this" hx-swap="innerHTML">
-                        <div class="animate-pulse">
-                            <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                            <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                <!-- Comments Content -->
+                <div class="p-6">
+                    <!-- Comment Form Container -->
+                    <div class="mb-8" id="comment-form-container">
+                        <div hx-get="{% url 'transcriber:get_comment_form' transcription.pk %}" hx-trigger="load"
+                            hx-target="this" hx-swap="innerHTML">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                                <div class="h-20 bg-gray-200 rounded mb-4"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Comments List Container -->
-                <div hx-get="{% url 'transcriber:comments_list' transcription.pk %}" hx-trigger="load" hx-target="this"
-                    hx-swap="innerHTML">
-                    <div class="animate-pulse space-y-4">
-                        <div class="flex space-x-3">
-                            <div class="h-10 w-10 bg-gray-200 rounded-full"></div>
-                            <div class="flex-1">
-                                <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-                                <div class="h-12 bg-gray-200 rounded"></div>
+                    <!-- Comments List Container -->
+                    <div hx-get="{% url 'transcriber:comments_list' transcription.pk %}" hx-trigger="load" hx-target="this"
+                        hx-swap="innerHTML">
+                        <div class="animate-pulse space-y-4">
+                            <div class="flex space-x-3">
+                                <div class="h-10 w-10 bg-gray-200 rounded-full"></div>
+                                <div class="flex-1">
+                                    <div class="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+                                    <div class="h-12 bg-gray-200 rounded"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
