@@ -568,7 +568,23 @@ class ExportManager:
     
     def _tab_to_midi(self, string: int, fret: int, tuning: list) -> int:
         """Convert tab position to MIDI note number."""
-        return tuning[string] + fret
+        # Convert 1-indexed string to 0-indexed if needed
+        string_index = string - 1 if string > 0 else string
+        
+        # Bounds checking
+        if string_index < 0 or string_index >= len(tuning):
+            logger.warning(f"String index {string} (0-indexed: {string_index}) out of range for tuning array of length {len(tuning)}. Using string 0.")
+            string_index = 0
+            
+        # Fret bounds checking
+        if fret < 0:
+            logger.warning(f"Negative fret value {fret}, using 0")
+            fret = 0
+        elif fret > 24:  # Reasonable upper limit
+            logger.warning(f"High fret value {fret}, capping at 24")
+            fret = 24
+            
+        return tuning[string_index] + fret
     
     def generate_gp5_bytes(self, tab_data: Optional[Dict] = None) -> bytes:
         """
@@ -609,7 +625,7 @@ class ExportManager:
                     'start_time': note['time'] + measure.get('start_time', 0),
                     'end_time': note['time'] + measure.get('start_time', 0) + note['duration'],
                     'midi_note': self._tab_to_midi(
-                        note['string'] - 1,  # Convert to 0-indexed
+                        note['string'],  # _tab_to_midi now handles indexing
                         note['fret'],
                         tab_data.get('tuning', [40, 45, 50, 55, 59, 64])
                     ),
@@ -650,9 +666,13 @@ class ExportManager:
             # Add track to song
             song.tracks.append(track)
             
-            # Create one empty measure
+            # Create one empty measure with proper parameters
             if hasattr(track, 'measures'):
-                measure = gp.Measure()
+                # Create measure header first
+                header = gp.MeasureHeader()
+                
+                # Create measure with required parameters
+                measure = gp.Measure(track, header)
                 
                 # Add basic voice with one rest beat
                 voice = gp.Voice()
@@ -670,6 +690,9 @@ class ExportManager:
                 voice.beats.append(beat)
                 measure.voices.append(voice)
                 track.measures.append(measure)
+                
+                # Add header to song
+                song.measureHeaders.append(header)
             
             # Save to temporary file
             temp_file = tempfile.NamedTemporaryFile(suffix='.gp5', delete=False)

@@ -13,15 +13,14 @@
         {% if not user.is_authenticated %}
         <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-xl mx-auto">
             <p class="font-body text-sm text-blue-800 mb-3">
-                <span class="font-semibold">Create an account</span> to save your transcriptions, access your library, and track your uploads!
+                <span class="font-semibold">Create an account</span> to save your transcriptions, access your library,
+                and track your uploads!
             </p>
             <div class="flex justify-center space-x-3">
-                <button onclick="showAuthModal('signup')" 
-                        class="btn-primary text-sm py-2 px-4">
+                <button onclick="showAuthModal('signup')" class="btn-primary text-sm py-2 px-4">
                     Sign Up Free
                 </button>
-                <button onclick="showAuthModal('signin')" 
-                        class="btn-secondary text-sm py-2 px-4">
+                <button onclick="showAuthModal('signin')" class="btn-secondary text-sm py-2 px-4">
                     Sign In
                 </button>
             </div>
@@ -31,11 +30,8 @@
 
     <!-- Upload Card -->
     <div class="sheet-card rounded-xl p-10 mb-10">
-        <form id="upload-form" method="post" enctype="multipart/form-data" 
-            hx-post="{% url 'transcriber:upload' %}"
-            hx-target="#upload-result" 
-            hx-swap="innerHTML" 
-            x-data="{ 
+        <form id="upload-form" method="post" enctype="multipart/form-data" hx-post="{% url 'transcriber:upload' %}"
+            hx-target="#upload-result" hx-swap="innerHTML" x-data="{ 
                 uploading: false, 
                 hasFile: false,
                 fileName: '',
@@ -80,10 +76,8 @@
                 <label for="audio-file" class="cursor-pointer">
                     <h3 class="font-headline text-2xl text-nyt-black mb-3">Drop your audio file here</h3>
                     <p class="font-body text-nyt-gray-medium text-lg mb-4">or click to browse your files</p>
-                    <input type="file" id="audio-file" name="audio_file" 
-                        accept=".mp3,.wav,.m4a,.flac,.ogg"
-                        class="hidden" 
-                        x-on:change="
+                    <input type="file" id="audio-file" name="audio_file" accept=".mp3,.wav,.m4a,.flac,.ogg"
+                        class="hidden" x-on:change="
                             const file = $event.target.files[0];
                             if (file) {
                                 hasFile = true;
@@ -130,23 +124,19 @@
                             Selected: <span id="file-name" class="font-semibold"></span>
                         </span>
                     </div>
-                    <button type="button" 
-                        x-on:click="
+                    <button type="button" x-on:click="
                             document.getElementById('audio-file').value=''; 
                             document.getElementById('file-info').classList.add('hidden');
                             hasFile = false;
                             fileName = '';
-                        "
-                        class="btn-secondary text-sm py-1 px-3">Remove</button>
+                        " class="btn-secondary text-sm py-1 px-3">Remove</button>
                 </div>
             </div>
 
             <!-- Upload Button -->
-            <button type="submit" 
-                class="w-full mt-8 btn-primary text-lg musical-note" 
+            <button type="submit" class="w-full mt-8 btn-primary text-lg musical-note"
                 x-on:click.prevent="validateAndSubmit($event) && $el.form.requestSubmit()"
-                x-bind:disabled="uploading || !hasFile"
-                x-bind:class="{'opacity-50 cursor-not-allowed': !hasFile}">
+                x-bind:disabled="uploading || !hasFile" x-bind:class="{'opacity-50 cursor-not-allowed': !hasFile}">
                 <span x-show="!uploading && !hasFile">Select a File First</span>
                 <span x-show="!uploading && hasFile">Start Transcription</span>
                 <span x-show="uploading" class="flex items-center justify-center">
@@ -178,7 +168,8 @@
                 </div>
                 <h3 class="font-headline text-xl font-bold text-nyt-black mb-3">Upload Audio</h3>
                 <p class="font-body text-nyt-gray-medium leading-relaxed">
-                    Upload your guitar recording, song, or any musical audio file in supported formats
+                    Upload your guitar recording, song, or any musical audio file<br>
+                    <span class="text-sm">Supported formats: FLAC, M4A, MP3, MP4, MPEG, MPGA, OGA, OGG, WAV, WEBM</span>
                 </p>
             </div>
 

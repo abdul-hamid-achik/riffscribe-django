@@ -128,7 +128,7 @@ def library_search(request):
     }
     
     # Return the enhanced transcriptions grid
-    return render(request, 'transcriber/partials/transcriptions_grid_enhanced.html', context)
+    return render(request, 'transcriber/partials/transcriptions_grid.html', context)
 
 
 @require_http_methods(["GET"])

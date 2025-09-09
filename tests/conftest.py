@@ -6,7 +6,21 @@ import os
 import sys
 import pytest
 import django
+import logging
 from pathlib import Path
+
+# Configure logging for tests
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)8s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
+    force=True  # Override any existing logging configuration
+)
+
+# Set specific loggers to INFO level for better test visibility
+logging.getLogger('transcriber').setLevel(logging.INFO)
+logging.getLogger('transcriber.tasks').setLevel(logging.INFO)
+logging.getLogger('transcriber.services').setLevel(logging.INFO)
 
 # Reclassify legacy markers into primary categories
 @pytest.hookimpl(tryfirst=True)
@@ -129,13 +143,22 @@ def complex_riff_wav():
     return None
 
 @pytest.fixture
+def full_song_wav():
+    """Get path to full-song.wav sample file."""
+    samples_dir = Path(__file__).parent.parent / "samples"
+    full_song = samples_dir / "full-song.wav"
+    if full_song.exists():
+        return str(full_song)
+    return None
+
+@pytest.fixture
 def sample_audio_files():
     """Get dict of all available sample audio files."""
     samples_dir = Path(__file__).parent.parent / "samples"
     files = {}
     
-    for name in ['simple-riff', 'complex-riff']:
-        for ext in ['wav', 'mp3', 'flac', 'm4a', 'ogg', 'aac']:
+    for name in ['simple-riff', 'complex-riff', 'full-song']:
+        for ext in ['wav', 'mp3', 'flac', 'm4a', 'ogg']:
             file_path = samples_dir / f"{name}.{ext}"
             if file_path.exists():
                 files[f"{name}_{ext}"] = str(file_path)

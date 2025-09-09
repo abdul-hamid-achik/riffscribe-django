@@ -52,6 +52,17 @@ def multiply(value, arg):
     except (ValueError, TypeError):
         return 0
 
+@register.filter
+def divide(value, arg):
+    """
+    Divide a value by an argument.
+    Usage: {{ value|divide:2 }}
+    """
+    try:
+        return float(value) / float(arg)
+    except (ValueError, TypeError):
+        return 0
+
 
 @register.filter
 def percentage(value, total):

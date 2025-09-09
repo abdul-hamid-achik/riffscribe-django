@@ -45,8 +45,9 @@ def upload(request):
         
         audio_file = request.FILES['audio_file']
         
-        # Validate file extension
-        allowed_extensions = ['.mp3', '.wav', '.m4a', '.flac', '.ogg']
+        # Validate file extension - OpenAI Whisper supported formats only
+        # Based on OpenAI API: ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm']
+        allowed_extensions = ['.flac', '.m4a', '.mp3', '.mp4', '.mpeg', '.mpga', '.oga', '.ogg', '.wav', '.webm']
         file_ext = os.path.splitext(audio_file.name)[1].lower()
         
         if file_ext not in allowed_extensions:

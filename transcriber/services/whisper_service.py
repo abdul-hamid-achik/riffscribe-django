@@ -14,7 +14,6 @@ import librosa
 import soundfile as sf
 from openai import OpenAI
 import openai  # re-exported module for tests that patch transcriber.services.whisper_service.openai
-from pydub import AudioSegment
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -332,6 +331,10 @@ class WhisperService:
         """
         Prepare audio file for Whisper API.
         
+        Since we now only accept OpenAI-supported formats in upload validation,
+        we can send files directly to the API. If a file is too large,
+        OpenAI will return a clear error message.
+        
         Args:
             audio_path: Path to audio file
             
@@ -341,30 +344,15 @@ class WhisperService:
         file_size = os.path.getsize(audio_path)
         file_ext = Path(audio_path).suffix.lower().lstrip('.')
         
-        # Check if file needs conversion
-        needs_conversion = (
-            file_size > self.MAX_FILE_SIZE or 
-            file_ext not in self.SUPPORTED_FORMATS
-        )
+        # Log file info for debugging
+        if file_size > self.MAX_FILE_SIZE:
+            logger.warning(f"File may be too large for OpenAI API: {file_size / 1024 / 1024:.1f}MB (limit: {self.MAX_FILE_SIZE / 1024 / 1024}MB)")
         
-        if needs_conversion:
-            # Convert to MP3 and/or compress
-            temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
-            audio = AudioSegment.from_file(audio_path)
-            
-            # Compress if needed
-            if file_size > self.MAX_FILE_SIZE:
-                # Calculate target bitrate to fit within size limit
-                duration_sec = len(audio) / 1000
-                target_bitrate = int((self.MAX_FILE_SIZE * 0.9 * 8) / duration_sec / 1000)
-                target_bitrate = f"{min(target_bitrate, 320)}k"
-                audio.export(temp_file.name, format='mp3', bitrate=target_bitrate)
-            else:
-                audio.export(temp_file.name, format='mp3')
-                
-            return open(temp_file.name, 'rb')
-        else:
-            return open(audio_path, 'rb')
+        if file_ext not in self.SUPPORTED_FORMATS:
+            logger.warning(f"File format '{file_ext}' may not be supported by OpenAI API. Supported: {self.SUPPORTED_FORMATS}")
+        
+        # Send file directly to OpenAI - let them handle any format/size issues
+        return open(audio_path, 'rb')
             
     def _extract_musical_elements(self, transcription: Dict[str, Any]) -> Dict[str, List]:
         """
