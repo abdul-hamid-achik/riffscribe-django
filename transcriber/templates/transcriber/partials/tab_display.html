@@ -164,6 +164,22 @@ E|----------------------------------------------------------</pre>
     <script>
         let alphaTabApi = null;
         let alphaTabInitialized = false;
+        
+        // Helper function to get CSRF cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
 
         function toggleAlphaTab(checkbox) {
             if (checkbox.checked && !alphaTabInitialized) {
@@ -189,15 +205,15 @@ E|----------------------------------------------------------</pre>
 
             const alphaTabElement = document.getElementById('alphaTabViewer');
 
-            // AlphaTab settings - use HTML5 renderer with basic configuration
+            // AlphaTab settings - use correct API values
             const settings = {
                 core: {
                     engine: "html5",
-                    logLevel: "info"
+                    logLevel: alphaTab.LogLevel.Info
                 },
                 display: {
-                    layoutMode: "horizontal",
-                    staveProfile: "tab",
+                    layoutMode: alphaTab.LayoutMode.Horizontal,
+                    staveProfile: alphaTab.StaveProfile.Tab,
                     scale: 0.8
                 },
                 notation: {
@@ -220,11 +236,15 @@ E|----------------------------------------------------------</pre>
 
             try {
                 // Fetch MusicXML with credentials for authenticated access
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                 document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || 
+                                 getCookie('csrftoken');
+                
                 fetch("{% url 'transcriber:export_musicxml' transcription.id %}", {
                     credentials: 'same-origin',  // Include cookies for authentication
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                        'X-CSRFToken': csrfToken
                     }
                 })
                     .then(response => {
