@@ -274,9 +274,34 @@ WHISPER_ENABLE_CHORD_DETECTION = config('WHISPER_ENABLE_CHORD_DETECTION', defaul
 WHISPER_MAX_RETRIES = config('WHISPER_MAX_RETRIES', default=3, cast=int)
 WHISPER_TIMEOUT = config('WHISPER_TIMEOUT', default=60, cast=int)  # seconds
 
-# Multi-track Processing
-ENABLE_MULTITRACK = config('ENABLE_MULTITRACK', default=True, cast=bool)
+# Multi-track Processing (always enabled - automatic instrument detection)
 DEMUCS_MODEL = config('DEMUCS_MODEL', default='htdemucs_ft')  # htdemucs_ft is the best quality model
+
+# Rate Limiting & Cost Control
+OPENAI_RATE_LIMIT_PER_MINUTE = config('OPENAI_RATE_LIMIT_PER_MINUTE', default=60, cast=int)
+OPENAI_MONTHLY_BUDGET_LIMIT = config('OPENAI_MONTHLY_BUDGET_LIMIT', default=100, cast=float)  # USD
+OPENAI_USAGE_TRACKING = config('OPENAI_USAGE_TRACKING', default=True, cast=bool)
+
+# Task Queue Configuration
+CELERY_ROUTES = {
+    'transcriber.tasks.separate_audio_stems': {'queue': 'separation'},
+    'transcriber.tasks.transcribe_guitar_stem': {'queue': 'transcription'},
+    'transcriber.tasks.transcribe_bass_stem': {'queue': 'transcription'},
+    'transcriber.tasks.transcribe_drums_stem': {'queue': 'transcription'},
+    'transcriber.tasks.transcribe_vocals_stem': {'queue': 'transcription'},
+    'transcriber.tasks.combine_transcriptions': {'queue': 'processing'},
+    'transcriber.tasks.generate_multitrack_exports': {'queue': 'exports'},
+    'transcriber.tasks.generate_export': {'queue': 'exports'},
+    'transcriber.tasks.generate_variants': {'queue': 'processing'},
+}
+
+# Task Priorities (lower number = higher priority)
+CELERY_TASK_PRIORITIES = {
+    'separation': 9,      # Highest priority - needed by others
+    'transcription': 5,   # High priority - core processing
+    'processing': 3,      # Medium priority - variants, combining
+    'exports': 1,         # Lower priority - can wait
+}
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [

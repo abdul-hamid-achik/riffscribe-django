@@ -13,6 +13,10 @@ from .tools.audio_prep import AudioPrepTool
 from .tools.whisper_tool import WhisperTool
 from .tools.gpt_analysis import GPTAnalysisTool
 from .tools.result_combiner import ResultCombinerTool, AIAnalysisResult
+from .tools.basic_pitch_tool import BasicPitchTool
+from .tools.demucs_tool import DemucsTool
+from ..metrics_service import start_task_metrics, complete_task_metrics, update_progress
+from ..rate_limiter import check_openai_rate_limit, record_openai_request
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +50,8 @@ class AITranscriptionService:
         self.whisper_tool = WhisperTool(self.api_key)
         self.gpt_tool = GPTAnalysisTool(self.api_key)
         self.combiner = ResultCombinerTool()
+        self.basic_pitch = BasicPitchTool()
+        self.demucs = DemucsTool()
         
         # Worker management
         self.executor = ThreadPoolExecutor(max_workers=3)
@@ -53,11 +59,19 @@ class AITranscriptionService:
         
         logger.info("AI Transcription Service initialized")
     
-    async def transcribe_audio(self, audio_path: str, task_id: Optional[str] = None) -> AIAnalysisResult:
+    async def transcribe_audio(self, audio_path: str, task_id: Optional[str] = None, 
+                              transcription_id: Optional[str] = None) -> AIAnalysisResult:
         """Main transcription method with worker spawning"""
         task_id = task_id or f"task_{len(self.active_tasks)}"
         
         logger.info(f"Starting transcription task {task_id} for: {audio_path}")
+        
+        # Start metrics tracking
+        metrics = start_task_metrics(
+            task_id=task_id, 
+            task_type="ai_transcription",
+            transcription_id=transcription_id
+        )
         
         # Create task
         task = WorkerTask(
@@ -68,37 +82,74 @@ class AITranscriptionService:
         self.active_tasks[task_id] = task
         
         try:
-            # Spawn workers for different parts
+            # Step 1: Source separation (MANDATORY for accuracy)
+            logger.info("Running source separation to isolate guitar...")
+            try:
+                guitar_audio = await self.demucs.extract_guitar_only(audio_path)
+                logger.info(f"Guitar successfully isolated: {guitar_audio}")
+            except Exception as e:
+                logger.error(f"Source separation failed: {e}")
+                logger.warning("Falling back to original mixed audio (accuracy will be reduced)")
+                guitar_audio = audio_path
+            
+            # Step 2: Prepare audio
             prepared_audio = await self._spawn_audio_prep_worker(task)
             
-            # Spawn parallel workers for whisper and gpt analysis
-            whisper_task = asyncio.create_task(self._spawn_whisper_worker(task, prepared_audio))
-            gpt_task = asyncio.create_task(self._spawn_gpt_worker(task, prepared_audio))
+            # Step 3: Run Basic Pitch transcription (primary)
+            basic_pitch_task = asyncio.create_task(
+                self._spawn_basic_pitch_worker(task, guitar_audio)
+            )
             
-            # Wait for both workers
-            whisper_result, gpt_result = await asyncio.gather(whisper_task, gpt_task)
+            # Step 4: Run MANDATORY analysis in parallel for musical context
+            whisper_task = asyncio.create_task(self._spawn_whisper_worker(task, prepared_audio))
+            gpt_task = asyncio.create_task(self._spawn_gpt_worker(task, guitar_audio))  # Use isolated guitar for better GPT analysis
+            
+            # Wait for all workers
+            basic_pitch_result, whisper_result, gpt_result = await asyncio.gather(
+                basic_pitch_task, whisper_task, gpt_task
+            )
             
             # Get actual audio duration
             actual_duration = self._get_audio_duration(audio_path)
             
-            # Combine results with actual duration
-            result = self.combiner.combine(whisper_result, gpt_result, duration=actual_duration)
+            # Combine results with Basic Pitch as primary source
+            result = self.combiner.combine_with_basic_pitch(
+                basic_pitch_result, 
+                whisper_result, 
+                gpt_result, 
+                duration=actual_duration
+            )
+            
+            # Clean up temp files from source separation
+            if guitar_audio != audio_path:
+                self.demucs.cleanup_temp_files({'guitar': guitar_audio})
             
             # Self-check the result
             if await self._self_check_result(result):
                 task.status = "completed"
                 task.result = result.__dict__
+                complete_task_metrics(task_id, 'success', additional_data={
+                    'confidence': result.confidence,
+                    'notes_count': len(result.notes),
+                    'duration': result.duration
+                })
                 logger.info(f"Task {task_id} completed successfully")
             else:
                 logger.warning(f"Task {task_id} failed self-check, but proceeding")
                 task.status = "completed_with_warnings"
                 task.result = result.__dict__
+                complete_task_metrics(task_id, 'completed_with_warnings', additional_data={
+                    'confidence': result.confidence,
+                    'notes_count': len(result.notes),
+                    'duration': result.duration
+                })
             
             return result
             
         except Exception as e:
             task.status = "failed"
             task.error = str(e)
+            complete_task_metrics(task_id, 'failed', error_type=type(e).__name__)
             logger.error(f"Task {task_id} failed: {e}")
             raise
         finally:
@@ -119,7 +170,16 @@ class AITranscriptionService:
     async def _spawn_gpt_worker(self, task: WorkerTask, audio_path: str) -> Dict:
         """Spawn worker for GPT analysis"""
         logger.info(f"Spawning GPT analysis worker for task {task.task_id}")
-        return await self.gpt_tool.analyze(audio_path)
+        try:
+            return await self.gpt_tool.analyze(audio_path)
+        except Exception as e:
+            logger.warning(f"GPT analysis failed: {e}, using empty result")
+            return {}
+    
+    async def _spawn_basic_pitch_worker(self, task: WorkerTask, audio_path: str) -> Dict:
+        """Spawn worker for Basic Pitch transcription"""
+        logger.info(f"Spawning Basic Pitch worker for task {task.task_id}")
+        return await self.basic_pitch.transcribe_with_options(audio_path, guitar_optimized=True)
     
     async def _self_check_result(self, result: AIAnalysisResult) -> bool:
         """Self-check the transcription result quality"""

@@ -8,8 +8,8 @@ from celery.result import AsyncResult  # re-exported for tests patching transcri
 # Lazy import of process_transcription to avoid importing ML dependencies in web container
 def __getattr__(name):
     if name == 'process_transcription':
-        from ..tasks import process_transcription
-        return process_transcription
+        from ..tasks import process_transcription_advanced
+        return process_transcription_advanced
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 # Import all views for backwards compatibility with URLs
@@ -85,6 +85,24 @@ from .preview import (
     comparison_view,
 )
 
+from .progress import (
+    transcription_progress,
+    system_metrics,
+    instrument_stats,
+    queue_status,
+    retry_failed_transcription,
+    cost_estimation,
+)
+
+from .business_intelligence import (
+    transcription_analytics,
+    conversion_funnel_analysis,
+    accuracy_dashboard,
+    user_transcription_insights,
+    revenue_analytics,
+    my_transcription_history,
+)
+
 # Make all views available at package level
 __all__ = [
     # Core views
@@ -149,6 +167,23 @@ __all__ = [
     'variant_stats',
     'export_variant',
     'check_generation_status',
+    
+    # Progress and monitoring views
+    'transcription_progress',
+    'system_metrics',
+    'instrument_stats',
+    'queue_status',
+    'retry_failed_transcription',
+    'cost_estimation',
+    
+    # Business intelligence views
+    'transcription_analytics',
+    'conversion_funnel_analysis',
+    'accuracy_dashboard',
+    'user_transcription_insights',
+    'revenue_analytics',
+    'my_transcription_history',
+    
     # Re-exported utilities
     'AsyncResult',
     'process_transcription',

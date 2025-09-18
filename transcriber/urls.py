@@ -77,6 +77,21 @@ urlpatterns = [
     path('karma/<str:username>/', views.user_karma_display, name='user_karma_display'),
     path('karma/', views.user_karma_display, name='my_karma_display'),
     
+    # Enhanced progress tracking and monitoring
+    path('transcription/<uuid:transcription_id>/progress/', views.transcription_progress, name='transcription_progress'),
+    path('transcription/<uuid:transcription_id>/retry/', views.retry_failed_transcription, name='retry_failed_transcription'),
+    path('admin/metrics/system/', views.system_metrics, name='system_metrics'),
+    path('admin/metrics/instruments/', views.instrument_stats, name='instrument_stats'),
+    path('admin/metrics/queues/', views.queue_status, name='queue_status'),
+    path('admin/metrics/costs/', views.cost_estimation, name='cost_estimation'),
+    
+    # Business intelligence and analytics
+    path('transcription/<uuid:pk>/analytics/', views.transcription_analytics, name='transcription_analytics'),
+    path('admin/analytics/conversion/', views.conversion_funnel_analysis, name='conversion_funnel'),
+    path('admin/analytics/accuracy/', views.accuracy_dashboard, name='accuracy_dashboard'),
+    path('admin/analytics/revenue/', views.revenue_analytics, name='revenue_analytics'),
+    path('my/transcriptions/history/', views.my_transcription_history, name='user_history'),
+    
     # Secure media access
     path('media/', include('transcriber.urls_media')),
 ]

@@ -327,7 +327,7 @@ def reprocess(request, pk):
     """
     Reprocess a transcription with the ML pipeline.
     """
-    from ..tasks import process_transcription
+    from ..tasks import process_transcription_advanced
     
     # Need full object for reprocessing (will reset data fields)
     transcription = get_object_or_404(Transcription, pk=pk)
@@ -355,7 +355,7 @@ def reprocess(request, pk):
     transcription.exports.all().delete()
     
     # Start new processing task
-    task = process_transcription.delay(str(transcription.id))
+    task = process_transcription_advanced.delay(str(transcription.id), accuracy_mode='maximum')
     
     # Store task ID in session for status tracking
     request.session[f'task_{transcription.id}'] = task.id

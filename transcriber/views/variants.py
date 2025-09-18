@@ -8,7 +8,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from celery.result import AsyncResult
 from ..models import Transcription, FingeringVariant, PlayabilityMetrics
-from ..tasks import generate_variants
+from ..tasks import generate_variants_advanced
 from ..services.export_manager import ExportManager
 import json
 
@@ -160,7 +160,7 @@ def regenerate_variants(request, pk):
     
     # Queue variant regeneration task
     preset = request.POST.get('preset')  # Optional: regenerate specific preset
-    task = generate_variants.delay(str(transcription.id), preset)
+    task = generate_variants_advanced.delay(str(transcription.id), request.user.id if request.user.is_authenticated else None)
     
     if request.headers.get('HX-Request'):
         return render(request, 'transcriber/partials/variants_regenerating.html', {

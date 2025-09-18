@@ -7,8 +7,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
-from ..models import Transcription, UserProfile
-from ..tasks import process_transcription
+from ..models import Transcription, UserProfile, ConversionEvent
+from ..tasks import process_transcription_advanced
+from ..decorators import check_monthly_limits, track_conversion_event
 import os
 
 
@@ -27,9 +28,11 @@ def index(request):
 
 
 @require_http_methods(["GET", "POST"])
+@check_monthly_limits
+@track_conversion_event('uploaded_audio')
 def upload(request):
     """
-    Handle audio file upload for transcription.
+    Handle audio file upload for transcription with usage tracking.
     """
     if request.method == "POST":
         is_htmx = request.headers.get('HX-Request')
@@ -89,9 +92,13 @@ def upload(request):
                     return JsonResponse({'error': error_msg}, status=400)
                 profile.increment_usage()
             
-            # Queue processing task with Celery
+            # Queue advanced processing task with Celery
             try:
-                task = process_transcription.delay(str(transcription.id))
+                # Use maximum accuracy mode for best results
+                task = process_transcription_advanced.delay(
+                    str(transcription.id),
+                    accuracy_mode='maximum'
+                )
                 # Store task ID in session for tracking
                 request.session[f'task_{transcription.id}'] = task.id
             except Exception as e:

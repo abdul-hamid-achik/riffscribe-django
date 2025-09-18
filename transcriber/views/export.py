@@ -11,8 +11,10 @@ from xml.dom import minidom
 import json
 import os
 
-from ..models import Transcription, TabExport, FingeringVariant
-from ..tasks import generate_export
+from ..models import Transcription, TabExport, FingeringVariant, ConversionEvent
+from ..tasks import generate_premium_export
+from ..decorators import premium_required, track_conversion_event, check_monthly_limits
+from ..services.export_manager import ExportManager
 
 
 def generate_basic_musicxml_from_guitar_notes(transcription):
@@ -385,9 +387,11 @@ def export_musicxml(request, pk):
         return JsonResponse({'error': f'Export failed: {str(e)}'}, status=500)
 
 
+@premium_required(feature_name='gp5_export')
+@track_conversion_event('downloaded_gp5')
 def download_gp5(request, pk):
     """
-    Generate and download Guitar Pro 5 export.
+    Generate and download Guitar Pro 5 export - PREMIUM FEATURE
     """
     transcription = get_object_or_404(Transcription, pk=pk)
     
@@ -405,31 +409,29 @@ def download_gp5(request, pk):
     if existing_export and existing_export.file:
         return redirect('transcriber:download', pk=transcription.pk, export_id=existing_export.id)
     
-    # Generate export
-    try:
-        export_manager = ExportManager(transcription)
-        gp5_content = export_manager.generate_gp5_bytes()
-        
-        if gp5_content:
-            # Save export
-            tab_export = TabExport.objects.create(
-                transcription=transcription,
-                format='gp5'
-            )
-            
-            # Save file
-            from django.core.files.base import ContentFile
-            tab_export.file.save(
-                f'{transcription.id}_guitar_pro.gp5',
-                ContentFile(gp5_content)
-            )
-            
-            return redirect('transcriber:download', pk=transcription.pk, export_id=tab_export.id)
-        else:
-            return JsonResponse({'error': 'Failed to generate Guitar Pro file'}, status=500)
-            
-    except Exception as e:
-        return JsonResponse({'error': f'Export failed: {str(e)}'}, status=500)
+    # Queue premium export task
+    task = generate_premium_export.delay(
+        str(transcription.id), 
+        'gp5', 
+        request.user.id
+    )
+    
+    # Return task status for monitoring
+    if request.headers.get('HX-Request'):
+        return render(request, 'transcriber/partials/export_processing.html', {
+            'task_id': task.id,
+            'format': 'gp5',
+            'transcription': transcription,
+            'format_display': 'Guitar Pro 5',
+            'premium_feature': True
+        })
+    
+    return JsonResponse({
+        'task_id': task.id,
+        'format': 'gp5',
+        'status': 'processing',
+        'message': 'Generating Guitar Pro 5 file...'
+    })
 
 
 def debug_tab_data(request, pk):
@@ -451,9 +453,11 @@ def debug_tab_data(request, pk):
         return JsonResponse({'error': f'Debug failed: {str(e)}'}, status=500)
 
 
+@premium_required(feature_name='ascii_tab_export')
+@track_conversion_event('downloaded_ascii_tab')
 def download_ascii_tab(request, pk):
     """
-    Generate and download ASCII tab export.
+    Generate and download ASCII tab export - PREMIUM FEATURE
     """
     transcription = get_object_or_404(Transcription, pk=pk)
     
@@ -462,27 +466,36 @@ def download_ascii_tab(request, pk):
         if not request.user.is_superuser:
             return JsonResponse({'error': 'Access denied'}, status=403)
     
-    # Generate ASCII tab
-    try:
-        export_manager = ExportManager(transcription)
-        ascii_tab = export_manager.export_ascii_tab()
-        
-        if ascii_tab:
-            # Return as plain text
-            response = HttpResponse(ascii_tab, content_type='text/plain')
-            base_filename = os.path.splitext(transcription.filename)[0]
-            response['Content-Disposition'] = f'attachment; filename="{base_filename}_tab.txt"'
-            return response
-        else:
-            return JsonResponse({'error': 'No tab data available'}, status=404)
-            
-    except Exception as e:
-        return JsonResponse({'error': f'Export failed: {str(e)}'}, status=500)
+    # Queue premium export task
+    task = generate_premium_export.delay(
+        str(transcription.id), 
+        'ascii', 
+        request.user.id
+    )
+    
+    # Return task status for monitoring
+    if request.headers.get('HX-Request'):
+        return render(request, 'transcriber/partials/export_processing.html', {
+            'task_id': task.id,
+            'format': 'ascii',
+            'transcription': transcription,
+            'format_display': 'ASCII Tab',
+            'premium_feature': True
+        })
+    
+    return JsonResponse({
+        'task_id': task.id,
+        'format': 'ascii',
+        'status': 'processing',
+        'message': 'Generating ASCII tab...'
+    })
 
 
+@premium_required(feature_name='midi_export')
+@track_conversion_event('downloaded_midi')
 def download_midi(request, pk):
     """
-    Generate and download MIDI export.
+    Generate and download MIDI export - PREMIUM FEATURE
     """
     transcription = get_object_or_404(Transcription, pk=pk)
     
@@ -500,31 +513,29 @@ def download_midi(request, pk):
     if existing_export and existing_export.file:
         return redirect('transcriber:download', pk=transcription.pk, export_id=existing_export.id)
     
-    # Generate MIDI
-    try:
-        export_manager = ExportManager(transcription)
-        midi_content = export_manager.export_midi()
-        
-        if midi_content:
-            # Save export
-            tab_export = TabExport.objects.create(
-                transcription=transcription,
-                format='midi'
-            )
-            
-            # Save file
-            from django.core.files.base import ContentFile
-            tab_export.file.save(
-                f'{transcription.id}_midi.mid',
-                ContentFile(midi_content)
-            )
-            
-            return redirect('transcriber:download', pk=transcription.pk, export_id=tab_export.id)
-        else:
-            return JsonResponse({'error': 'Failed to generate MIDI'}, status=500)
-            
-    except Exception as e:
-        return JsonResponse({'error': f'Export failed: {str(e)}'}, status=500)
+    # Queue premium export task
+    task = generate_premium_export.delay(
+        str(transcription.id), 
+        'midi', 
+        request.user.id
+    )
+    
+    # Return task status for monitoring
+    if request.headers.get('HX-Request'):
+        return render(request, 'transcriber/partials/export_processing.html', {
+            'task_id': task.id,
+            'format': 'midi',
+            'transcription': transcription,
+            'format_display': 'MIDI',
+            'premium_feature': True
+        })
+    
+    return JsonResponse({
+        'task_id': task.id,
+        'format': 'midi',
+        'status': 'processing',
+        'message': 'Generating MIDI file...'
+    })
 
 
 @require_http_methods(["POST"])

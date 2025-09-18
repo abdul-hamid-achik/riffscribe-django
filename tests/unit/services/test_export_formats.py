@@ -588,7 +588,7 @@ class TestExportFormatValidation(TestCase):
         assert debug_info['measures_count'] == 2
 
 
-@patch('transcriber.services.export_manager.gp')
+@patch('transcriber.services.export_manager.guitarpro')
 class TestGuitarProExportDetails(TestCase):
     """Test Guitar Pro export with mocked guitarpro library"""
     
@@ -617,7 +617,7 @@ class TestGuitarProExportDetails(TestCase):
             }
         )
     
-    def test_gp5_export_structure(self, mock_gp):
+    def test_gp5_export_structure(self, mock_guitarpro):
         """Test GP5 export creates proper structure"""
         # Set up mocks
         mock_song = Mock()
@@ -629,15 +629,15 @@ class TestGuitarProExportDetails(TestCase):
         mock_duration = Mock()
         mock_midi_channel = Mock()
         
-        mock_gp.Song.return_value = mock_song
-        mock_gp.Track.return_value = mock_track
-        mock_gp.Measure.return_value = mock_measure
-        mock_gp.Voice.return_value = mock_voice
-        mock_gp.Beat.return_value = mock_beat
-        mock_gp.Note.return_value = mock_note
-        mock_gp.Duration.return_value = mock_duration
-        mock_gp.MidiChannel.return_value = mock_midi_channel
-        mock_gp.write = Mock()
+        mock_guitarpro.models.Song.return_value = mock_song
+        mock_guitarpro.models.Track.return_value = mock_track
+        mock_guitarpro.models.Measure.return_value = mock_measure
+        mock_guitarpro.models.Voice.return_value = mock_voice
+        mock_guitarpro.models.Beat.return_value = mock_beat
+        mock_guitarpro.models.Note.return_value = mock_note
+        mock_guitarpro.models.Duration.return_value = mock_duration
+        mock_guitarpro.models.TrackChannel.return_value = mock_midi_channel
+        mock_guitarpro.write = Mock()
         
         # Set up attributes
         mock_song.tracks = []
@@ -652,29 +652,29 @@ class TestGuitarProExportDetails(TestCase):
         gp5_path = export_manager.generate_gp5()
         
         # Verify calls
-        mock_gp.Song.assert_called_once()
+        mock_guitarpro.models.Song.assert_called_once()
         assert mock_song.title == "gp_test.mp3"
         assert mock_song.artist == "RiffScribe"
         assert mock_song.tempo == 150
         
-        mock_gp.Track.assert_called_once()
+        mock_guitarpro.models.Track.assert_called_once()
         mock_track.name = "Guitar"
         mock_track.isPercussionTrack = False
         
         # Should create measures and notes
-        assert mock_gp.Measure.called
-        assert mock_gp.Note.called
+        assert mock_guitarpro.models.Measure.called
+        assert mock_guitarpro.models.Note.called
         
         # Should write file
-        mock_gp.write.assert_called_once()
+        mock_guitarpro.write.assert_called_once()
         assert gp5_path is not None
     
-    def test_gp5_export_without_library(self, mock_gp):
+    def test_gp5_export_without_library(self, mock_guitarpro):
         """Test GP5 export when guitarpro library not available"""
-        # Make gp None to simulate missing library
-        mock_gp = None
+        # Make guitarpro None to simulate missing library
+        mock_guitarpro = None
         
-        with patch('transcriber.services.export_manager.gp', None):
+        with patch('transcriber.services.export_manager.guitarpro', None):
             export_manager = ExportManager(self.transcription)
             gp5_path = export_manager.generate_gp5()
             

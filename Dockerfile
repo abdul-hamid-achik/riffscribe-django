@@ -60,17 +60,23 @@ EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60", "riffscribe.wsgi:application"]
 
 # ============================================ 
-# WORKER TARGET - Lightweight AI processing (90% smaller!)
+# WORKER TARGET - Full AI transcription with Demucs + Basic Pitch
 # ============================================
 FROM base AS worker
 
-# Install MINIMAL system dependencies for AI processing
+# Install ALL system dependencies for audio processing and AI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    g++ \
     libffi-dev \
     libssl-dev \
     libpq5 \
     ffmpeg \
+    libsndfile1 \
+    libsndfile1-dev \
+    libsamplerate0 \
+    libsamplerate0-dev \
+    sox \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -80,7 +86,7 @@ COPY pyproject.toml ./
 RUN --mount=type=cache,target=/opt/uv-cache \
     uv venv /opt/venv \
     && uv pip install --python=/opt/venv/bin/python -e ".[worker]" \
-    && echo "AI Worker build complete - 90% smaller than ML version!"
+    && echo "Worker build complete with Basic Pitch + Demucs for accurate transcription!"
 
 ENV PATH="/opt/venv/bin:$PATH"
 
@@ -92,8 +98,8 @@ RUN uv pip install --python=/opt/venv/bin/python -e . \
 
 USER django
 
-# AI workers can handle more concurrency (less memory per task)
-CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=4"]
+# Workers with Demucs need more memory per task
+CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=2", "--max-memory-per-child=2000000"]
 
 # ============================================
 # DEVELOPMENT TARGET - Fast local development  
@@ -174,8 +180,8 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
 
 USER django
 
-# AI workers use less memory - can increase concurrency and remove memory limit
-CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=4"]
+# Workers need sufficient memory for Demucs models
+CMD ["celery", "-A", "riffscribe", "worker", "--loglevel=info", "--concurrency=2", "--max-memory-per-child=2000000"]
 
 # ============================================
 # PRODUCTION SCHEDULER - Celery beat

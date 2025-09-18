@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Lightweight AI-powered worker dependencies (90% size reduction!)
+# Worker dependencies with CUTTING-EDGE transcription capabilities
 worker = [
     # Celery worker dependencies
     "vine==5.0.0",
@@ -52,26 +52,42 @@ worker = [
     "amqp>=5.2,<5.3",
     "flower>=2.0",
     
-    # Audio processing for duration calculation and chunking
-    "pydub>=0.25",  # For basic audio format conversion and duration
-    "librosa>=0.10.0",  # For accurate audio duration and analysis
+    # Core audio processing
+    "pydub>=0.25",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "audioread>=3.0.0",
+    "resampy>=0.4.0",
     
-    # Music processing (keep the essentials)
-    "music21>=9.1",  # For music theory and notation
-    "midiutil>=1.2",  # For MIDI file generation
+    # STATE-OF-THE-ART transcription models
+    "mt3>=0.1.0",  # Google's Multi-Task Multitrack Music Transcription (SOTA)
+    "omnizart>=0.5.0",  # Comprehensive music transcription toolkit
+    "crepe>=0.0.16",  # Advanced pitch detection with CNN
+    
+    # Advanced source separation
+    "demucs>=4.0.0",  # Enhanced source separation
+    "torch>=2.0.0", 
+    "torchaudio>=2.0.0",
+    "transformers>=4.30.0",  # Required by MT3
+    "tensorflow>=2.13.0",  # Required by Omnizart and CREPE
+    
+    # MIDI and music processing
+    "music21>=9.1",
+    "midiutil>=1.2",
+    "pretty-midi>=0.2.10",
+    "mido>=1.3.0",
     
     # Guitar tab formats
-    "pyguitarpro>=0.10",  # For Guitar Pro file export
+    "pyguitarpro>=0.10",
     
-    # AI-powered transcription (replaces entire ML pipeline!)
-    # Note: openai is already in main dependencies
+    # Scientific computing
+    "scipy>=1.11.0",
+    "numpy>=1.24.0",
     
-    # REMOVED HEAVY DEPENDENCIES (saved ~4GB!):
-    # - numpy, scipy, librosa, soundfile, audioread, resampy (audio analysis)
-    # - torch, torchaudio (PyTorch models)
-    # - pretty-midi (MIDI processing)
-    # - demucs (4GB source separation model)
-    # - basic-pitch (polyphonic transcription)
+    # Machine learning infrastructure
+    "jax[cpu]>=0.4.0",  # Required by MT3
+    "flax>=0.7.0",  # Required by MT3
+    "note-seq>=0.0.5",  # Music representation for MT3
 ]
 
 # Development dependencies (lightweight)

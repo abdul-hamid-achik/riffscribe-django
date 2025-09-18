@@ -314,10 +314,13 @@ class ExportManager:
             logger.info(f"GP5 export: Tempo set to {tempo_value}")
             
             # Create a single guitar track (requires song parameter)
-            track = guitarpro.models.Track(song)
+            track = guitarpro.models.Track(song=song)
             track.name = "Guitar"
-            track.channel = guitarpro.models.TrackChannel()
+            # Fix: Use MidiChannel instead of TrackChannel (API change in newer versions)
+            track.channel = guitarpro.models.MidiChannel()
             track.channel.instrument = 24  # Acoustic guitar
+            track.channel.volume = 127
+            track.channel.balance = 64
             song.tracks = [track]
             logger.info("GP5 export: Track created and added to song")
             
@@ -609,25 +612,25 @@ class ExportManager:
     
     def _create_empty_gp5_file(self) -> Optional[str]:
         """Create a minimal empty GP5 file when no tab data is available."""
-        if not gp:
+        if not guitarpro:
             logger.warning("guitarpro library not available for empty GP5 creation")
             return None
             
         try:
             # Create basic GP5 structure
-            song = gp.Song()
+            song = guitarpro.models.Song()
             song.title = self.transcription.filename or "Untitled"
             song.artist = "RiffScribe"
             song.tempo = 120
             
             # Create a single guitar track
-            track = gp.Track(song=song)
+            track = guitarpro.models.Track(song=song)
             track.name = "Guitar"
             track.isPercussionTrack = False
             
             # Set MIDI channel if available
             if hasattr(track, 'channel'):
-                track.channel = gp.MidiChannel()
+                track.channel = guitarpro.models.MidiChannel()
                 track.channel.instrument = 24  # Acoustic guitar
             
             # Add track to song
@@ -636,23 +639,23 @@ class ExportManager:
             # Create one empty measure with proper parameters
             if hasattr(track, 'measures'):
                 # Create measure header first
-                header = gp.MeasureHeader()
+                header = guitarpro.models.MeasureHeader()
                 
                 # Create measure with required parameters
-                measure = gp.Measure(track, header)
+                measure = guitarpro.models.Measure(track, header)
                 
                 # Add basic voice with one rest beat
-                voice = gp.Voice()
-                beat = gp.Beat()
+                voice = guitarpro.models.Voice()
+                beat = guitarpro.models.Beat()
                 
                 # Set beat duration to quarter note rest
                 try:
-                    if hasattr(gp, 'DurationType'):
-                        beat.duration = gp.Duration(value=gp.DurationType.quarter)
+                    if hasattr(guitarpro, 'DurationType'):
+                        beat.duration = guitarpro.models.Duration(value=guitarpro.DurationType.quarter)
                     else:
-                        beat.duration = gp.Duration(value=4)
+                        beat.duration = guitarpro.models.Duration(value=4)
                 except:
-                    beat.duration = gp.Duration()
+                    beat.duration = guitarpro.models.Duration()
                 
                 voice.beats.append(beat)
                 measure.voices.append(voice)
@@ -666,7 +669,7 @@ class ExportManager:
             temp_file.close()
             
             # Write the GP5 file
-            gp.write_song(song, temp_file.name, format=gp.formats.GP5)
+            guitarpro.write(song, temp_file.name)
             
             logger.info(f"Created empty GP5 file at: {temp_file.name}")
             return temp_file.name

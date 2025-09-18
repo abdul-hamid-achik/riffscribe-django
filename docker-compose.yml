@@ -60,7 +60,7 @@ services:
       cache_from:
         - riffscribe-worker:latest
     image: riffscribe-worker:latest
-    command: celery -A riffscribe worker -l info --concurrency=4  # More concurrency with AI!
+    command: celery -A riffscribe worker -l info --concurrency=2 --max-memory-per-child=2000000  # Demucs needs memory
     restart: unless-stopped
     volumes:
       - .:/app
@@ -82,12 +82,6 @@ services:
       - AWS_S3_USE_SSL=false
       - USE_S3=true
       - MEDIA_URL_ENDPOINT=http://localhost:9000
-      # AI-specific settings  
-      - ENABLE_DRUMS=true
-      - ENABLE_MULTITRACK=true
-      # REMOVED ML SETTINGS (no longer needed!):
-      # - USE_GPU=false (no GPU needed for AI API)
-      # - DEMUCS_MODEL=htdemucs_ft (no 4GB model needed!)
     depends_on:
       - redis
       - db
@@ -97,7 +91,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G  # 75% memory reduction!
+          memory: 4G  # Demucs models need ~3GB memory
         reservations:
           memory: 256M  # Much lower baseline
     healthcheck:
@@ -226,7 +220,7 @@ volumes:
   storage_data:
   # Separate caches for different container types
   uv_cache_web:    # Lightweight web dependencies cache
-  uv_cache_worker: # Heavy ML dependencies cache
+  uv_cache_worker: # Worker dependencies cache (Demucs + Basic Pitch)
   uv_cache_dev:    # Development environment cache
 
 networks:

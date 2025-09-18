@@ -131,23 +131,30 @@ class TestExportManager:
     @pytest.mark.unit
     def test_generate_gp5_with_pyguitarpro(self, export_manager):
         """Test GP5 generation when guitarpro is available."""
-        with patch('transcriber.services.export_manager.gp') as mock_gp:
+        with patch('transcriber.services.export_manager.guitarpro') as mock_guitarpro:
             mock_song = MagicMock()
-            mock_gp.Song.return_value = mock_song
-            mock_gp.Track = MagicMock()
-            mock_gp.Measure = MagicMock()
-            mock_gp.Beat = MagicMock()
-            mock_gp.Note = MagicMock()
+            mock_track = MagicMock()
+            mock_measure = MagicMock()
+            mock_voice = MagicMock()
+            
+            mock_guitarpro.models.Song.return_value = mock_song
+            mock_guitarpro.models.Track.return_value = mock_track
+            mock_guitarpro.models.Measure.return_value = mock_measure
+            mock_guitarpro.models.Voice.return_value = mock_voice
+            mock_guitarpro.models.TrackChannel = MagicMock()
+            mock_guitarpro.write = MagicMock()
+            
+            mock_track.measures = []
             
             result = export_manager.generate_gp5(export_manager.tab_data)
             
             # Should attempt to create GP5
-            mock_gp.Song.assert_called_once()
+            mock_guitarpro.models.Song.assert_called_once()
     
     @pytest.mark.unit
     def test_generate_gp5_without_pyguitarpro(self, export_manager):
         """Test GP5 generation when guitarpro is not available."""
-        with patch('transcriber.services.export_manager.gp', None):
+        with patch('transcriber.services.export_manager.guitarpro', None):
             result = export_manager.generate_gp5(export_manager.tab_data)
             
             # Should return None when library not available
@@ -175,7 +182,7 @@ class TestExportManager:
         )
         export_manager = ExportManager(transcription)
         
-        with patch('transcriber.services.export_manager.gp') as mock_gp:
+        with patch('transcriber.services.export_manager.guitarpro') as mock_guitarpro:
             mock_song = MagicMock()
             mock_track = MagicMock()
             mock_measure = MagicMock()
@@ -183,13 +190,14 @@ class TestExportManager:
             mock_beat = MagicMock()
             mock_duration = MagicMock()
             
-            mock_gp.Song.return_value = mock_song
-            mock_gp.Track.return_value = mock_track
-            mock_gp.Measure.return_value = mock_measure
-            mock_gp.Voice.return_value = mock_voice
-            mock_gp.Beat.return_value = mock_beat
-            mock_gp.Duration.return_value = mock_duration
-            mock_gp.write = MagicMock()
+            mock_guitarpro.models.Song.return_value = mock_song
+            mock_guitarpro.models.Track.return_value = mock_track
+            mock_guitarpro.models.Measure.return_value = mock_measure
+            mock_guitarpro.models.Voice.return_value = mock_voice
+            mock_guitarpro.models.Beat.return_value = mock_beat
+            mock_guitarpro.models.Duration.return_value = mock_duration
+            mock_guitarpro.models.TrackChannel = MagicMock()
+            mock_guitarpro.write = MagicMock()
             
             # Configure the track to have no measures initially
             mock_track.measures = []
@@ -198,13 +206,13 @@ class TestExportManager:
             result = export_manager.generate_gp5()
             
             # Should create a song and track despite empty measures
-            mock_gp.Song.assert_called_once()
-            mock_gp.Track.assert_called_once()
+            mock_guitarpro.models.Song.assert_called_once()
+            mock_guitarpro.models.Track.assert_called_once()
             
             # Should create at least one measure for empty transcription
-            assert mock_gp.Measure.called
-            assert mock_gp.Voice.called
-            assert mock_gp.Beat.called
+            assert mock_guitarpro.models.Measure.called
+            assert mock_guitarpro.models.Voice.called
+            assert mock_guitarpro.models.Beat.called
 
     @pytest.mark.unit
     def test_export_midi_with_notes(self, export_manager):

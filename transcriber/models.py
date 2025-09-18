@@ -48,10 +48,29 @@ class UserProfile(models.Model):
     comments_received_upvotes = models.IntegerField(default=0)
     comments_received_downvotes = models.IntegerField(default=0)
     
-    # Subscription/limits (for future use)
-    is_premium = models.BooleanField(default=False)
-    monthly_upload_limit = models.IntegerField(default=10)
+    # Subscription management
+    SUBSCRIPTION_TIERS = [
+        ('free', 'Free'),
+        ('premium', 'Premium'),
+        ('professional', 'Professional'),
+    ]
+    
+    subscription_tier = models.CharField(
+        max_length=20, 
+        choices=SUBSCRIPTION_TIERS, 
+        default='free'
+    )
+    subscription_expires = models.DateTimeField(null=True, blank=True)
+    is_premium = models.BooleanField(default=False)  # Backward compatibility
+    
+    # Usage limits
+    monthly_upload_limit = models.IntegerField(default=3)  # Free tier limit
     uploads_this_month = models.IntegerField(default=0)
+    
+    # Premium features tracking
+    can_export = models.BooleanField(default=False)
+    can_use_commercial = models.BooleanField(default=False)
+    can_use_api = models.BooleanField(default=False)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -77,9 +96,53 @@ class UserProfile(models.Model):
     
     def can_upload(self):
         """Check if user can upload more files this month"""
-        if self.is_premium:
+        # Premium and professional users have unlimited uploads
+        if self.subscription_tier in ['premium', 'professional'] or self.is_premium:
             return True
         return self.uploads_this_month < self.monthly_upload_limit
+    
+    def can_export_files(self):
+        """Check if user can export files"""
+        return (
+            self.subscription_tier in ['premium', 'professional'] or
+            self.is_premium or
+            self.can_export
+        )
+    
+    def get_monthly_limit(self):
+        """Get monthly upload limit based on subscription tier"""
+        limits = {
+            'free': 3,
+            'premium': 999999,  # Unlimited
+            'professional': 999999  # Unlimited
+        }
+        return limits.get(self.subscription_tier, 3)
+    
+    def update_premium_features(self):
+        """Update premium feature flags based on subscription tier"""
+        if self.subscription_tier == 'free':
+            self.can_export = False
+            self.can_use_commercial = False
+            self.can_use_api = False
+            self.monthly_upload_limit = 3
+        elif self.subscription_tier == 'premium':
+            self.can_export = True
+            self.can_use_commercial = False
+            self.can_use_api = False
+            self.monthly_upload_limit = 999999
+        elif self.subscription_tier == 'professional':
+            self.can_export = True
+            self.can_use_commercial = True
+            self.can_use_api = True
+            self.monthly_upload_limit = 999999
+        
+        # Update is_premium for backward compatibility
+        self.is_premium = self.subscription_tier in ['premium', 'professional']
+        
+        self.save(update_fields=[
+            'can_export', 'can_use_commercial', 'can_use_api', 
+            'monthly_upload_limit', 'is_premium'
+        ])
     
     def increment_usage(self, duration=0):
         """Increment usage statistics"""
@@ -200,9 +263,24 @@ class Transcription(models.Model):
     gp5_file = models.FileField(upload_to='gp5/%Y/%m/%d/', null=True, blank=True)
     guitar_notes = models.JSONField(null=True, blank=True)
     
-    # Whisper AI analysis
+    # AI Analysis (enhanced)
     whisper_analysis = models.JSONField(null=True, blank=True)
     
+    # Advanced transcription metadata (NEW)
+    accuracy_score = models.FloatField(null=True, blank=True, help_text="Estimated accuracy (0-1)")
+    processing_model_version = models.CharField(max_length=50, default="advanced_v2.0")
+    models_used = models.JSONField(default=list, blank=True, help_text="List of AI models used")
+    
+    # Multi-track processing
+    separated_stems = models.JSONField(null=True, blank=True, help_text="Paths to separated audio stems")
+    multitrack_data = models.JSONField(null=True, blank=True, help_text="Combined multi-track analysis results")
+    
+    # Business intelligence
+    commercial_license = models.BooleanField(default=False, help_text="Can be used commercially")
+    view_count = models.IntegerField(default=0)
+    export_count = models.IntegerField(default=0)
+    last_viewed = models.DateTimeField(null=True, blank=True)
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -233,7 +311,11 @@ class Transcription(models.Model):
             self.whisper_analysis = ensure_json_serializable(self.whisper_analysis)
         if self.detected_instruments is not None:
             self.detected_instruments = ensure_json_serializable(self.detected_instruments)
-            
+        if self.separated_stems is not None:
+            self.separated_stems = ensure_json_serializable(self.separated_stems)
+        if self.multitrack_data is not None:
+            self.multitrack_data = ensure_json_serializable(self.multitrack_data)
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -271,10 +353,7 @@ class TabExport(models.Model):
     
     transcription = models.ForeignKey(Transcription, on_delete=models.CASCADE, related_name='exports')
     format = models.CharField(max_length=20, choices=FORMAT_CHOICES)
-    file = models.FileField(
-        upload_to='exports/%Y/%m/%d/', 
-        storage=lambda: __import__('transcriber.storage', fromlist=['ExportStorage']).ExportStorage()
-    )
+    file = models.FileField(upload_to='exports/%Y/%m/%d/')
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -453,6 +532,7 @@ class Track(models.Model):
     # Track-specific analysis
     volume_level = models.FloatField(null=True, blank=True)  # RMS amplitude
     prominence_score = models.FloatField(null=True, blank=True)  # How prominent this track is (0-1)
+    confidence_score = models.FloatField(null=True, blank=True)  # Transcription confidence (0-1)
     
     # Track-specific transcription data
     midi_data = models.JSONField(null=True, blank=True)
@@ -712,12 +792,71 @@ class CommentVote(models.Model):
             comment_user.profile.update_karma()
 
 
+# Business Intelligence Models
+
+class ConversionEvent(models.Model):
+    """Track user conversion events for business analytics"""
+    
+    EVENT_TYPES = [
+        ('viewed_transcription', 'Viewed Transcription'),
+        ('attempted_export', 'Attempted Export'),
+        ('signed_up', 'Signed Up'),
+        ('upgraded_premium', 'Upgraded to Premium'),
+        ('cancelled_subscription', 'Cancelled Subscription'),
+        ('used_feature', 'Used Feature'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
+    transcription = models.ForeignKey(Transcription, on_delete=models.CASCADE, null=True, blank=True)
+    feature_name = models.CharField(max_length=100, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['event_type', 'created_at']),
+            models.Index(fields=['user', 'event_type']),
+        ]
+    
+    def __str__(self):
+        user_id = self.user.id if self.user else 'Anonymous'
+        return f"User {user_id}: {self.event_type}"
+
+
+class UsageAnalytics(models.Model):
+    """Detailed usage analytics for business insights"""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    date = models.DateField(auto_now_add=True)
+    
+    # Daily usage metrics
+    transcriptions_created = models.IntegerField(default=0)
+    exports_attempted = models.IntegerField(default=0)
+    exports_completed = models.IntegerField(default=0)
+    total_processing_time = models.FloatField(default=0.0)  # seconds
+    
+    # Feature usage
+    features_used = models.JSONField(default=list, blank=True)
+    avg_accuracy_score = models.FloatField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['user', 'date']
+        ordering = ['-date']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.date}"
+
+
 # Signals to create UserProfile automatically
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     """Create a UserProfile when a new User is created"""
     if created:
-        UserProfile.objects.create(user=instance)
+        # Set premium features based on subscription tier
+        profile = UserProfile.objects.create(user=instance)
+        profile.update_premium_features()
 
 @receiver(post_save, sender=User) 
 def save_user_profile(sender, instance, **kwargs):
